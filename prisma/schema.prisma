@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id          Int             @id @default(autoincrement())
+  username    String
+  email       String           @unique
+  password    String
+  firstName   String
+  lastName    String
+  isVerified  String
+  createdAt   DateTime         @default(now())
+  favouriteProducts FavouriteProduct[]
+  reviews     Review[]
+  products    Product[]
+}
+
+model FavouriteProduct {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  productId  Int
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+  product    Product   @relation(fields: [productId], references: [id])
+}
+
+model Product {
+  id          Int             @id @default(autoincrement())
+  name        String
+  userId      Int
+  description String
+  price       String
+  stock       String
+  images      String
+  brandId     Int?
+  modelId     Int?
+  categoryId  Int
+  condition   String
+  isPublished Boolean
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation(fields: [userId], references: [id])
+  reviews     Review[]
+  favouriteProducts FavouriteProduct[]
+  category    Category         @relation(fields: [categoryId], references: [id])
+  brand       Brand?           @relation(fields: [brandId], references: [id])
+  model       Model?           @relation(fields: [modelId], references: [id])
+  personalComputer PersonalComputer?
+  laptop      Laptop?
+  component   Component?
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+  brands   Brand[]
+}
+
+model PersonalComputer {
+  id          Int     @id @default(autoincrement())
+  productId   Int     @unique
+  ram         String
+  processor   String
+  processorType String
+  storage     String
+  graphics    String
+  ports       String
+  os          String
+
+  product     Product @relation(fields: [productId], references: [id])
+}
+
+model Laptop {
+  id              Int     @id @default(autoincrement())
+  productId       Int     @unique
+  ram             String
+  processor       String
+  storage         String
+  graphics        String
+  ports           String
+  batteryLife     String
+  screenSize      String
+  weight          String
+  screenResolution String
+  os              String
+  processorType   String
+  color           String
+
+  product         Product @relation(fields: [productId], references: [id])
+}
+
+model Component {
+  id            Int     @id @default(autoincrement())
+  productId     Int     @unique
+  wattage       String
+  socketType    String
+  powerSupply   String
+  coolingSystem String
+  formFactor    String
+
+  product       Product @relation(fields: [productId], references: [id])
+}
+
+model Brand {
+  id          Int       @id @default(autoincrement())
+  categoryId  Int
+  name        String
+  logo        String
+  status      Boolean
+  products    Product[]
+  models      Model[]
+  category    Category  @relation(fields: [categoryId], references: [id])
+}
+
+model Model {
+  id       Int      @id @default(autoincrement())
+  name     String
+  brandId  Int
+  status   Boolean
+  products Product[]
+  brand    Brand    @relation(fields: [brandId], references: [id])
+}
+
+model Review {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  productId  Int
+  comments   String
+  ratings    Int
+  images     String
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+  product    Product   @relation(fields: [productId], references: [id])
+}
