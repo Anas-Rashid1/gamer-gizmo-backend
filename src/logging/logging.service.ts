@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { CreateUserDto } from 'src/DataTransferObject/data.dto';
+// import { CreateUserDto } from 'src/DataTransferObject/data.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-
 
 @Injectable()
 export class LoggingService {
@@ -14,7 +13,7 @@ export class LoggingService {
       const { email, username, password, firstName, lastName, isSeller } =
         req.body;
 
-      console.log(req.body)
+      console.log(req.body);
 
       // Check for missing fields
       if (
