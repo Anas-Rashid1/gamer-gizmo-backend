@@ -59,7 +59,6 @@ export class AuthService {
     try {
       otp_res = await this.authenticateByOtp(email, false);
     } catch (err) {
-      console.log(err, 'roor');
       throw new BadRequestException(
         'Failed to send OTP email. Please Try again.',
       );
@@ -286,7 +285,6 @@ export class AuthService {
       if (!tokenWithUser) {
         throw new BadRequestException('Token not found');
       }
-      console.log(tokenWithUser);
       this.sendLogoutEmail(tokenWithUser);
       return { message: 'Email Sent To  logged out' };
     } catch (error) {
@@ -307,16 +305,13 @@ export class AuthService {
   }
   async emailLogoutConfirmation(token: string) {
     let decodedToken;
-    console.log(token);
     try {
       decodedToken = await this.jwtService.verify(token, {
         secret: this.secretKey,
       });
     } catch (error) {
-      console.log(error);
       throw new BadRequestException('Invalid or expired token');
     }
-    console.log(decodedToken, 'lol');
 
     const deletedToken = await this.prisma.tokens.delete({
       where: {
