@@ -9,6 +9,12 @@ async function bootstrap() {
     .setTitle('Gamer Gizmo')
     .setDescription('Gamer Gizmo API Documentation')
     .setVersion('1.0')
+    .addBearerAuth()
+    .addApiKey(
+      { type: 'apiKey', name: 'X-Org-Auth', in: 'header' },
+      'X-Org-Auth',
+    )
+
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

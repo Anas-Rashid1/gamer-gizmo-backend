@@ -1,8 +1,14 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBrandsDto } from './dto/createbrands.dto';
 import { GetBrandsDto } from './dto/getbrands.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class BrandsService {
@@ -31,17 +37,38 @@ export class BrandsService {
   }
   async DeleteBrand({ id }: DeleteBrandsDto) {
     try {
-      console.log(id, 'lol');
-      const brands = await this.prisma.brands.delete({
+      const brands = await this.prisma.brands.findUnique({
         where: {
           id: parseInt(id),
         },
       });
+      // Check if the brand or its logo is missing
+      if (!brands) {
+        throw new BadRequestException(`Brand with id ${id} does not exist.`);
+      }
+      if (!brands.logo) {
+        throw new BadRequestException('No logo associated with this brand.');
+      }
+
+      // Delete the logo file
+      await fs.unlink(brands.logo.slice(1));
+
+      // Delete the brand from the database
+      await this.prisma.brands.delete({
+        where: {
+          id: parseInt(id),
+        },
+      });
+
       return { message: 'Successfully Deleted' };
     } catch (e) {
-      throw new InternalServerErrorException(e);
+      console.error('Error deleting brand:', e);
+      throw new InternalServerErrorException(
+        e.message || 'Failed to delete the brand.',
+      );
     }
   }
+
   async createBrand(data: CreateBrandsDto, logo: any) {
     try {
       const brands = await this.prisma.brands.create({
