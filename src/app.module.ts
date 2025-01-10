@@ -11,6 +11,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
+import { ModelModule } from './model/model.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BrandsModule } from './brands/brands.module';
     AuthModule,
     CategoriesModule,
     BrandsModule,
+    ModelModule,
     LaptopModule,
   ],
   controllers: [AppController],
