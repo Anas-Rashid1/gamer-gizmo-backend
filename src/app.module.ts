@@ -13,6 +13,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
 import { ModelModule } from './model/model.module';
 import { ComponentCategoryModule } from './component_category/componentCategory.module';
+import { FavouriteModule } from './favourites/favourite.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ComponentCategoryModule } from './component_category/componentCategory.
     ModelModule,
     ComponentCategoryModule,
     ProductModule,
+    FavouriteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

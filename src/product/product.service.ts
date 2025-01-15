@@ -87,13 +87,42 @@ export class ProductService {
       if (!data) {
         throw new BadRequestException('No Product Found');
       }
-      console.log(data, 'data');
+      let images = await this.prismaService.product_images.findMany({
+        where: {
+          product_id: parseInt(pid.id),
+        },
+      });
+      for (let i = 0; images.length > i; i++) {
+        await fs.unlink(images[i].image_url);
+      }
+      await this.prismaService.product_images.deleteMany({
+        where: {
+          product_id: parseInt(pid.id),
+        },
+      });
+      await this.prismaService.laptops.deleteMany({
+        where: {
+          product_id: parseInt(pid.id),
+        },
+      });
+      await this.prismaService.personal_computers.deleteMany({
+        where: {
+          product_id: parseInt(pid.id),
+        },
+      });
+      await this.prismaService.components.deleteMany({
+        where: {
+          product_id: parseInt(pid.id),
+        },
+      });
       await this.prismaService.product.delete({
         where: {
           id: parseInt(pid.id),
         },
       });
-      return { data: data, message: 'success' };
+      console.log(images, 'data');
+
+      return { data: data, message: 'successfully deleted' };
     } catch (e) {
       console.log(e);
       throw new InternalServerErrorException(e);
