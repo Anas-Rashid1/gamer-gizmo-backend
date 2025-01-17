@@ -57,7 +57,7 @@ export class AddToFavouriteService {
         data: {
           user_id: parseInt(data.userId),
           product_id: parseInt(data.productId),
-        },
+        }, 
       });
 
       return { data: data, message: 'Successfully Added' };

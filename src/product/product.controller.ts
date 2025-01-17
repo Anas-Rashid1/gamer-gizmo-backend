@@ -15,6 +15,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ProductService } from './product.service';
+import { CreateReviewDto } from './dto/review.dto';
 
 @ApiTags('Products')
 @Controller('/products')
@@ -79,13 +80,19 @@ export class ProductsContoller {
 
   @Delete('/deleteProductById')
   @ApiQuery({
-    name: 'id',
+    name: 'user_id',
+    required: true, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'product_id',
     required: true, // Make category optional
     type: String,
   })
   async DeleteProductById(@Query() id: string) {
     return this.productService.DeleteProductById(id);
   }
+
   // @ApiBearerAuth()
   // @UseGuards(AuthGuard)
   @UseInterceptors(
@@ -111,5 +118,45 @@ export class ProductsContoller {
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     return this.productService.CreateProduct(productbody, images);
+  }
+
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, './public/reviewImages');
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname); // Extract the file extension
+          const fileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
+          cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @Post('/addReview')
+  async AddReview(
+    @Body() ReviewDto: CreateReviewDto,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.productService.AddReview(ReviewDto, images);
+  }
+
+  @Delete('/deleteReviewById')
+  @ApiQuery({
+    name: 'user_id',
+    required: true, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'review_id',
+    required: true, // Make category optional
+    type: String,
+  })
+  async DeleteReviewById(@Query() data: any) {
+    return this.productService.DeleteReviewById(data);
   }
 }

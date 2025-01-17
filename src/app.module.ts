@@ -14,6 +14,7 @@ import { BrandsModule } from './brands/brands.module';
 import { ModelModule } from './model/model.module';
 import { ComponentCategoryModule } from './component_category/componentCategory.module';
 import { FavouriteModule } from './favourites/favourite.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FavouriteModule } from './favourites/favourite.module';
     ComponentCategoryModule,
     ProductModule,
     FavouriteModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

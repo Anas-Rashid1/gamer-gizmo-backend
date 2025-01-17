@@ -6,6 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/product.dto';
 import * as fs from 'fs/promises';
+import { CreateReviewDto } from './dto/review.dto';
 
 @Injectable()
 export class ProductService {
@@ -81,15 +82,18 @@ export class ProductService {
     try {
       let data = await this.prismaService.product.findUnique({
         where: {
-          id: parseInt(pid.id),
+          id: parseInt(pid.product_id),
         },
       });
       if (!data) {
         throw new BadRequestException('No Product Found');
       }
+      if (data.user_id != pid.user_id) {
+        throw new BadRequestException('Not Allowed');
+      }
       let images = await this.prismaService.product_images.findMany({
         where: {
-          product_id: parseInt(pid.id),
+          product_id: parseInt(pid.product_id),
         },
       });
       for (let i = 0; images.length > i; i++) {
@@ -97,27 +101,53 @@ export class ProductService {
       }
       await this.prismaService.product_images.deleteMany({
         where: {
-          product_id: parseInt(pid.id),
+          product_id: parseInt(pid.product_id),
         },
       });
       await this.prismaService.laptops.deleteMany({
         where: {
-          product_id: parseInt(pid.id),
+          product_id: parseInt(pid.product_id),
         },
       });
       await this.prismaService.personal_computers.deleteMany({
         where: {
-          product_id: parseInt(pid.id),
+          product_id: parseInt(pid.product_id),
         },
       });
       await this.prismaService.components.deleteMany({
         where: {
-          product_id: parseInt(pid.id),
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      let rev = await this.prismaService.store_product_review.findMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      for (let i = 0; rev.length > i; i++) {
+        let rev_images =
+          await this.prismaService.store_product_review_images.findMany({
+            where: {
+              review_id: rev[i].id,
+            },
+          });
+        for (let i = 0; rev_images.length > i; i++) {
+          await fs.unlink(rev_images[i].image_url);
+        }
+        await this.prismaService.store_product_review_images.deleteMany({
+          where: {
+            review_id: rev[i].id,
+          },
+        });
+      }
+      await this.prismaService.store_product_review.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
         },
       });
       await this.prismaService.product.delete({
         where: {
-          id: parseInt(pid.id),
+          id: parseInt(pid.product_id),
         },
       });
       console.log(images, 'data');
@@ -139,6 +169,11 @@ export class ProductService {
           components: {
             include: {
               component_type_components_component_typeTocomponent_type: true, // Correct nested relation
+            },
+          },
+          store_product_review: {
+            include: {
+              store_product_review_images: true, // Correct nested relation
             },
           },
           personal_computers: true,
@@ -230,12 +265,99 @@ export class ProductService {
           },
         });
       }
+      await this.prismaService.users.update({
+        data: { is_seller: true },
+        where: { id: parseInt(productbody.user_id) },
+      });
       return { message: 'success' };
     } catch (e) {
       console.log(e);
       for (let i = 0; images.length > i; i++) {
         await fs.unlink(images[i].path);
       }
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async AddReview(productbody: CreateReviewDto, images) {
+    try {
+      let pro = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(productbody.product_id),
+        },
+      });
+      if (!pro) {
+        throw new BadRequestException('No Product Found');
+      }
+      if (!pro.is_verified_by_admin) {
+        throw new BadRequestException('No Cant Review this product');
+      }
+      let rev = await this.prismaService.store_product_review.create({
+        data: {
+          ratings: parseInt(productbody.ratings),
+          user_id: parseInt(productbody.user_id),
+          product_id: parseInt(productbody.product_id),
+          comments: productbody.comments,
+        },
+      });
+
+      for (let i = 0; images.length > i; i++) {
+        await this.prismaService.store_product_review_images.create({
+          data: {
+            review_id: rev.id,
+            image_url: images[i].path,
+            created_at: new Date(),
+          },
+        });
+      }
+
+      return { message: 'success added review' };
+    } catch (e) {
+      console.log(e);
+      for (let i = 0; images.length > i; i++) {
+        await fs.unlink(images[i].path);
+      }
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async DeleteReviewById(data: any) {
+    try {
+      let rev = await this.prismaService.store_product_review.findUnique({
+        where: {
+          id: parseInt(data.review_id),
+        },
+      });
+      if (!rev) {
+        throw new BadRequestException('No Product Found');
+      }
+      if (rev.user_id != data.user_id) {
+        throw new BadRequestException('Not Allowed');
+      }
+      let images =
+        await this.prismaService.store_product_review_images.findMany({
+          where: {
+            review_id: parseInt(data.review_id),
+          },
+        });
+      for (let i = 0; images.length > i; i++) {
+        await fs.unlink(images[i].image_url);
+      }
+      await this.prismaService.store_product_review_images.deleteMany({
+        where: {
+          review_id: parseInt(data.review_id),
+        },
+      });
+
+      await this.prismaService.store_product_review.delete({
+        where: {
+          id: parseInt(data.review_id),
+        },
+      });
+
+      return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
       throw new InternalServerErrorException(e);
     }
   }

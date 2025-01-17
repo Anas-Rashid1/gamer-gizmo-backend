@@ -7,6 +7,7 @@ import {
   Matches,
   IsString,
   Validate,
+  IsDate,
 } from 'class-validator';
 // import { Match } from './match.decorator'; // Custom validator for password confirmation
 
@@ -35,9 +36,6 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsNotEmpty({ message: 'Confirm password is required' })
-  //   @Validate(Match, ['password'], {
-  //     message: 'Password and confirm password must match',
-  //   })
   confirmPassword: string;
 
   @ApiProperty()
@@ -50,4 +48,14 @@ export class CreateUserDto {
     message: 'Invalid phone number format. Must be in international format.',
   })
   phone: string;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'Date is required' })
+  @IsDate()
+  dob: Date;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'gender is required' })
+  @IsString()
+  gender: string;
 }

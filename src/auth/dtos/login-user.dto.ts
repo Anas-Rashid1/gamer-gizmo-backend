@@ -16,4 +16,7 @@ export class LoginUserDto {
   @ApiProperty()
   @IsNotEmpty({ message: 'platform is required' })
   platform: string;
+  @ApiProperty()
+  @IsNotEmpty({ message: 'region is required' })
+  region: string;
 }

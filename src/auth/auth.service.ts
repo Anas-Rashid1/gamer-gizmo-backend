@@ -35,6 +35,8 @@ export class AuthService {
       confirmPassword,
       phone,
       username,
+      dob,
+      gender,
     } = createUserDto;
 
     if (password !== confirmPassword) {
@@ -72,7 +74,9 @@ export class AuthService {
         email,
         phone,
         is_seller: false,
-        is_verified: false,
+        is_email_verified: false,
+        dob,
+        gender,
       },
     });
     if (!newUser) {
@@ -86,7 +90,7 @@ export class AuthService {
     };
   }
   async signin(createUserDto: LoginUserDto) {
-    const { name, password, platform } = createUserDto;
+    const { name, password, platform, region } = createUserDto;
 
     let user = await this.prisma.users.findUnique({
       where: { email: name },
@@ -105,7 +109,7 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new BadRequestException('Incorrect email or password');
     }
-    const isUserVerified = user.is_verified;
+    const isUserVerified = user.is_email_verified;
     if (!isUserVerified) {
       await this.authenticateByOtp(user.email);
       throw new BadRequestException(
@@ -142,6 +146,7 @@ export class AuthService {
         user_id: user.id,
         token: token,
         platform: platform,
+        region: region,
       },
     });
     if (!createdToken) {
@@ -167,7 +172,13 @@ export class AuthService {
         if (user) {
           user = await this.prisma.users.update({
             where: { email: email },
-            data: { is_verified: true },
+            data: { is_email_verified: true },
+          });
+          const cart = await this.prisma.cart.create({
+            data: {
+              user_id: user.id,
+              updated_at: new Date(),
+            },
           });
         } else {
           throw new Error('User not found!');
