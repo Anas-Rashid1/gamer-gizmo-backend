@@ -51,7 +51,7 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsNotEmpty({ message: 'Date is required' })
-  @IsDate()
+  @IsString()
   dob: Date;
 
   @ApiProperty()

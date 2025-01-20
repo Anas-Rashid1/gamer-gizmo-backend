@@ -75,7 +75,7 @@ export class AuthService {
         phone,
         is_seller: false,
         is_email_verified: false,
-        dob,
+        dob: new Date(dob),
         gender,
       },
     });
@@ -239,7 +239,7 @@ export class AuthService {
     );
 
     // Return the URL with the token
-    return `https://your-frontend-url.com/logout?token=${logoutToken}`;
+    return `http://localhost:3000/logout-accounts?token=${logoutToken}`;
   }
   async sendLogoutEmail(data: any, expires_in: number = 600) {
     try {
@@ -323,7 +323,15 @@ export class AuthService {
     } catch (error) {
       throw new BadRequestException('Invalid or expired token');
     }
-
+    const tokenFound = await this.prisma.tokens.findUnique({
+      where: {
+        user_id: decodedToken.userId,
+        token: decodedToken.token,
+      },
+    });
+    if (!tokenFound) {
+      throw new BadRequestException('Token not found');
+    }
     const deletedToken = await this.prisma.tokens.delete({
       where: {
         user_id: decodedToken.userId,

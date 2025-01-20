@@ -296,6 +296,7 @@ model users {
   gender                                       String                    @db.VarChar
   nic_front_image                              String?
   nic_back_image                               String?
+  address                                      String?
   blog_posts                                   blog_posts[]
   cart                                         cart[]
   chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")

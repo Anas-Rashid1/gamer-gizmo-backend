@@ -19,7 +19,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     const token = this.extractTokenFromHeader(request);
-
+    console.log(token, 'loll');
     if (!token) {
       throw new UnauthorizedException();
     }
@@ -31,6 +31,7 @@ export class AuthGuard implements CanActivate {
       const tokenCount = await this.prisma.tokens.count({
         where: { token: token },
       });
+      console.log(tokenCount, 'tokenCount');
       if (!tokenCount) {
         throw new UnauthorizedException();
       }

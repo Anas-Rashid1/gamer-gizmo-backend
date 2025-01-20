@@ -29,7 +29,7 @@ export class CartContoller {
 
   @Post('/addItemToCart')
   async GetProductById(@Query() id: string) {
-    return this.cartService.AddItemToCart(id, 'images');
+    return "this.cartService.AddItemToCart(id, 'images')";
   }
 
   @Delete('/removeItemFromCart')
