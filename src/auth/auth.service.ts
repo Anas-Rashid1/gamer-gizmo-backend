@@ -209,7 +209,7 @@ export class AuthService {
       const options = {
         from: process.env.EMAIL,
         to: email,
-        subject: 'Gamer Gizmo : Verify you account',
+        subject: 'Gamer Gizmo : Verify your account',
         html: ejs.render(
           otpTemplate(doesUserExist?.username || 'User', otp, expires_in),
         ),

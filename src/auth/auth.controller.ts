@@ -22,8 +22,14 @@ import { AuthGuard } from './auth.gurad';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // @Post('signup')
+  // async signup(@Body() createUserDto: CreateUserDto) {
+  //   return this.authService.signup(createUserDto);
+  // }
+
   @Post('signup')
   async signup(@Body() createUserDto: CreateUserDto) {
+    console.log('Signup endpoint hit'); // Add logs for debugging
     return this.authService.signup(createUserDto);
   }
   @Post('signin')
