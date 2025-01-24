@@ -15,6 +15,7 @@ import { ModelModule } from './model/model.module';
 import { ComponentCategoryModule } from './component_category/componentCategory.module';
 import { FavouriteModule } from './favourites/favourite.module';
 import { CartModule } from './cart/cart.module';
+import { UserModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CartModule } from './cart/cart.module';
       isGlobal: true,
     }),
     AuthModule,
+    UserModule,
     CategoriesModule,
     BrandsModule,
     ModelModule,
