@@ -32,6 +32,8 @@ export class BrandsContoller {
   //   @ApiBearerAuth()
   //   @UseGuards(AuthGuard)
   @Get('/getAll')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @ApiQuery({
     name: 'category',
     required: true, // Make category optional
@@ -63,6 +65,8 @@ export class BrandsContoller {
       }),
     }),
   )
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Create a new brand with logo',
@@ -91,6 +95,8 @@ export class BrandsContoller {
   ) {
     return this.brandsService.createBrand(CreateCategoriesDto, logo);
   }
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Delete('/delete')
   async deleteBrand(@Query() id: DeleteBrandsDto) {
     return this.brandsService.DeleteBrand(id);

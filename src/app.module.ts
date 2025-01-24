@@ -6,11 +6,15 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { LaptopModule } from './laptop/laptop.module';
+import { ProductModule } from './product/product.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
+import { ModelModule } from './model/model.module';
+import { ComponentCategoryModule } from './component_category/componentCategory.module';
+import { FavouriteModule } from './favourites/favourite.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -25,7 +29,11 @@ import { BrandsModule } from './brands/brands.module';
     AuthModule,
     CategoriesModule,
     BrandsModule,
-    LaptopModule,
+    ModelModule,
+    ComponentCategoryModule,
+    ProductModule,
+    FavouriteModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

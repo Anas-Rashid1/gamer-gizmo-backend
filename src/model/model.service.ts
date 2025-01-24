@@ -1,24 +1,23 @@
 import {
   BadRequestException,
   Injectable,
+  
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateBrandsDto } from './dto/createbrands.dto';
-import { GetBrandsDto } from './dto/getbrands.dto';
-import { DeleteBrandsDto } from './dto/deletebrands.dto';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import {  CreateModelsto } from './dto/createmodel.dto';
+import {  GetModlesDto } from './dto/getmodels.dto';
+import {  DeleteModelsDto } from './dto/deletemodel.dto';
 
 @Injectable()
-export class BrandsService {
+export class ModelService {
   constructor(private prisma: PrismaService) {}
-  async GetAllBrands({ category, pageNo }: GetBrandsDto) {
+  async GetAllModels({ brand, pageNo }: GetModlesDto) {
     try {
       const limit = 10;
 
-      const whereCondition = category
-        ? { category_id: parseInt(category) }
+      const whereCondition = brand
+        ? { brand_id: parseInt(brand) }
         : {}; // Apply category filter if provided
       const queryOptions: any = {
         where: whereCondition,
@@ -29,32 +28,27 @@ export class BrandsService {
         queryOptions.take = limit; // Limit the number of records
       }
 
-      const brands = await this.prisma.brands.findMany(queryOptions);
-      return { message: 'Success', data: brands };
+      const models = await this.prisma.models.findMany(queryOptions);
+      return { message: 'Success', data: models };
     } catch (e) {
       throw new InternalServerErrorException(e);
     }
   }
-  async DeleteBrand({ id }: DeleteBrandsDto) {
+  async DeleteModel({ id }: DeleteModelsDto) {
     try {
-      const brands = await this.prisma.brands.findUnique({
+      const model = await this.prisma.models.findUnique({
         where: {
           id: parseInt(id),
         },
       });
       // Check if the brand or its logo is missing
-      if (!brands) {
+      if (!model) {
         throw new BadRequestException(`Brand with id ${id} does not exist.`);
       }
-      if (!brands.logo) {
-        throw new BadRequestException('No logo associated with this brand.');
-      }
-
-      // Delete the logo file
-      await fs.unlink(brands.logo.slice(1));
+    
 
       // Delete the brand from the database
-      await this.prisma.brands.delete({
+      await this.prisma.models.delete({
         where: {
           id: parseInt(id),
         },
@@ -69,18 +63,18 @@ export class BrandsService {
     }
   }
 
-  async createBrand(data: CreateBrandsDto, logo: any) {
-    try {
-      const brands = await this.prisma.brands.create({
+  async createModel(data: CreateModelsto,) {
+    try {      
+      const brands = await this.prisma.models.create({
         data: {
           name: data.name,
-          category_id: parseInt(data.category_id),
-          logo: `/public/brandsLogo/${logo.filename}`,
+          brand_id: parseInt(data.brand_id),
           status: Boolean(data.status),
         },
       });
       return { message: 'Successfully Created' };
     } catch (e) {
+      console.log(e,"pak")
       throw new InternalServerErrorException(e);
     }
   }
