@@ -5,11 +5,13 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { BrandsService } from './users.service
+import { UserService } from './users.service';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,42 +20,97 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.gurad';
-import { CreateBrandsDto } from './dto/createbrands.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateUserDto } from './dto/updateUser.dto';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { GetBrandsDto } from './dto/getbrands.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
 
-@ApiTags('Products Brands')
-@Controller('/brands')
-export class BrandsContoller {
-  constructor(private readonly brandsService: BrandsService) {}
-  //   @ApiBearerAuth()
-  //   @UseGuards(AuthGuard)
-  @Get('/getAll')
+@ApiTags('Users')
+@Controller('/user')
+export class UserContoller {
+  constructor(private readonly userService: UserService) {}
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @ApiQuery({
-    name: 'category',
-    required: true, // Make category optional
-    type: String,
-  })
-  @ApiQuery({
-    name: 'pageNo',
-    required: false, // Make pageNo optional
-    type: Number,
-    description:
-      'Page number for pagination (if not provided, all brands will be returned)',
-  })
-  async GetAllBrands(@Query() { category, pageNo = null }: GetBrandsDto) {
-    return this.brandsService.GetAllBrands({ category, pageNo });
+  @Get('/getUserData')
+  async GetUserData(@Req() data: any) {
+    return this.userService.GetUserData(data.user);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post('/updateUserData')
+  async UpdateUserData(@Req() data: any, @Body() dataToUpdate: UpdateUserDto) {
+    return this.userService.updateUserData(data.user, dataToUpdate);
   }
   @UseInterceptors(
-    FileInterceptor('logo', {
+    FileFieldsInterceptor(
+      [
+        { name: 'nic_front_image', maxCount: 1 },
+        { name: 'nic_back_image', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: './public/nic',
+          filename: (req, file, cb) => {
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const ext = extname(file.originalname);
+            const fileName = `nic-${file.fieldname}-${uniqueSuffix}${ext}`;
+            cb(null, fileName);
+          },
+        }),
+      },
+    ),
+  )
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload NIC front and back images',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        nic_front_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'NIC front image file',
+        },
+        nic_back_image: {
+          type: 'string',
+          format: 'binary',
+          description: 'NIC back image file',
+        },
+      },
+    },
+  })
+  @Post('/applyForVerification')
+  async ApplyForVerification(
+    @UploadedFiles() files: { [key: string]: Express.Multer.File[] },
+    @Req() user: any,
+  ) {
+    const nicFrontImage = files.nic_front_image?.[0];
+    const nicBackImage = files.nic_back_image?.[0];
+
+    return this.userService.ApplyForVerification(
+      {
+        nicFrontImage,
+        nicBackImage,
+      },
+      user.user,
+    );
+  }
+
+  @UseInterceptors(
+    FileInterceptor('profile', {
       storage: diskStorage({
         destination: function (req, file, cb) {
-          cb(null, './public/brandsLogo');
+          cb(null, './public/profilePics');
         },
         filename: (req, file, cb) => {
           const uniqueSuffix =
@@ -69,36 +126,24 @@ export class BrandsContoller {
   @UseGuards(AuthGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Create a new brand with logo',
+    description: 'Upload NIC front and back images',
     required: true,
     schema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Brand name' },
-        status: { type: 'boolean', description: 'Publish Status' },
-        category_id: {
-          type: 'integer',
-          description: 'Category ID to associate',
-        },
-        logo: {
+        profile: {
           type: 'string',
-          format: 'binary', // Mark this field as a binary file for Swagger
-          description: 'Brand logo file (image)',
+          format: 'binary',
+          description: 'NIC front image file',
         },
       },
     },
   })
-  @Post('/create')
-  async createBrand(
-    @Body() CreateCategoriesDto: CreateBrandsDto,
-    @UploadedFile() logo: Express.Multer.File,
+  @Post('/updateProfilePicture')
+  async UpdateProfilePic(
+    @UploadedFile() profile: Express.Multer.File,
+    @Req() user: any,
   ) {
-    return this.brandsService.createBrand(CreateCategoriesDto, logo);
-  }
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Delete('/delete')
-  async deleteBrand(@Query() id: DeleteBrandsDto) {
-    return this.brandsService.DeleteBrand(id);
+    return this.userService.UpdateProfilePic(profile, user.user);
   }
 }

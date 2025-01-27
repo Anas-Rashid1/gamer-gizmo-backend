@@ -297,6 +297,8 @@ model users {
   nic_front_image                              String?
   nic_back_image                               String?
   address                                      String?
+  profile                                      String?
+  applied_for_verification                     Boolean?                  @default(false)
   blog_posts                                   blog_posts[]
   cart                                         cart[]
   chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")

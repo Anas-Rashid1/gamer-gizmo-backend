@@ -4,83 +4,100 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateBrandsDto } from './dto/createbrands.dto';
-import { GetBrandsDto } from './dto/getbrands.dto';
+import { UpdateUserDto } from './dto/updateUser.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 
 @Injectable()
-export class BrandsService {
+export class UserService {
   constructor(private prisma: PrismaService) {}
-  async GetAllBrands({ category, pageNo }: GetBrandsDto) {
+  async GetUserData(data) {
     try {
-      const limit = 10;
-
-      const whereCondition = category
-        ? { category_id: parseInt(category) }
-        : {}; // Apply category filter if provided
-      const queryOptions: any = {
-        where: whereCondition,
-      };
-
-      if (pageNo) {
-        queryOptions.skip = (parseInt(pageNo) - 1) * limit; // Calculate the offset
-        queryOptions.take = limit; // Limit the number of records
-      }
-
-      const brands = await this.prisma.brands.findMany(queryOptions);
-      return { message: 'Success', data: brands };
+      const user = await this.prisma.users.findUnique({
+        where: {
+          id: data.id,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          first_name: true,
+          last_name: true,
+          is_email_verified: true,
+          is_seller: true,
+          created_at: true,
+          phone: true,
+          is_admin_verified: true,
+          dob: true,
+          gender: true,
+          address: true,
+          nic_front_image: true,
+          profile: true,
+          nic_back_image: true,
+          applied_for_verification: true,
+        },
+      });
+      return { message: 'Success', data: user };
     } catch (e) {
       throw new InternalServerErrorException(e);
     }
   }
-  async DeleteBrand({ id }: DeleteBrandsDto) {
+  async updateUserData(data: any, dataToUpdate: UpdateUserDto) {
     try {
-      const brands = await this.prisma.brands.findUnique({
+      const user = await this.prisma.users.update({
         where: {
-          id: parseInt(id),
+          id: data.id,
         },
+        data: dataToUpdate,
       });
-      // Check if the brand or its logo is missing
-      if (!brands) {
-        throw new BadRequestException(`Brand with id ${id} does not exist.`);
-      }
-      if (!brands.logo) {
-        throw new BadRequestException('No logo associated with this brand.');
-      }
-
-      // Delete the logo file
-      await fs.unlink(brands.logo.slice(1));
-
-      // Delete the brand from the database
-      await this.prisma.brands.delete({
-        where: {
-          id: parseInt(id),
-        },
-      });
-
-      return { message: 'Successfully Deleted' };
+      return { message: 'Success', data: user };
     } catch (e) {
-      console.error('Error deleting brand:', e);
-      throw new InternalServerErrorException(
-        e.message || 'Failed to delete the brand.',
-      );
+      throw new InternalServerErrorException(e);
     }
   }
 
-  async createBrand(data: CreateBrandsDto, logo: any) {
+  async ApplyForVerification(data, user) {
+    console.log(data, user);
     try {
-      const brands = await this.prisma.brands.create({
+      const updatedUser = await this.prisma.users.update({
+        where: {
+          id: user.id,
+        },
         data: {
-          name: data.name,
-          category_id: parseInt(data.category_id),
-          logo: `/public/brandsLogo/${logo.filename}`,
-          status: Boolean(data.status),
+          nic_front_image: `/public/nic/${data.nicFrontImage.filename}`,
+          nic_back_image: `/public/nic/${data.nicBackImage.filename}`,
+          applied_for_verification: true,
         },
       });
       return { message: 'Successfully Created' };
     } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async UpdateProfilePic(data, user) {
+    console.log(data, user);
+    try {
+      const existUser = await this.prisma.users.findUnique({
+        where: {
+          id: user.id,
+        },
+      });
+      console.log(existUser, data);
+      if (existUser.profile != null) {
+        await fs.unlink(existUser.profile);
+      }
+      const updatedUser = await this.prisma.users.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          profile: `public/profilePics/${data.filename}`,
+        },
+      });
+      return { message: 'Successfully Created' };
+    } catch (e) {
+      console.log(e);
       throw new InternalServerErrorException(e);
     }
   }
