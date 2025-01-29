@@ -94,8 +94,10 @@ export class ProductsContoller {
     return this.productService.DeleteProductById(id);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @Post('/createProduct')
+  @ApiConsumes('multipart/form-data')
+  // @ApiBearerAuth()
+  // @UseGuards(AuthGuard)
   @UseInterceptors(
     FilesInterceptor('images', 10, {
       storage: diskStorage({
@@ -112,11 +114,9 @@ export class ProductsContoller {
       }),
     }),
   )
-  @ApiConsumes('multipart/form-data')
-  @Post('/createProduct')
   async CraeteProduct(
     @Body() productbody: CreateProductDto,
-    @UploadedFiles() images: Express.Multer.File[],
+    @UploadedFiles() images: any,
   ) {
     return this.productService.CreateProduct(productbody, images);
   }

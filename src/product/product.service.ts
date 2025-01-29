@@ -70,6 +70,7 @@ export class ProductService {
       console.log();
       let dataToSend = [];
       data.map((e) => {
+        console.log(e);
         dataToSend.push({
           name: e.name,
           id: e.id,
@@ -226,7 +227,7 @@ export class ProductService {
           top_rated: false,
         },
       });
-
+      console.log(images);
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
           data: {
