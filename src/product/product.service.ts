@@ -34,7 +34,7 @@ export class ProductService {
       }
       if (queryData.condition) {
         WhereParameters.condition =
-          queryData.condition.toLowerCase() === 'new' ? 'New' : 'Old';
+          queryData.condition.toLowerCase() === 'new' ? 'new' : 'used';
       }
       if (queryData.is_verified_by_admin) {
         WhereParameters.is_verified_by_admin = Boolean(
@@ -67,8 +67,19 @@ export class ProductService {
 
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
-
-      return { data, message: 'success' };
+      console.log();
+      let dataToSend = [];
+      data.map((e) => {
+        dataToSend.push({
+          name: e.name,
+          id: e.id,
+          description: e.description,
+          price: e.price,
+          // @ts-expect-error
+          images: data[0].product_images,
+        });
+      });
+      return { data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
       throw new InternalServerErrorException(

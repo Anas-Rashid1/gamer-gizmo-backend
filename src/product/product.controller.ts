@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -93,8 +94,8 @@ export class ProductsContoller {
     return this.productService.DeleteProductById(id);
   }
 
-  // @ApiBearerAuth()
-  // @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @UseInterceptors(
     FilesInterceptor('images', 10, {
       storage: diskStorage({
