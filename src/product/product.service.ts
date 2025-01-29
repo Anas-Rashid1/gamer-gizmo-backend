@@ -75,8 +75,7 @@ export class ProductService {
           id: e.id,
           description: e.description,
           price: e.price,
-          // @ts-expect-error
-          images: data[0].product_images,
+          images: e[0].product_images,
         });
       });
       return { data: dataToSend, message: 'success' };
