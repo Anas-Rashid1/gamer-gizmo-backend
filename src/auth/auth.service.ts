@@ -239,7 +239,7 @@ export class AuthService {
     );
 
     // Return the URL with the token
-    return `http://localhost:3000/logout-accounts?token=${logoutToken}`;
+    return `https://gamergizmo.com/logout-accounts?token=${logoutToken}`;
   }
   async sendLogoutEmail(data: any, expires_in: number = 600) {
     try {
