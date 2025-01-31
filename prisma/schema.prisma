@@ -145,21 +145,23 @@ model favourite_products {
 }
 
 model laptops {
-  id                Int     @id @default(autoincrement())
-  product_id        Int
-  ram               String? @db.VarChar
-  processor         String? @db.VarChar
-  storage           String? @db.VarChar
-  graphics          String? @db.VarChar
-  ports             String? @db.VarChar
-  battery_life      String? @db.VarChar
-  screen_size       String? @db.VarChar
-  weight            String? @db.VarChar
-  screen_resolution String? @db.VarChar
-  os                String? @db.VarChar
-  processortype     String? @db.VarChar
-  color             String? @db.VarChar
-  product           product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                                             Int                @id @default(autoincrement())
+  product_id                                                     Int
+  ram                                                            String?            @db.VarChar
+  storage                                                        String?            @db.VarChar
+  graphics                                                       String?            @db.VarChar
+  ports                                                          String?            @db.VarChar
+  battery_life                                                   String?            @db.VarChar
+  screen_size                                                    String?            @db.VarChar
+  weight                                                         String?            @db.VarChar
+  screen_resolution                                              String?            @db.VarChar
+  os                                                             String?            @db.VarChar
+  color                                                          String?            @db.VarChar
+  processor                                                      Int?
+  processor_variant                                              Int?
+  product                                                        product            @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processors                                                     processors?        @relation(fields: [processor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "processor_fk")
+  processor_variant_laptops_processor_variantToprocessor_variant processor_variant? @relation("laptops_processor_variantToprocessor_variant", fields: [processor_variant], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "processor_variant_fk")
 }
 
 model messages {
@@ -371,6 +373,7 @@ model location {
 model processor_variant {
   id                                                                         Int                  @id @default(autoincrement())
   name                                                                       String?              @db.VarChar
+  laptops_laptops_processor_variantToprocessor_variant                       laptops[]            @relation("laptops_processor_variantToprocessor_variant")
   personal_computers_personal_computers_processor_variantToprocessor_variant personal_computers[] @relation("personal_computers_processor_variantToprocessor_variant")
   processors                                                                 processors[]
 }
@@ -379,6 +382,7 @@ model processors {
   id                 Int                  @id(map: "Processors_pkey") @default(autoincrement())
   name               String?              @db.VarChar
   variant_id         Int
+  laptops            laptops[]
   personal_computers personal_computers[]
   processor_variant  processor_variant    @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vraint_fk")
 }

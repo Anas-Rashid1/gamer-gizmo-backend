@@ -86,11 +86,13 @@ export class ProcessorService {
 
   async GetAllProcessors(data: GetProcessorDto) {
     try {
-      const processors = await this.prisma.processors.findMany({
-        where: {
+      let query={}
+      if(data.variant){
+        query={where: {
           variant_id: parseInt(data.variant),
-        },
-      });
+        },}
+      }
+      const processors = await this.prisma.processors.findMany(query);
       return { message: 'Success', data: processors };
     } catch (e) {
       throw new InternalServerErrorException(e);

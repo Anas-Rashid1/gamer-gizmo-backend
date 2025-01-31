@@ -14,7 +14,6 @@ export class ProductService {
   async GetAllProducts(queryData: any) {
     try {
       const limit = 10;
-
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
       if (queryData.show_on_home) {
@@ -247,7 +246,7 @@ export class ProductService {
           data: {
             product_id: prod.id,
             ram: productbody.ram,
-            processor: productbody.processor,
+            processor: parseInt(productbody.processor),
             storage: productbody.storage,
             graphics: productbody.graphics,
             ports: productbody.ports,
@@ -257,7 +256,7 @@ export class ProductService {
             screen_resolution: productbody.screen_resolution,
             os: productbody.os,
             color: productbody.color,
-            processortype: productbody.processorType,
+            processor_variant: parseInt(productbody.processorVariant),
           },
         });
       } else if (parseInt(productbody.category_id) == 4) {
@@ -276,8 +275,8 @@ export class ProductService {
           data: {
             product_id: prod.id,
             ram: productbody.ram,
-            processor: productbody.processor,
-            processortype: productbody.processorType,
+            processor: parseInt(productbody.processor),
+            processor_variant: parseInt(productbody.processorVariant),
             storage: productbody.storage,
             graphics: productbody.graphics,
             ports: productbody.ports,
