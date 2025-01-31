@@ -20,6 +20,11 @@ export class CreateProductDto {
   @ApiProperty({ required: true })
   @IsNotEmpty()
   @IsString()
+  location: string;
+
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
   price: string;
 
   @ApiProperty({ required: true })
@@ -52,6 +57,20 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   ram?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  accessories?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  connectivity?: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  warranty_status?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

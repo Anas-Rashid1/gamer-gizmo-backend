@@ -54,6 +54,7 @@ export class ProductService {
             },
           },
           personal_computers: true,
+          gaming_console: true,
           laptops: true,
           product_images: true,
         },
@@ -188,6 +189,8 @@ export class ProductService {
               store_product_review_images: true, // Correct nested relation
             },
           },
+          gaming_console: true,
+          users: true,
           personal_computers: true,
           laptops: true,
           product_images: true,
@@ -225,9 +228,9 @@ export class ProductService {
           verified_by: null,
           show_on_home: false,
           top_rated: false,
+          location: productbody.location,
         },
       });
-      console.log(images);
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
           data: {
@@ -253,6 +256,17 @@ export class ProductService {
             os: productbody.os,
             color: productbody.color,
             processortype: productbody.processorType,
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 4) {
+        await this.prismaService.gaming_console.create({
+          data: {
+            product_id: prod.id,
+            accessories: productbody.accessories,
+            battery_life: productbody.battery_life,
+            warranty_status: productbody.warranty_status,
+            color: productbody.color,
+            connectivity: productbody.connectivity,
           },
         });
       } else if (parseInt(productbody.category_id) == 2) {
