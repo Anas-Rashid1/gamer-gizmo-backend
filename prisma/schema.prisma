@@ -208,50 +208,53 @@ model orders {
 }
 
 model personal_computers {
-  id            Int     @id @default(autoincrement())
-  product_id    Int
-  ram           String? @db.VarChar
-  processor     String? @db.VarChar
-  processortype String? @db.VarChar
-  storage       String? @db.VarChar
-  graphics      String? @db.VarChar
-  ports         String? @db.VarChar
-  os            String? @db.VarChar
-  product       product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                                                        Int                @id @default(autoincrement())
+  product_id                                                                Int
+  ram                                                                       String?            @db.VarChar
+  storage                                                                   String?            @db.VarChar
+  graphics                                                                  String?            @db.VarChar
+  ports                                                                     String?            @db.VarChar
+  os                                                                        String?            @db.VarChar
+  processor                                                                 Int?
+  processor_variant                                                         Int?
+  product                                                                   product            @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processors                                                                processors?        @relation(fields: [processor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "processor_fk")
+  processor_variant_personal_computers_processor_variantToprocessor_variant processor_variant? @relation("personal_computers_processor_variantToprocessor_variant", fields: [processor_variant], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "processor_variant_fk")
 }
 
 model product {
-  id                   Int                    @id @default(autoincrement())
-  name                 String                 @db.VarChar
-  user_id              Int
-  description          String                 @db.VarChar
-  price                String                 @db.VarChar
-  stock                String                 @db.VarChar
-  brand_id             Int?
-  model_id             Int?
-  category_id          Int
-  condition            String?                @db.VarChar
-  is_published         Boolean?               @default(false)
-  is_verified_by_admin Boolean?               @default(false)
-  verified_by          Int?
-  created_at           DateTime?              @default(now()) @db.Timestamp(6)
-  show_on_home         Boolean?               @default(false)
-  top_rated            Boolean?               @default(false)
-  location             String?                @db.VarChar
-  cart_items           cart_items[]
-  components           components[]
-  favourite_products   favourite_products[]
-  gaming_console       gaming_console[]
-  laptops              laptops[]
-  order_items          order_items[]
-  personal_computers   personal_computers[]
-  brands               brands?                @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  categories           categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  models               models?                @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                users                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  admin                admin?                 @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_images       product_images[]
-  store_product_review store_product_review[]
+  id                                  Int                    @id @default(autoincrement())
+  name                                String                 @db.VarChar
+  user_id                             Int
+  description                         String                 @db.VarChar
+  price                               String                 @db.VarChar
+  stock                               String                 @db.VarChar
+  brand_id                            Int?
+  model_id                            Int?
+  category_id                         Int
+  condition                           String?                @db.VarChar
+  is_published                        Boolean?               @default(false)
+  is_verified_by_admin                Boolean?               @default(false)
+  verified_by                         Int?
+  created_at                          DateTime?              @default(now()) @db.Timestamp(6)
+  show_on_home                        Boolean?               @default(false)
+  top_rated                           Boolean?               @default(false)
+  location                            Int?
+  cart_items                          cart_items[]
+  components                          components[]
+  favourite_products                  favourite_products[]
+  gaming_console                      gaming_console[]
+  laptops                             laptops[]
+  order_items                         order_items[]
+  personal_computers                  personal_computers[]
+  location_product_locationTolocation location?              @relation("product_locationTolocation", fields: [location], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "location_fkry")
+  brands                              brands?                @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categories                          categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  models                              models?                @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                               users                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  admin                               admin?                 @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_images                      product_images[]
+  store_product_review                store_product_review[]
 }
 
 model product_images {
@@ -357,4 +360,25 @@ model gaming_console {
   warranty_status String? @db.VarChar
   battery_life    String? @db.VarChar
   product         product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "gaming _console_product_id_fkey")
+}
+
+model location {
+  id                                 Int       @id @default(autoincrement())
+  name                               String    @db.VarChar
+  product_product_locationTolocation product[] @relation("product_locationTolocation")
+}
+
+model processor_variant {
+  id                                                                         Int                  @id @default(autoincrement())
+  name                                                                       String?              @db.VarChar
+  personal_computers_personal_computers_processor_variantToprocessor_variant personal_computers[] @relation("personal_computers_processor_variantToprocessor_variant")
+  processors                                                                 processors[]
+}
+
+model processors {
+  id                 Int                  @id(map: "Processors_pkey") @default(autoincrement())
+  name               String?              @db.VarChar
+  variant_id         Int
+  personal_computers personal_computers[]
+  processor_variant  processor_variant    @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vraint_fk")
 }

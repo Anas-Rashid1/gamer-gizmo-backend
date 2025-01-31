@@ -57,6 +57,7 @@ export class ProductService {
           gaming_console: true,
           laptops: true,
           product_images: true,
+          location_product_locationTolocation: true,
         },
         where: WhereParameters,
       };
@@ -194,6 +195,7 @@ export class ProductService {
           personal_computers: true,
           laptops: true,
           product_images: true,
+          location_product_locationTolocation: true,
         },
         where: {
           id: parseInt(pid.id),
@@ -228,7 +230,7 @@ export class ProductService {
           verified_by: null,
           show_on_home: false,
           top_rated: false,
-          location: productbody.location,
+          location: parseInt(productbody.location),
         },
       });
       for (let i = 0; images.length > i; i++) {
