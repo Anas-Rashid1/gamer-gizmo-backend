@@ -263,9 +263,9 @@ export class ProductService {
           data: {
             product_id: prod.id,
             accessories: productbody.accessories,
-            battery_life: productbody.battery_life,
             warranty_status: productbody.warranty_status,
             color: productbody.color,
+            battery_life: productbody.battery_life,
             connectivity: productbody.connectivity,
           },
         });
