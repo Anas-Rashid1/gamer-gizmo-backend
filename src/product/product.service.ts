@@ -189,9 +189,32 @@ export class ProductService {
             },
           },
           gaming_console: true,
-          users: true,
-          personal_computers: true,
-          laptops: true,
+          users: {
+            select: {
+              username: true,
+              profile: true,
+              created_at: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              gender: true,
+            },
+          },
+          personal_computers: {
+            include: {
+              processors: true,
+              processor_variant_personal_computers_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          laptops: {
+            include: {
+              processors: true,
+              processor_variant_laptops_processor_variantToprocessor_variant:
+                true,
+            },
+          },
           product_images: true,
           location_product_locationTolocation: true,
         },
