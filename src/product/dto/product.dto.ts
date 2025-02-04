@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({ required: true })
@@ -16,6 +16,11 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   description: string;
+
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  location: string;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
@@ -56,12 +61,26 @@ export class CreateProductDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  accessories?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  connectivity?: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  warranty_status?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   processor?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  processorType?: string;
+  processorVariant?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

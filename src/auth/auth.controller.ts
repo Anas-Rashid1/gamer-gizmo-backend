@@ -29,7 +29,7 @@ export class AuthController {
 
   @Post('signup')
   async signup(@Body() createUserDto: CreateUserDto) {
-    console.log('Signup endpoint hit'); // Add logs for debugging
+    console.log('Signup endpoint hit');
     return this.authService.signup(createUserDto);
   }
   @Post('signin')

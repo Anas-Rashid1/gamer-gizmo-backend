@@ -14,7 +14,6 @@ export class ProductService {
   async GetAllProducts(queryData: any) {
     try {
       const limit = 10;
-
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
       if (queryData.show_on_home) {
@@ -34,7 +33,7 @@ export class ProductService {
       }
       if (queryData.condition) {
         WhereParameters.condition =
-          queryData.condition.toLowerCase() === 'new' ? 'New' : 'Old';
+          queryData.condition.toLowerCase() === 'new' ? 'new' : 'used';
       }
       if (queryData.is_verified_by_admin) {
         WhereParameters.is_verified_by_admin = Boolean(
@@ -54,8 +53,10 @@ export class ProductService {
             },
           },
           personal_computers: true,
+          gaming_console: true,
           laptops: true,
           product_images: true,
+          location_product_locationTolocation: true,
         },
         where: WhereParameters,
       };
@@ -67,8 +68,20 @@ export class ProductService {
 
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
-
-      return { data, message: 'success' };
+      console.log();
+      let dataToSend = [];
+      data.map((e) => {
+        console.log(e);
+        dataToSend.push({
+          name: e.name,
+          id: e.id,
+          description: e.description,
+          price: e.price,
+          // @ts-expect-error
+          images: e.product_images,
+        });
+      });
+      return { data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
       throw new InternalServerErrorException(
@@ -176,9 +189,35 @@ export class ProductService {
               store_product_review_images: true, // Correct nested relation
             },
           },
-          personal_computers: true,
-          laptops: true,
+          gaming_console: true,
+          users: {
+            select: {
+              username: true,
+              profile: true,
+              created_at: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              gender: true,
+            },
+          },
+          personal_computers: {
+            include: {
+              processors: true,
+              processor_variant_personal_computers_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          laptops: {
+            include: {
+              processors: true,
+              processor_variant_laptops_processor_variantToprocessor_variant:
+                true,
+            },
+          },
           product_images: true,
+          location_product_locationTolocation: true,
         },
         where: {
           id: parseInt(pid.id),
@@ -213,9 +252,9 @@ export class ProductService {
           verified_by: null,
           show_on_home: false,
           top_rated: false,
+          location: parseInt(productbody.location),
         },
       });
-
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
           data: {
@@ -230,7 +269,7 @@ export class ProductService {
           data: {
             product_id: prod.id,
             ram: productbody.ram,
-            processor: productbody.processor,
+            processor: parseInt(productbody.processor),
             storage: productbody.storage,
             graphics: productbody.graphics,
             ports: productbody.ports,
@@ -240,7 +279,18 @@ export class ProductService {
             screen_resolution: productbody.screen_resolution,
             os: productbody.os,
             color: productbody.color,
-            processortype: productbody.processorType,
+            processor_variant: parseInt(productbody.processorVariant),
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 4) {
+        await this.prismaService.gaming_console.create({
+          data: {
+            product_id: prod.id,
+            accessories: productbody.accessories,
+            warranty_status: productbody.warranty_status,
+            color: productbody.color,
+            battery_life: productbody.battery_life,
+            connectivity: productbody.connectivity,
           },
         });
       } else if (parseInt(productbody.category_id) == 2) {
@@ -248,8 +298,8 @@ export class ProductService {
           data: {
             product_id: prod.id,
             ram: productbody.ram,
-            processor: productbody.processor,
-            processortype: productbody.processorType,
+            processor: parseInt(productbody.processor),
+            processor_variant: parseInt(productbody.processorVariant),
             storage: productbody.storage,
             graphics: productbody.graphics,
             ports: productbody.ports,

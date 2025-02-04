@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.gurad';
 
 import { AddToFavouriteService } from './favourite.service';
-import { AddToFavouriteDto } from './dto/addToFav.Dto';
+import { AddToFavouriteDto } from './dto/addToFav.dto';
 
 @ApiTags('Fvourite Products')
 @Controller('/product/favourite')

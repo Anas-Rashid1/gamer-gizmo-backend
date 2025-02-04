@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -93,6 +94,8 @@ export class ProductsContoller {
     return this.productService.DeleteProductById(id);
   }
 
+  @Post('/createProduct')
+  @ApiConsumes('multipart/form-data')
   // @ApiBearerAuth()
   // @UseGuards(AuthGuard)
   @UseInterceptors(
@@ -111,11 +114,9 @@ export class ProductsContoller {
       }),
     }),
   )
-  @ApiConsumes('multipart/form-data')
-  @Post('/createProduct')
   async CraeteProduct(
     @Body() productbody: CreateProductDto,
-    @UploadedFiles() images: Express.Multer.File[],
+    @UploadedFiles() images: any,
   ) {
     return this.productService.CreateProduct(productbody, images);
   }
