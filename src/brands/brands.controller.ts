@@ -29,11 +29,8 @@ import { DeleteBrandsDto } from './dto/deletebrands.dto';
 @Controller('/brands')
 export class BrandsContoller {
   constructor(private readonly brandsService: BrandsService) {}
-  //   @ApiBearerAuth()
-  //   @UseGuards(AuthGuard)
+
   @Get('/getAll')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @ApiQuery({
     name: 'category',
     required: true, // Make category optional

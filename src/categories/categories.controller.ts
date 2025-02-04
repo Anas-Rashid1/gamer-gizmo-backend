@@ -8,8 +8,7 @@ import { CreateCategoriesDto } from './dto/categories.dto';
 @Controller('/categories')
 export class CategoriesContoller {
   constructor(private readonly categoriesService: CategoriesService) {}
-  //   @ApiBearerAuth()
-  //   @UseGuards(AuthGuard)
+
   @Get('/getAll')
   async GetAllCategories() {
     return this.categoriesService.GetAllCategories();

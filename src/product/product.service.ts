@@ -32,15 +32,14 @@ export class ProductService {
         WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
       }
       if (queryData.condition) {
-        WhereParameters.condition =
-          queryData.condition.toLowerCase() === 'new' ? 'new' : 'used';
+        WhereParameters.condition = parseInt(queryData.condition, 10);
       }
       if (queryData.is_verified_by_admin) {
         WhereParameters.is_verified_by_admin = Boolean(
           queryData.is_verified_by_admin,
         );
       }
-
+      console.log(WhereParameters)
       // Pagination setup
       const queryOptions: any = {
         include: {
@@ -223,13 +222,14 @@ export class ProductService {
             ? parseInt(productbody.model_id)
             : null,
           category_id: parseInt(productbody.category_id),
-          condition: productbody.condition,
+          condition: parseInt(productbody.condition),
           is_published: Boolean(productbody.is_published),
           is_verified_by_admin: false,
           verified_by: null,
           show_on_home: false,
           top_rated: false,
           location: parseInt(productbody.location),
+          other_brand_name:productbody.otherBrandName
         },
       });
       for (let i = 0; images.length > i; i++) {
@@ -245,16 +245,17 @@ export class ProductService {
         await this.prismaService.laptops.create({
           data: {
             product_id: prod.id,
-            ram: productbody.ram,
+            ram: parseInt(productbody.ram),
             processor: parseInt(productbody.processor),
-            storage: productbody.storage,
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
             graphics: productbody.graphics,
             ports: productbody.ports,
             battery_life: productbody.battery_life,
             screen_size: productbody.screen_size,
             weight: productbody.weight,
             screen_resolution: productbody.screen_resolution,
-            os: productbody.os,
             color: productbody.color,
             processor_variant: parseInt(productbody.processorVariant),
           },
@@ -274,13 +275,14 @@ export class ProductService {
         await this.prismaService.personal_computers.create({
           data: {
             product_id: prod.id,
-            ram: productbody.ram,
+            ram: parseInt(productbody.ram),
             processor: parseInt(productbody.processor),
             processor_variant: parseInt(productbody.processorVariant),
-            storage: productbody.storage,
             graphics: productbody.graphics,
             ports: productbody.ports,
-            os: productbody.os,
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
           },
         });
       } else if (parseInt(productbody.category_id) == 3) {

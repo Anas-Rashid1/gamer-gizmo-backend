@@ -46,7 +46,6 @@ export class CreateProductDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
   condition?: string;
 
   @ApiProperty({ required: false, default: false })
@@ -96,11 +95,20 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   ports?: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  otherBrandName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  os?: string;
+  gpu?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  storageType?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
