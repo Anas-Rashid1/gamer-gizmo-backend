@@ -86,8 +86,8 @@ export class ProductService {
       }
   
       // Apply storage filter for both laptops and personal_computers
-      if (queryData.stoarge) {
-        const storageValue = parseInt(queryData.stoarge, 10);
+      if (queryData.storage) {
+        const storageValue = parseInt(queryData.storage, 10);
         WhereParameters.AND = WhereParameters.AND || [];
         WhereParameters.AND.push({
           OR: [
