@@ -279,12 +279,14 @@ export class ProductService {
           brands: true,
           models: true,
           categories: true,
+          condition_product_conditionTocondition:true,
           // components: true,
           components: {
             include: {
               component_type_components_component_typeTocomponent_type: true, // Correct nested relation
             },
           },
+          
           store_product_review: {
             include: {
               store_product_review_images: true, // Correct nested relation
@@ -306,12 +308,20 @@ export class ProductService {
           personal_computers: {
             include: {
               processors: true,
+              ram_personal_computers_ramToram:true,
+              storage_personal_computers_storageTostorage:true,
+              storage_type_personal_computers_storage_typeTostorage_type:true,
+              gpu_personal_computers_gpuTogpu:true,
               processor_variant_personal_computers_processor_variantToprocessor_variant:
                 true,
             },
           },
           laptops: {
             include: {
+              ram_laptops_ramToram:true,
+              storage_laptops_storageTostorage:true,
+              storage_type_laptops_storage_typeTostorage_type:true,
+              gpu_laptops_gpuTogpu:true,
               processors: true,
               processor_variant_laptops_processor_variantToprocessor_variant:
                 true,
