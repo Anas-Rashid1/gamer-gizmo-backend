@@ -94,14 +94,14 @@ export class ProductService {
             {
               laptops: {
                 some: {
-                  stoarge_type: storageValue,
+                  storage_type: storageValue,
                 },
               },
             },
             {
               personal_computers: {
                 some: {
-                  stoarge_type: storageValue,
+                  storage_type: storageValue,
                 },
               },
             },
