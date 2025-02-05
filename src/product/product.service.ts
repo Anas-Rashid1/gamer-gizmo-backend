@@ -34,6 +34,87 @@ export class ProductService {
       if (queryData.condition) {
         WhereParameters.condition = parseInt(queryData.condition, 10);
       }
+      if (queryData.processor) {
+        const processorValue = parseInt(queryData.processor, 10);
+        WhereParameters.OR = [
+          {
+            laptops: {
+              some: {
+                processor: processorValue,
+              },
+            },
+          },
+          {
+            personal_computers: {
+              some: {
+                processor: processorValue,
+              },
+            },
+          },
+        ];
+      }
+      if (queryData.ram) {
+        const ramValue = parseInt(queryData.ram, 10);
+        WhereParameters.OR = [
+          {
+            laptops: {
+              some: {
+                ram: ramValue,
+              },
+            },
+          },
+          {
+            personal_computers: {
+              some: {
+                ram: ramValue,
+              },
+            },
+          },
+        ];
+      }
+      if (queryData.stoarge) {
+        const stoargeValue = parseInt(queryData.stoarge, 10);
+        WhereParameters.OR = [
+          {
+            laptops: {
+              some: {
+                stoarge_type: stoargeValue,
+              },
+            },
+          },
+          {
+            personal_computers: {
+              some: {
+                stoarge_type: stoargeValue,
+              },
+            },
+          },
+        ];
+      }
+      if (queryData.gpu) {
+        const gpuValue = parseInt(queryData.gpu, 10);
+        WhereParameters.OR = [
+          {
+            laptops: {
+              some: {
+                gpu: gpuValue,
+              },
+            },
+          },
+          {
+            personal_computers: {
+              some: {
+                gpu: gpuValue,
+              },
+            },
+          },
+        ];
+      }
+  
+      if (queryData.location) {
+        WhereParameters.location = parseInt(queryData.location, 10);
+      }
+     
       if (queryData.is_verified_by_admin) {
         WhereParameters.is_verified_by_admin = Boolean(
           queryData.is_verified_by_admin,

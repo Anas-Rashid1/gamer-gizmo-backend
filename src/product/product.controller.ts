@@ -40,6 +40,36 @@ export class ProductsContoller {
     type: String,
   })
   @ApiQuery({
+    name: 'processor',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'ram',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'stoarge',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'gpu',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'price',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
     name: 'brand_id',
     required: false, // Make category optional
     type: String,
