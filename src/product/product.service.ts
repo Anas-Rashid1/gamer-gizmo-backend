@@ -16,6 +16,8 @@ export class ProductService {
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
+  
+      // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
       }
@@ -34,93 +36,114 @@ export class ProductService {
       if (queryData.condition) {
         WhereParameters.condition = parseInt(queryData.condition, 10);
       }
+  
+      // Combine processor filter for both laptops and personal_computers with AND
       if (queryData.processor) {
         const processorValue = parseInt(queryData.processor, 10);
-        WhereParameters.OR = [
-          {
-            laptops: {
-              some: {
-                processor: processorValue,
+        WhereParameters.AND = WhereParameters.AND || []; // Initialize AND if not present
+        WhereParameters.AND.push({
+          OR: [
+            {
+              laptops: {
+                some: {
+                  processor: processorValue,
+                },
               },
             },
-          },
-          {
-            personal_computers: {
-              some: {
-                processor: processorValue,
+            {
+              personal_computers: {
+                some: {
+                  processor: processorValue,
+                },
               },
             },
-          },
-        ];
-      }
-      if (queryData.ram) {
-        const ramValue = parseInt(queryData.ram, 10);
-        WhereParameters.OR = [
-          {
-            laptops: {
-              some: {
-                ram: ramValue,
-              },
-            },
-          },
-          {
-            personal_computers: {
-              some: {
-                ram: ramValue,
-              },
-            },
-          },
-        ];
-      }
-      if (queryData.stoarge) {
-        const stoargeValue = parseInt(queryData.stoarge, 10);
-        WhereParameters.OR = [
-          {
-            laptops: {
-              some: {
-                stoarge_type: stoargeValue,
-              },
-            },
-          },
-          {
-            personal_computers: {
-              some: {
-                stoarge_type: stoargeValue,
-              },
-            },
-          },
-        ];
-      }
-      if (queryData.gpu) {
-        const gpuValue = parseInt(queryData.gpu, 10);
-        WhereParameters.OR = [
-          {
-            laptops: {
-              some: {
-                gpu: gpuValue,
-              },
-            },
-          },
-          {
-            personal_computers: {
-              some: {
-                gpu: gpuValue,
-              },
-            },
-          },
-        ];
+          ],
+        });
       }
   
+      // Apply RAM filter for both laptops and personal_computers
+      if (queryData.ram) {
+        const ramValue = parseInt(queryData.ram, 10);
+        WhereParameters.AND = WhereParameters.AND || [];
+        WhereParameters.AND.push({
+          OR: [
+            {
+              laptops: {
+                some: {
+                  ram: ramValue,
+                },
+              },
+            },
+            {
+              personal_computers: {
+                some: {
+                  ram: ramValue,
+                },
+              },
+            },
+          ],
+        });
+      }
+  
+      // Apply storage filter for both laptops and personal_computers
+      if (queryData.stoarge) {
+        const storageValue = parseInt(queryData.stoarge, 10);
+        WhereParameters.AND = WhereParameters.AND || [];
+        WhereParameters.AND.push({
+          OR: [
+            {
+              laptops: {
+                some: {
+                  stoarge_type: storageValue,
+                },
+              },
+            },
+            {
+              personal_computers: {
+                some: {
+                  stoarge_type: storageValue,
+                },
+              },
+            },
+          ],
+        });
+      }
+  
+      // Apply GPU filter for both laptops and personal_computers
+      if (queryData.gpu) {
+        const gpuValue = parseInt(queryData.gpu, 10);
+        WhereParameters.AND = WhereParameters.AND || [];
+        WhereParameters.AND.push({
+          OR: [
+            {
+              laptops: {
+                some: {
+                  gpu: gpuValue,
+                },
+              },
+            },
+            {
+              personal_computers: {
+                some: {
+                  gpu: gpuValue,
+                },
+              },
+            },
+          ],
+        });
+      }
+  
+      // Apply location filter
       if (queryData.location) {
         WhereParameters.location = parseInt(queryData.location, 10);
       }
-     
+  
+      // Apply admin verification filter
       if (queryData.is_verified_by_admin) {
-        WhereParameters.is_verified_by_admin = Boolean(
-          queryData.is_verified_by_admin,
-        );
+        WhereParameters.is_verified_by_admin = Boolean(queryData.is_verified_by_admin);
       }
-      console.log(WhereParameters)
+  
+  
       // Pagination setup
       const queryOptions: any = {
         include: {
@@ -140,15 +163,15 @@ export class ProductService {
         },
         where: WhereParameters,
       };
-
+  
+      // Handle pagination
       if (queryData.pageNo) {
         queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
         queryOptions.take = limit;
       }
-
+  
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
-      console.log();
       let dataToSend = [];
       data.map((e) => {
         console.log(e);
@@ -164,12 +187,10 @@ export class ProductService {
       return { data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
-      throw new InternalServerErrorException(
-        'Failed to fetch products',
-        error.message,
-      );
+      throw new InternalServerErrorException('Failed to fetch products', error.message);
     }
   }
+  
 
   async DeleteProductById(pid: any) {
     try {
