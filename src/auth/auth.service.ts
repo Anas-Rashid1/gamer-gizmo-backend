@@ -90,7 +90,7 @@ export class AuthService {
     };
   }
   async signin(createUserDto: LoginUserDto) {
-    const { name, password, platform, region } = createUserDto;
+    const { name, password, platform, region = null } = createUserDto;
 
     let user = await this.prisma.users.findUnique({
       where: { email: name },
