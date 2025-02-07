@@ -7,16 +7,33 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/product.dto';
 import * as fs from 'fs/promises';
 import { CreateReviewDto } from './dto/review.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class ProductService {
-  constructor(private prismaService: PrismaService) {}
-  async GetAllProducts(queryData: any) {
+  constructor(
+    private prismaService: PrismaService,
+    private jwtService: JwtService,
+  ) {}
+  extractTokenFromHeader(request: Request): string | undefined {
+    // @ts-expect-error
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
+  }
+  async GetAllProducts(queryData: any, user: any) {
     try {
+      const token = this.extractTokenFromHeader(user);
+      let payload = null;
+      if (token) {
+        payload = await this.jwtService.verifyAsync(token, {
+          secret: process.env.JWT_SECRET,
+        });
+      }
+
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
-  
+
       // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
@@ -36,7 +53,7 @@ export class ProductService {
       if (queryData.condition) {
         WhereParameters.condition = parseInt(queryData.condition, 10);
       }
-  
+
       // Combine processor filter for both laptops and personal_computers with AND
       if (queryData.processor) {
         const processorValue = parseInt(queryData.processor, 10);
@@ -60,7 +77,7 @@ export class ProductService {
           ],
         });
       }
-  
+
       // Apply RAM filter for both laptops and personal_computers
       if (queryData.ram) {
         const ramValue = parseInt(queryData.ram, 10);
@@ -84,7 +101,7 @@ export class ProductService {
           ],
         });
       }
-  
+
       // Apply storage filter for both laptops and personal_computers
       if (queryData.storage) {
         const storageValue = parseInt(queryData.storage, 10);
@@ -108,7 +125,7 @@ export class ProductService {
           ],
         });
       }
-  
+
       // Apply GPU filter for both laptops and personal_computers
       if (queryData.gpu) {
         const gpuValue = parseInt(queryData.gpu, 10);
@@ -132,18 +149,19 @@ export class ProductService {
           ],
         });
       }
-  
+
       // Apply location filter
       if (queryData.location) {
         WhereParameters.location = parseInt(queryData.location, 10);
       }
-  
+
       // Apply admin verification filter
       if (queryData.is_verified_by_admin) {
-        WhereParameters.is_verified_by_admin = Boolean(queryData.is_verified_by_admin);
+        WhereParameters.is_verified_by_admin = Boolean(
+          queryData.is_verified_by_admin,
+        );
       }
-  
-  
+
       // Pagination setup
       const queryOptions: any = {
         include: {
@@ -163,34 +181,46 @@ export class ProductService {
         },
         where: WhereParameters,
       };
-  
+
       // Handle pagination
       if (queryData.pageNo) {
         queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
         queryOptions.take = limit;
       }
-  
+
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
       let dataToSend = [];
-      data.map((e) => {
-        console.log(e);
-        dataToSend.push({
+      dataToSend = await Promise.all(
+        data.map(async (e) => ({
           name: e.name,
           id: e.id,
           description: e.description,
           price: e.price,
           // @ts-expect-error
           images: e.product_images,
-        });
-      });
+          fav: token
+            ? (
+                await this.prismaService.favourite_products.findMany({
+                  where: {
+                    user_id: parseInt(payload.id),
+                    product_id: e.id,
+                  },
+                })
+              ).length > 0
+            : false,
+        })),
+      );
+      console.log(dataToSend[0]);
       return { data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
-      throw new InternalServerErrorException('Failed to fetch products', error.message);
+      throw new InternalServerErrorException(
+        'Failed to fetch products',
+        error.message,
+      );
     }
   }
-  
 
   async DeleteProductById(pid: any) {
     try {
@@ -272,21 +302,28 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
-  async GetProductById(pid: any) {
+  async GetProductById(pid: any, user: any) {
     try {
+      const token = this.extractTokenFromHeader(user);
+      let payload = null;
+      if (token) {
+        payload = await this.jwtService.verifyAsync(token, {
+          secret: process.env.JWT_SECRET,
+        });
+      }
       let data = await this.prismaService.product.findUnique({
         include: {
           brands: true,
           models: true,
           categories: true,
-          condition_product_conditionTocondition:true,
+          condition_product_conditionTocondition: true,
           // components: true,
           components: {
             include: {
               component_type_components_component_typeTocomponent_type: true, // Correct nested relation
             },
           },
-          
+
           store_product_review: {
             include: {
               store_product_review_images: true, // Correct nested relation
@@ -308,20 +345,20 @@ export class ProductService {
           personal_computers: {
             include: {
               processors: true,
-              ram_personal_computers_ramToram:true,
-              storage_personal_computers_storageTostorage:true,
-              storage_type_personal_computers_storage_typeTostorage_type:true,
-              gpu_personal_computers_gpuTogpu:true,
+              ram_personal_computers_ramToram: true,
+              storage_personal_computers_storageTostorage: true,
+              storage_type_personal_computers_storage_typeTostorage_type: true,
+              gpu_personal_computers_gpuTogpu: true,
               processor_variant_personal_computers_processor_variantToprocessor_variant:
                 true,
             },
           },
           laptops: {
             include: {
-              ram_laptops_ramToram:true,
-              storage_laptops_storageTostorage:true,
-              storage_type_laptops_storage_typeTostorage_type:true,
-              gpu_laptops_gpuTogpu:true,
+              ram_laptops_ramToram: true,
+              storage_laptops_storageTostorage: true,
+              storage_type_laptops_storage_typeTostorage_type: true,
+              gpu_laptops_gpuTogpu: true,
               processors: true,
               processor_variant_laptops_processor_variantToprocessor_variant:
                 true,
@@ -334,6 +371,21 @@ export class ProductService {
           id: parseInt(pid.id),
         },
       });
+
+      if (!data) {
+        return { data: null, message: 'Product not found' };
+      }
+      // @ts-expect-error
+      data.fav = token
+        ? (
+            await this.prismaService.favourite_products.findMany({
+              where: {
+                user_id: parseInt(payload.id),
+                product_id: data.id,
+              },
+            })
+          ).length > 0
+        : false;
 
       return { data: data, message: 'success' };
     } catch (e) {
@@ -364,7 +416,7 @@ export class ProductService {
           show_on_home: false,
           top_rated: false,
           location: parseInt(productbody.location),
-          other_brand_name:productbody.otherBrandName
+          other_brand_name: productbody.otherBrandName,
         },
       });
       for (let i = 0; images.length > i; i++) {

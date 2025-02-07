@@ -35,6 +35,7 @@ export class AuthGuard implements CanActivate {
       if (!tokenCount) {
         throw new UnauthorizedException();
       }
+      console.log(payload, 'ppppayload');
       request['user'] = payload;
     } catch (e) {
       throw new UnauthorizedException(e);

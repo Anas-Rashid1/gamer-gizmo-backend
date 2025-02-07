@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -95,8 +96,8 @@ export class ProductsContoller {
     type: String,
   })
   @Get('/getAll')
-  async getAllProducts(@Query() query: any) {
-    return this.productService.GetAllProducts(query);
+  async getAllProducts(@Query() query: any, @Req() user: any) {
+    return this.productService.GetAllProducts(query, user);
   }
 
   @Get('/getProductById')
@@ -105,8 +106,8 @@ export class ProductsContoller {
     required: true, // Make category optional
     type: String,
   })
-  async GetProductById(@Query() id: string) {
-    return this.productService.GetProductById(id);
+  async GetProductById(@Query() id: string, @Req() user: any) {
+    return this.productService.GetProductById(id, user);
   }
 
   @Delete('/deleteProductById')
