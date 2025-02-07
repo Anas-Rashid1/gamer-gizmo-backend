@@ -35,7 +35,6 @@ export class ProductService {
           payload = null;
         }
       }
-
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
@@ -187,7 +186,6 @@ export class ProductService {
         },
         where: WhereParameters,
       };
-
       // Handle pagination
       if (queryData.pageNo) {
         queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
@@ -196,6 +194,7 @@ export class ProductService {
 
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
+      console.log(data, 'WhereParameters');
       let dataToSend = [];
       dataToSend = await Promise.all(
         data.map(async (e) => ({
@@ -205,7 +204,7 @@ export class ProductService {
           price: e.price,
           // @ts-expect-error
           images: e.product_images,
-          fav: token
+          fav: payload
             ? (
                 await this.prismaService.favourite_products.findMany({
                   where: {
@@ -217,7 +216,7 @@ export class ProductService {
             : false,
         })),
       );
-      console.log(dataToSend[0]);
+      console.log(dataToSend);
       return { data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
@@ -388,7 +387,7 @@ export class ProductService {
         return { data: null, message: 'Product not found' };
       }
       // @ts-expect-error
-      data.fav = token
+      data.fav = payload
         ? (
             await this.prismaService.favourite_products.findMany({
               where: {
