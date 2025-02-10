@@ -9,10 +9,11 @@ datasource db {
 
 model admin {
   id         Int          @id @default(autoincrement())
-  email      String       @db.VarChar
+  email      String       @unique(map: "email") @db.VarChar
   password   String       @db.VarChar
   name       String       @db.VarChar
   created_at DateTime?    @default(now()) @db.Timestamp(6)
+  type       String?      @default("child") @db.VarChar
   blog_posts blog_posts[]
   product    product[]
 }

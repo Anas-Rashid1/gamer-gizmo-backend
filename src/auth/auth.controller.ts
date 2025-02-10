@@ -8,9 +8,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from './dtos/create-user.dto';
+import { CreateAdminDto, CreateUserDto } from './dtos/create-user.dto';
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { LoginUserDto } from './dtos/login-user.dto';
+import { LoginAdminDto, LoginUserDto } from './dtos/login-user.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { LogoutUserDto } from './dtos/logout-user.dto';
 import { ForgetPassDto } from './dtos/forgetPass.dto';
@@ -25,6 +25,14 @@ export class AuthController {
   @Post('signup')
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.authService.signup(createUserDto);
+  }
+  @Post('admin/signup')
+  async Adminsignup(@Body() createAdmin: CreateAdminDto) {
+    return this.authService.Adminsignup(createAdmin);
+  }
+  @Post('admin/signin')
+  async AdminSignin(@Body() loginAdminDto: LoginAdminDto) {
+    return this.authService.AdminSignin(loginAdminDto);
   }
   @Post('signin')
   async signin(@Body() loginUserDto: LoginUserDto) {

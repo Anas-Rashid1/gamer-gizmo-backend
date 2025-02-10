@@ -4,15 +4,16 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto } from './dtos/create-user.dto';
+import { CreateAdminDto, CreateUserDto } from './dtos/create-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateOTP } from 'src/utils/otp.generator';
+import { ConfigService } from '@nestjs/config';
 import { RedisConnector } from 'src/redis/database.connector';
 import { JwtService } from '@nestjs/jwt';
 import * as ejs from 'ejs';
 import { createTransport } from 'nodemailer';
 import { otpTemplate } from 'src/views/otp.template';
-import { LoginUserDto } from './dtos/login-user.dto';
+import { LoginAdminDto, LoginUserDto } from './dtos/login-user.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { LogoutUserDto } from './dtos/logout-user.dto';
 import { logoutTemplate } from 'src/views/logout.template';
@@ -25,6 +26,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
   async signup(createUserDto: CreateUserDto) {
     const {
@@ -89,6 +91,77 @@ export class AuthService {
       data: { user: userWithoutPassword, otp: otp_res },
     };
   }
+
+  async Adminsignup(createUserDto: CreateAdminDto) {
+    const {
+      email,
+      password,
+      name,
+    } = createUserDto;
+
+  
+    const doesUserExist = await this.prisma.admin.findUnique({
+      where: { email: email },
+    });
+
+
+    if (doesUserExist) {
+      throw new BadRequestException('Email already in use');
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await this.prisma.admin.create({
+      data: {
+        name: name,
+        email: email,
+        password:hashedPassword,
+      },
+    });
+    if (!newUser) {
+      throw new BadRequestException(['Could not create user!']);
+    }
+    // const otp_res = await this.authenticateByOtp(email);
+    const { password: _, ...userWithoutPassword } = newUser;
+    return {
+      message: 'Admin has been Craeted',
+      data: { user: userWithoutPassword },
+    };
+  }
+
+
+  async AdminSignin(createUserDto: LoginAdminDto) {
+    const { email, password } = createUserDto;
+
+    let user = await this.prisma.admin.findUnique({
+      where: { email: email },
+    });
+   
+
+    if (!user) {
+      throw new BadRequestException('No User Found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Incorrect email or password');
+    }
+    
+    const payload = {
+      id: user.id,
+      email: user.email,
+      username: user.type,
+    };
+  
+
+    const token = await this.jwtService.signAsync(payload,{
+      secret: this.configService.get<string>('JWT_SECRET_ADMIN'),
+      expiresIn: '7d', 
+    });
+    if (!token) {
+      throw new BadRequestException(['Failed To create token']);
+    }
+    const { password: _, ...userWithoutPassword } = user;
+    return { token, ...userWithoutPassword };
+  }
   async signin(createUserDto: LoginUserDto) {
     const { name, password, platform, region = null } = createUserDto;
 
@@ -137,7 +210,10 @@ export class AuthService {
       });
     }
 
-    const token = await this.jwtService.signAsync(payload);
+    const token = await this.jwtService.signAsync(payload,{
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: '7d', 
+    });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
     }
