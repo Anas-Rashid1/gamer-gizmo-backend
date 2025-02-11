@@ -18,7 +18,7 @@ export class ModelService {
 
       const whereCondition = brand
         ? { brand_id: parseInt(brand) }
-        : {}; // Apply category filter if provided
+        : {}; 
       const queryOptions: any = {
         where: whereCondition,
       };
@@ -69,7 +69,7 @@ export class ModelService {
         data: {
           name: data.name,
           brand_id: parseInt(data.brand_id),
-          status: Boolean(data.status),
+          status: true,
         },
       });
       return { message: 'Successfully Created' };

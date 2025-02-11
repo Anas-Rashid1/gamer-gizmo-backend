@@ -26,8 +26,8 @@ export class ConditionService {
   }
   async DeleteCondition(data: DeleteDto) {
     try {
-      const cat = await this.prisma.condition.create({
-        data: { name: data.id },
+      const cat = await this.prisma.condition.delete({
+        where: { id: parseInt(data.id) },
       });
       return { message: 'Success Created' };
     } catch (e) {

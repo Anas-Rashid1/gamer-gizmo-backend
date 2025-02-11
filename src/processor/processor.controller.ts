@@ -16,14 +16,11 @@ import {
   ApiTags,
   ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard } from 'src/auth/auth.gurad';
 import { CreateProcessor, CreateVariant } from './dto/createvariant.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { GetProcessorDto } from './dto/getmodels.dto';
 import { ProcessorService } from './processor.service';
 import { DeleteVariantsDto } from './dto/deleteVariantdto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Processors')
 @Controller('/processor')
@@ -43,21 +40,28 @@ export class ProcessorContoller {
   async GetProcessor() {
     return this.processorService.GetAllVariants();
   }
+    @ApiBearerAuth()
+    @UseGuards(AdminAuthGuard)
   @Post('/createVariant')
   async CreateVariant(@Body() data: CreateVariant) {
     return this.processorService.CreateVariant(data);
   }
-
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
   @Post('/createProcessor')
   async createProcessor(@Body() data: CreateProcessor) {
     return this.processorService.createProcessor(data);
   }
+  @ApiBearerAuth()
+    @UseGuards(AdminAuthGuard)
   @Delete('/deleteVariant')
-  async deleteVariant(@Body() data: DeleteVariantsDto) {
+  async deleteVariant(@Query() data: DeleteVariantsDto) {
     return this.processorService.DeleteProcessorVariant(data);
   }
+  @ApiBearerAuth()
+    @UseGuards(AdminAuthGuard)
   @Delete('/deleteProcessor')
-  async deleteProcessor(@Body() data: DeleteVariantsDto) {
+  async deleteProcessor(@Query() data: DeleteVariantsDto) {
     return this.processorService.deleteProcessor(data);
   }
 }

@@ -26,8 +26,8 @@ export class RamService {
   }
   async DeleteRam(data: DeleteDto) {
     try {
-      const cat = await this.prisma.ram.create({
-        data: { name: data.id },
+      const cat = await this.prisma.ram.delete({
+        where: { id: parseInt(data.id) },
       });
       return { message: 'Success Created' };
     } catch (e) {

@@ -24,6 +24,7 @@ import { extname } from 'path';
 import {  GetModlesDto } from './dto/getmodels.dto';
 import { ModelService } from './model.service';
 import { DeleteModelsDto } from './dto/deletemodel.dto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Brands Model')
 @Controller('/models')
@@ -32,12 +33,12 @@ export class ModelContoller {
   @Get('/getAll')
   @ApiQuery({
     name: 'brand',
-    required: true, // Make category optional
+    required: true, 
     type: String,
   })
   @ApiQuery({
     name: 'pageNo',
-    required: false, // Make pageNo optional
+    required: false, 
     type: Number,
     description:
       'Page number for pagination (if not provided, all brands will be returned)',
@@ -47,7 +48,7 @@ export class ModelContoller {
   }
  
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)  
+  @UseGuards(AdminAuthGuard)  
   @Post('/create')
   async createModel(
     @Body() CreateModelsDto: CreateModelsto,
@@ -55,7 +56,7 @@ export class ModelContoller {
     return this.modelService.createModel(CreateModelsDto);
   }
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('/delete')
   async deleteModel(@Query() id: DeleteModelsDto) {
     return this.modelService.DeleteModel(id);

@@ -26,8 +26,8 @@ export class GPUService {
   }
   async DeleteGPU(data: DeleteDto) {
     try {
-      const cat = await this.prisma.gpu.create({
-        data: { name: data.id },
+      const cat = await this.prisma.gpu.delete({
+        where: { id: parseInt(data.id) },
       });
       return { message: 'Success Created' };
     } catch (e) {

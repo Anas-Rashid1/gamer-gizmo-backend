@@ -17,7 +17,7 @@ import {
   ApiTags,
   ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard } from 'src/auth/auth.gurad';
+
 import { CreateBrandsDto } from './dto/createbrands.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';

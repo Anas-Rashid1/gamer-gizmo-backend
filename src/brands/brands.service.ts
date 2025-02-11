@@ -49,9 +49,15 @@ export class BrandsService {
       if (!brands.logo) {
         throw new BadRequestException('No logo associated with this brand.');
       }
-
-      // Delete the logo file
-      await fs.unlink(brands.logo.slice(1));
+      if (brands.logo) {
+        try {
+          await fs.unlink(brands.logo.slice(1)); // Remove first character if needed
+        } catch (unlinkError) {
+          console.warn(`Failed to delete logo file: ${brands.logo}`, unlinkError);
+          // Continue execution even if unlink fails
+        }
+      }
+      
 
       // Delete the brand from the database
       await this.prisma.brands.delete({
