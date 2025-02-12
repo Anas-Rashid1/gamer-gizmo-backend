@@ -99,38 +99,14 @@ export class ProductsContoller {
   async getAllProducts(@Query() query: any, @Req() user: any) {
     return this.productService.GetAllProducts(query, user);
   }
-  @ApiQuery({
-    name: 'is_verified_by_admin',
-    required: false, // Make category optional
-    type: String,
-  })
-  @ApiQuery({
-    name: 'condition',
-    required: false, // Make category optional
-    type: String,
-  })
+
   @ApiQuery({
     name: 'userId',
     required: false, // Make category optional
     type: String,
   })
   @ApiQuery({
-    name: 'location',
-    required: false, // Make category optional
-    type: String,
-  })
-  @ApiQuery({
-    name: 'price',
-    required: false, // Make category optional
-    type: String,
-  })
-  @ApiQuery({
-    name: 'brand_id',
-    required: false, // Make category optional
-    type: String,
-  })
-  @ApiQuery({
-    name: 'category_id',
+    name: 'active',
     required: false, // Make category optional
     type: String,
   })

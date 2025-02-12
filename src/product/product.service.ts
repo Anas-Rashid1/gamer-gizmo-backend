@@ -628,7 +628,7 @@ export class ProductService {
 
   async GetUserProducts(queryData: any) {
     try {
-      const limit = 10;
+      const limit = 3;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {
         user_id: parseInt(queryData.userId),
@@ -681,6 +681,11 @@ export class ProductService {
 
       // Fetch data
       const data = await this.prismaService.product.findMany(queryOptions);
+      const count = await this.prismaService.product.count({
+        where: {
+          user_id: parseInt(queryData.userId),
+        },
+      });
       let dataToSend = [];
       dataToSend = await Promise.all(
         data.map(async (e) => ({
@@ -695,7 +700,7 @@ export class ProductService {
           images: e.product_images,
         })),
       );
-      return { data: dataToSend, message: 'success' };
+      return { total: count, data: dataToSend, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
       throw new InternalServerErrorException(
