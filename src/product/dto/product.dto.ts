@@ -145,3 +145,14 @@ export class CreateProductDto {
   @IsString()
   text?: string;
 }
+
+export class InverProductStatusDto {
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  product_id: string;
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  user_id: string;
+}

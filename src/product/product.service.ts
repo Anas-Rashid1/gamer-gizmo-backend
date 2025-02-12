@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateProductDto } from './dto/product.dto';
+import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
 import * as fs from 'fs/promises';
 import { CreateReviewDto } from './dto/review.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -227,6 +227,35 @@ export class ProductService {
     }
   }
 
+  async invertStatus(pid: InverProductStatusDto) {
+    try {
+      let data = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      if (!data) {
+        throw new BadRequestException('No Product Found');
+      }
+      if (data.user_id != parseInt(pid.user_id)) {
+        throw new BadRequestException('Not Allowed');
+      }
+
+      await this.prismaService.product.update({
+        data: {
+          is_published: !Boolean(data.is_published),
+        },
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+
+      return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
   async DeleteProductById(pid: any) {
     try {
       let data = await this.prismaService.product.findUnique({

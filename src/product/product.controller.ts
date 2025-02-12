@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Query,
   Req,
   UploadedFiles,
@@ -11,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { CreateProductDto } from './dto/product.dto';
+import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -168,6 +169,10 @@ export class ProductsContoller {
     return this.productService.DeleteProductById(id);
   }
 
+  @Put('/invertStatus')
+  async invertStatus(@Body() productbody: InverProductStatusDto) {
+    return this.productService.invertStatus(productbody);
+  }
   @Post('/createProduct')
   @ApiConsumes('multipart/form-data')
   // @ApiBearerAuth()
