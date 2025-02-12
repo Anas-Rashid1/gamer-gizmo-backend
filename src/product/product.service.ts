@@ -38,7 +38,7 @@ export class ProductService {
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
-
+      WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
@@ -245,8 +245,12 @@ export class ProductService {
           product_id: parseInt(pid.product_id),
         },
       });
-      for (let i = 0; images.length > i; i++) {
-        await fs.unlink(images[i].image_url);
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
       }
       await this.prismaService.product_images.deleteMany({
         where: {
@@ -567,8 +571,12 @@ export class ProductService {
             review_id: parseInt(data.review_id),
           },
         });
-      for (let i = 0; images.length > i; i++) {
-        await fs.unlink(images[i].image_url);
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('erre');
       }
       await this.prismaService.store_product_review_images.deleteMany({
         where: {
@@ -589,27 +597,12 @@ export class ProductService {
     }
   }
 
-  async GetUserProducts(queryData: any, user: any) {
+  async GetUserProducts(queryData: any) {
     try {
-      const token = this.extractTokenFromHeader(user);
-      let payload = null;
-      if (token) {
-        try {
-          payload = await this.jwtService.verifyAsync(token, {
-            secret: process.env.JWT_SECRET,
-          });
-        } catch (error) {
-          console.warn('JWT Verification Failed:', error.message);
-          // Continue execution even if JWT is invalid
-          return 'No user';
-          payload = null;
-        }
-      }
-
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {
-        user_id: parseInt(payload.id),
+        user_id: parseInt(queryData.userId),
       };
 
       if (queryData.category_id) {
@@ -664,7 +657,10 @@ export class ProductService {
         data.map(async (e) => ({
           name: e.name,
           id: e.id,
+          active: e.is_published,
           description: e.description,
+          // @ts-expect-error jhk
+          category: e.categories.name,
           price: e.price,
           // @ts-expect-error
           images: e.product_images,

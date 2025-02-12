@@ -103,9 +103,13 @@ export class ProductsContoller {
     required: false, // Make category optional
     type: String,
   })
-  
   @ApiQuery({
     name: 'condition',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'userId',
     required: false, // Make category optional
     type: String,
   })
@@ -135,8 +139,8 @@ export class ProductsContoller {
     type: String,
   })
   @Get('/getUserProducts')
-  async GetUserProducts(@Query() query: any, @Req() user: any) {
-    return this.productService.GetUserProducts(query, user);
+  async GetUserProducts(@Query() query: any) {
+    return this.productService.GetUserProducts(query);
   }
 
   @Get('/getProductById')
