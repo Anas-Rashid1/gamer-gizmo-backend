@@ -29,8 +29,7 @@ export class ComponentCategoryController {
     private readonly componentCategoryService: ComponentCategoryService,
   ) {}
   @Get('/getAll')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+ 
   @ApiQuery({
     name: 'pageNo',
     required: false, // Make pageNo optional

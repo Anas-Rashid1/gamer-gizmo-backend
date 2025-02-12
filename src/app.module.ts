@@ -18,6 +18,10 @@ import { CartModule } from './cart/cart.module';
 import { UserModule } from './users/users.module';
 import { LocationModule } from './location/location.module';
 import { ProcessorModule } from './processor/processor.module';
+import { RamModule } from './ram/ram.module';
+import { GPUModule } from './gpu/gpu.module';
+import { ConditionModule } from './condition/condition.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -34,7 +38,11 @@ import { ProcessorModule } from './processor/processor.module';
     CategoriesModule,
     BrandsModule,
     ModelModule,
+    GPUModule,
+    ConditionModule,
+    StorageModule,
     ProcessorModule,
+    RamModule,
     ComponentCategoryModule,
     ProductModule,
     FavouriteModule,

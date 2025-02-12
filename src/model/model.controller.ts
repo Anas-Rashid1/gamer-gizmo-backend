@@ -29,11 +29,7 @@ import { DeleteModelsDto } from './dto/deletemodel.dto';
 @Controller('/models')
 export class ModelContoller {
   constructor(private readonly modelService: ModelService) {}
-  //   @ApiBearerAuth()
-  //   @UseGuards(AuthGuard)
   @Get('/getAll')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @ApiQuery({
     name: 'brand',
     required: true, // Make category optional
