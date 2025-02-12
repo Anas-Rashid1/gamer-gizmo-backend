@@ -98,80 +98,46 @@ export class ProductsContoller {
   async getAllProducts(@Query() query: any, @Req() user: any) {
     return this.productService.GetAllProducts(query, user);
   }
-  // @ApiQuery({
-  //   name: 'is_verified_by_admin',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'top_rated',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'condition',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'processor',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'ram',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'stoarge',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'gpu',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'location',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'price',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'brand_id',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'model_id',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'category_id',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'show_on_home',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @ApiQuery({
-  //   name: 'pageNo',
-  //   required: false, // Make category optional
-  //   type: String,
-  // })
-  // @Get('/getUserProducts')
-  // async GetUserProducts(@Query() query: any, @Req() user: any) {
-  //   return this.productService.GetUserProducts(query, user);
-  // }
+  @ApiQuery({
+    name: 'is_verified_by_admin',
+    required: false, // Make category optional
+    type: String,
+  })
+  
+  @ApiQuery({
+    name: 'condition',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'price',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'brand_id',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'category_id',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'pageNo',
+    required: false, // Make category optional
+    type: String,
+  })
+  @Get('/getUserProducts')
+  async GetUserProducts(@Query() query: any, @Req() user: any) {
+    return this.productService.GetUserProducts(query, user);
+  }
 
   @Get('/getProductById')
   @ApiQuery({

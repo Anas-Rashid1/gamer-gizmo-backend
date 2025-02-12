@@ -589,203 +589,94 @@ export class ProductService {
     }
   }
 
-  // async GetUserProducts(queryData: any, user: any) {
-  //   try {
-  //     const token = this.extractTokenFromHeader(user);
-  //     let payload = null;
-  //     if (token) {
-  //       try {
-  //         payload = await this.jwtService.verifyAsync(token, {
-  //           secret: process.env.JWT_SECRET,
-  //         });
-  //       } catch (error) {
-  //         console.warn('JWT Verification Failed:', error.message);
-  //         // Continue execution even if JWT is invalid
-  //         payload = null;
-  //       }
-  //     }
+  async GetUserProducts(queryData: any, user: any) {
+    try {
+      const token = this.extractTokenFromHeader(user);
+      let payload = null;
+      if (token) {
+        try {
+          payload = await this.jwtService.verifyAsync(token, {
+            secret: process.env.JWT_SECRET,
+          });
+        } catch (error) {
+          console.warn('JWT Verification Failed:', error.message);
+          // Continue execution even if JWT is invalid
+          return 'No user';
+          payload = null;
+        }
+      }
 
-  //     const limit = 10;
-  //     // Build the `where` parameters dynamically
-  //     const WhereParameters: Record<string, any> = {
-  //       user_id: parseInt(payload.id),
-  //     };
+      const limit = 10;
+      // Build the `where` parameters dynamically
+      const WhereParameters: Record<string, any> = {
+        user_id: parseInt(payload.id),
+      };
 
-  //     // Standard filters for show_on_home, top_rated, etc.
-  //     if (queryData.show_on_home) {
-  //       WhereParameters.show_on_home = Boolean(queryData.show_on_home);
-  //     }
-  //     if (queryData.top_rated) {
-  //       WhereParameters.top_rated = Boolean(queryData.top_rated);
-  //     }
-  //     if (queryData.category_id) {
-  //       WhereParameters.category_id = parseInt(queryData.category_id, 10);
-  //     }
-  //     if (queryData.model_id) {
-  //       WhereParameters.model_id = parseInt(queryData.model_id, 10);
-  //     }
-  //     if (queryData.brand_id) {
-  //       WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
-  //     }
-  //     if (queryData.condition) {
-  //       WhereParameters.condition = parseInt(queryData.condition, 10);
-  //     }
+      if (queryData.category_id) {
+        WhereParameters.category_id = parseInt(queryData.category_id, 10);
+      }
 
-  //     // Combine processor filter for both laptops and personal_computers with AND
-  //     if (queryData.processor) {
-  //       const processorValue = parseInt(queryData.processor, 10);
-  //       WhereParameters.AND = WhereParameters.AND || []; // Initialize AND if not present
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 processor: processorValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 processor: processorValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
+      if (queryData.brand_id) {
+        WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
+      }
+      if (queryData.condition) {
+        WhereParameters.condition = parseInt(queryData.condition, 10);
+      }
+      if (queryData.location) {
+        WhereParameters.location = parseInt(queryData.location, 10);
+      }
+      if (queryData.is_verified_by_admin) {
+        WhereParameters.is_verified_by_admin = Boolean(
+          queryData.is_verified_by_admin,
+        );
+      }
 
-  //     // Apply RAM filter for both laptops and personal_computers
-  //     if (queryData.ram) {
-  //       const ramValue = parseInt(queryData.ram, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 ram: ramValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 ram: ramValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
+      // Pagination setup
+      const queryOptions: any = {
+        include: {
+          brands: true,
+          models: true,
+          categories: true,
+          components: {
+            include: {
+              component_type_components_component_typeTocomponent_type: true, // Correct relation
+            },
+          },
+          personal_computers: true,
+          gaming_console: true,
+          laptops: true,
+          product_images: true,
+          location_product_locationTolocation: true,
+        },
+        where: WhereParameters,
+      };
 
-  //     // Apply storage filter for both laptops and personal_computers
-  //     if (queryData.storage) {
-  //       const storageValue = parseInt(queryData.storage, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 storage_type: storageValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 storage_type: storageValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
+      // Handle pagination
+      if (queryData.pageNo) {
+        queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
+        queryOptions.take = limit;
+      }
 
-  //     // Apply GPU filter for both laptops and personal_computers
-  //     if (queryData.gpu) {
-  //       const gpuValue = parseInt(queryData.gpu, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 gpu: gpuValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 gpu: gpuValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
-
-  //     // Apply location filter
-  //     if (queryData.location) {
-  //       WhereParameters.location = parseInt(queryData.location, 10);
-  //     }
-
-  //     // Apply admin verification filter
-  //     if (queryData.is_verified_by_admin) {
-  //       WhereParameters.is_verified_by_admin = Boolean(
-  //         queryData.is_verified_by_admin,
-  //       );
-  //     }
-
-  //     // Pagination setup
-  //     const queryOptions: any = {
-  //       include: {
-  //         brands: true,
-  //         models: true,
-  //         categories: true,
-  //         components: {
-  //           include: {
-  //             component_type_components_component_typeTocomponent_type: true, // Correct relation
-  //           },
-  //         },
-  //         personal_computers: true,
-  //         gaming_console: true,
-  //         laptops: true,
-  //         product_images: true,
-  //         location_product_locationTolocation: true,
-  //       },
-  //       where: WhereParameters,
-  //     };
-
-  //     // Handle pagination
-  //     if (queryData.pageNo) {
-  //       queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
-  //       queryOptions.take = limit;
-  //     }
-
-  //     // Fetch data
-  //     const data = await this.prismaService.product.findMany(queryOptions);
-  //     let dataToSend = [];
-  //     dataToSend = await Promise.all(
-  //       data.map(async (e) => ({
-  //         name: e.name,
-  //         id: e.id,
-  //         description: e.description,
-  //         price: e.price,
-  //         // @ts-expect-error
-  //         images: e.product_images,
-  //       })),
-  //     );
-  //     console.log(dataToSend[0]);
-  //     return { data: dataToSend, message: 'success' };
-  //   } catch (error) {
-  //     // Throw a standardized internal server error
-  //     throw new InternalServerErrorException(
-  //       'Failed to fetch products',
-  //       error.message,
-  //     );
-  //   }
-  // }
+      // Fetch data
+      const data = await this.prismaService.product.findMany(queryOptions);
+      let dataToSend = [];
+      dataToSend = await Promise.all(
+        data.map(async (e) => ({
+          name: e.name,
+          id: e.id,
+          description: e.description,
+          price: e.price,
+          // @ts-expect-error
+          images: e.product_images,
+        })),
+      );
+      return { data: dataToSend, message: 'success' };
+    } catch (error) {
+      // Throw a standardized internal server error
+      throw new InternalServerErrorException(
+        'Failed to fetch products',
+        error.message,
+      );
+    }
+  }
 }
