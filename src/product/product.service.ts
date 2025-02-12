@@ -628,7 +628,7 @@ export class ProductService {
 
   async GetUserProducts(queryData: any) {
     try {
-      const limit = 3;
+      const limit = 8;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {
         user_id: parseInt(queryData.userId),
