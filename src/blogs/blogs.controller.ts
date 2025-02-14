@@ -42,6 +42,20 @@ export class BlogsContoller {
   async GetAllBlogs(@Query() { pageNo = null }: GetBlogsDto) {
     return this.blogsService.GetAllBlogs({ pageNo });
   }
+  @Get('/getRecentsBlogs')
+  async GetRecentsBlogs() {
+    return this.blogsService.GetRecentsBlogs();
+  }
+  @Get('/getSingleBlogsDetails')
+  @ApiQuery({
+    name: 'id',
+    required: false, // Make pageNo optional
+    type: Number,
+    description: 'Id to be provided',
+  })
+  async GetSingleBlogsDetails(@Query() id: any) {
+    return this.blogsService.GetSingleBlogsDetails(id);
+  }
   @UseInterceptors(
     FileInterceptor('images', {
       storage: diskStorage({

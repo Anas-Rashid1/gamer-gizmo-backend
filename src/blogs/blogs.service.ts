@@ -28,6 +28,35 @@ export class BlogsService {
       throw new InternalServerErrorException(e);
     }
   }
+  async GetSingleBlogsDetails({ id }) {
+    try {
+      const queryOptions: any = {
+        where: {
+          id: parseInt(id),
+        },
+      };
+      const blogs = await this.prisma.blog_posts.findUnique(queryOptions);
+      return { message: 'Success', data: blogs };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async GetRecentsBlogs() {
+    try {
+      const limit = 4; // Limit to 4 recent blogs
+      const queryOptions: any = {
+        orderBy: {
+          created_at: 'desc', // Sort by created_at in descending order
+        },
+        take: limit, // Limit to 4 records
+      };
+
+      const blogs = await this.prisma.blog_posts.findMany(queryOptions);
+      return { message: 'Success', data: blogs };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
   async DeleteBlog({ id }: DeleteBlogsDto) {
     try {
       const brands = await this.prisma.blog_posts.findUnique({
