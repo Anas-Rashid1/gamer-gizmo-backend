@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
+
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto/updateUser.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
@@ -38,6 +39,40 @@ export class UserService {
         },
       });
       return { message: 'Success', data: user };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async getAllUsers(pageNo) {
+    try {
+      const limit = 10;
+      const queryOptions: any = {
+        select: {
+          id: true,
+          username: true,
+          profile: true,
+          email: true,
+          first_name: true,
+          last_name: true,
+          is_email_verified: true,
+          is_seller: true,
+          created_at: true,
+          phone: true,
+          is_admin_verified: true,
+          dob: true,
+          gender: true,
+          address: true,
+          applied_for_verification: true,
+        },
+      };
+
+      if (pageNo) {
+        queryOptions.skip = (parseInt(pageNo) - 1) * limit;
+        queryOptions.take = limit;
+      }
+      const total = await this.prisma.users.count();
+      const user = await this.prisma.users.findMany(queryOptions);
+      return { message: 'Success', data: user, total };
     } catch (e) {
       throw new InternalServerErrorException(e);
     }

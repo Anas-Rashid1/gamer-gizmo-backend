@@ -29,6 +29,8 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { GetBrandsDto } from './dto/getbrands.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
+import { getAllUsersDto } from './dto/getUsersDto';
 
 @ApiTags('Users')
 @Controller('/user')
@@ -39,6 +41,20 @@ export class UserContoller {
   @Get('/getUserData')
   async GetUserData(@Req() data: any) {
     return this.userService.GetUserData(data.user);
+  }
+
+  // @ApiBearerAuth()
+  // @UseGuards(AdminAuthGuard)
+  @Get('/getAllUsers')
+  @ApiQuery({
+    name: 'pageNo',
+    required: false, // Make pageNo optional
+    type: Number,
+    description:
+      'Page number for pagination (if not provided, all brands will be returned)',
+  })
+  async getAllUsers(@Query() { pageNo = null }: getAllUsersDto) {
+    return this.userService.getAllUsers(pageNo);
   }
 
   @ApiBearerAuth()
