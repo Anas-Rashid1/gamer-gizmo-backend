@@ -6,7 +6,6 @@ import {
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto/updateUser.dto';
-import { DeleteBrandsDto } from './dto/deletebrands.dto';
 import * as fs from 'fs/promises';
 
 @Injectable()
