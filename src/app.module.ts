@@ -22,6 +22,7 @@ import { RamModule } from './ram/ram.module';
 import { GPUModule } from './gpu/gpu.module';
 import { ConditionModule } from './condition/condition.module';
 import { StorageModule } from './storage/storage.module';
+import { BlogsModule } from './brands copy/blogs.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { StorageModule } from './storage/storage.module';
     GPUModule,
     ConditionModule,
     StorageModule,
+    BlogsModule,
     ProcessorModule,
     RamModule,
     ComponentCategoryModule,

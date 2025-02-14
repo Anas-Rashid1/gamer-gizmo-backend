@@ -8,14 +8,15 @@ datasource db {
 }
 
 model admin {
-  id         Int          @id @default(autoincrement())
-  email      String       @unique(map: "email") @db.VarChar
-  password   String       @db.VarChar
-  name       String       @db.VarChar
-  created_at DateTime?    @default(now()) @db.Timestamp(6)
-  type       String?      @default("child") @db.VarChar
-  blog_posts blog_posts[]
-  product    product[]
+  id                                       Int          @id @default(autoincrement())
+  email                                    String       @unique(map: "email") @db.VarChar
+  password                                 String       @db.VarChar
+  name                                     String       @db.VarChar
+  created_at                               DateTime?    @default(now()) @db.Timestamp(6)
+  type                                     String?      @default("child") @db.VarChar
+  blog_posts_blog_posts_admin_idToadmin    blog_posts[] @relation("blog_posts_admin_idToadmin")
+  blog_posts_blog_posts_verified_byToadmin blog_posts[] @relation("blog_posts_verified_byToadmin")
+  product                                  product[]
 }
 
 model blog_images {
@@ -27,19 +28,20 @@ model blog_images {
 }
 
 model blog_posts {
-  id           Int           @id @default(autoincrement())
-  user_id      Int
-  title        String        @db.VarChar
-  content      String
-  images       String?
-  created_at   DateTime?     @default(now()) @db.Timestamp(6)
-  updated_at   DateTime?     @default(now()) @db.Timestamp(6)
-  is_verified  Boolean?      @default(false)
-  verified_by  Int?
-  is_published Boolean?      @default(false)
-  blog_images  blog_images[]
-  users        users         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  admin        admin?        @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                  Int           @id @default(autoincrement())
+  admin_id                            Int
+  title                               String        @db.VarChar
+  content                             String
+  images                              String?
+  created_at                          DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at                          DateTime?     @default(now()) @db.Timestamp(6)
+  is_verified                         Boolean?      @default(true)
+  verified_by                         Int?
+  is_published                        Boolean?      @default(false)
+  tags                                String?
+  blog_images                         blog_images[]
+  admin_blog_posts_admin_idToadmin    admin         @relation("blog_posts_admin_idToadmin", fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "blog_posts_user_id_fkey")
+  admin_blog_posts_verified_byToadmin admin?        @relation("blog_posts_verified_byToadmin", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model brands {
@@ -136,6 +138,13 @@ model components {
   product                                                  product        @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+model condition {
+  id                                   Int       @id @default(autoincrement())
+  created_at                           DateTime  @default(now()) @db.Date
+  name                                 String    @db.VarChar
+  product_product_conditionTocondition product[] @relation("product_conditionTocondition")
+}
+
 model favourite_products {
   id         Int       @id @default(autoincrement())
   user_id    Int
@@ -143,6 +152,25 @@ model favourite_products {
   created_at DateTime? @default(now()) @db.Timestamp(6)
   product    product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model gaming_console {
+  id              Int     @id(map: "gaming_gizmo_pkey") @default(autoincrement())
+  product_id      Int
+  color           String? @db.VarChar
+  accessories     String?
+  connectivity    String? @db.VarChar
+  warranty_status String? @db.VarChar
+  battery_life    String? @db.VarChar
+  product         product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "gaming _console_product_id_fkey")
+}
+
+model gpu {
+  id                                             Int                  @id @default(autoincrement())
+  created_at                                     DateTime?            @default(now()) @db.Date
+  name                                           String               @db.VarChar
+  laptops_laptops_gpuTogpu                       laptops[]            @relation("laptops_gpuTogpu")
+  personal_computers_personal_computers_gpuTogpu personal_computers[] @relation("personal_computers_gpuTogpu")
 }
 
 model laptops {
@@ -168,6 +196,12 @@ model laptops {
   ram_laptops_ramToram                                           ram?               @relation("laptops_ramToram", fields: [ram], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ram")
   storage_type_laptops_storage_typeTostorage_type                storage_type?      @relation("laptops_storage_typeTostorage_type", fields: [storage_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "storage_type_fk")
   storage_laptops_storageTostorage                               storage?           @relation("laptops_storageTostorage", fields: [storage], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "stroage_fk")
+}
+
+model location {
+  id                                 Int       @id @default(autoincrement())
+  name                               String    @db.VarChar
+  product_product_locationTolocation product[] @relation("product_locationTolocation")
 }
 
 model messages {
@@ -235,6 +269,23 @@ model personal_computers {
   storage_type_personal_computers_storage_typeTostorage_type                storage_type?      @relation("personal_computers_storage_typeTostorage_type", fields: [storage_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "stoarge_type")
 }
 
+model processor_variant {
+  id                                                                         Int                  @id @default(autoincrement())
+  name                                                                       String?              @db.VarChar
+  laptops_laptops_processor_variantToprocessor_variant                       laptops[]            @relation("laptops_processor_variantToprocessor_variant")
+  personal_computers_personal_computers_processor_variantToprocessor_variant personal_computers[] @relation("personal_computers_processor_variantToprocessor_variant")
+  processors                                                                 processors[]
+}
+
+model processors {
+  id                 Int                  @id(map: "Processors_pkey") @default(autoincrement())
+  name               String?              @db.VarChar
+  variant_id         Int
+  laptops            laptops[]
+  personal_computers personal_computers[]
+  processor_variant  processor_variant    @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vraint_fk")
+}
+
 model product {
   id                                     Int                    @id @default(autoincrement())
   name                                   String                 @db.VarChar
@@ -280,141 +331,6 @@ model product_images {
   product    product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model tokens {
-  id         Int       @id @default(autoincrement())
-  user_id    Int
-  token      String    @unique(map: "unique_token")
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  platform   String
-  region     String
-  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
-}
-
-model transactions {
-  id                 Int       @id @default(autoincrement())
-  order_id           Int
-  transaction_status String    @db.VarChar
-  payment_method     String    @db.VarChar
-  payment_amount     String    @db.VarChar
-  transaction_date   DateTime? @default(now()) @db.Timestamp(6)
-  orders             orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model users {
-  id                                           Int                       @id @default(autoincrement())
-  username                                     String                    @unique(map: "unique_username") @db.VarChar
-  email                                        String                    @unique(map: "unique_email") @db.VarChar
-  password                                     String                    @db.VarChar
-  first_name                                   String?                   @db.VarChar
-  last_name                                    String?                   @db.VarChar
-  is_seller                                    Boolean?                  @default(false)
-  is_email_verified                            Boolean?                  @default(false)
-  created_at                                   DateTime?                 @default(now()) @db.Timestamp(6)
-  phone                                        String?                   @db.VarChar(15)
-  is_admin_verified                            Boolean?                  @default(false)
-  dob                                          DateTime                  @db.Date
-  gender                                       String                    @db.VarChar
-  nic_front_image                              String?
-  nic_back_image                               String?
-  address                                      String?
-  profile                                      String?
-  applied_for_verification                     Boolean?                  @default(false)
-  blog_posts                                   blog_posts[]
-  cart                                         cart[]
-  chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")
-  chats_chats_user2_idTousers                  chats[]                   @relation("chats_user2_idTousers")
-  community_chat_members                       community_chat_members[]
-  community_chat_messages                      community_chat_messages[]
-  favourite_products                           favourite_products[]
-  messages                                     messages[]
-  orders                                       orders[]
-  product                                      product[]
-  store_product_review                         store_product_review[]
-  tokens                                       tokens[]
-  user_reviews_user_reviews_reviewee_idTousers user_reviews[]            @relation("user_reviews_reviewee_idTousers")
-  user_reviews_user_reviews_reviewer_idTousers user_reviews[]            @relation("user_reviews_reviewer_idTousers")
-}
-
-model store_product_review {
-  id                          Int                           @id(map: "review_pkey") @default(autoincrement())
-  user_id                     Int
-  product_id                  Int
-  comments                    String?                       @db.VarChar
-  ratings                     Int
-  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
-  product                     product                       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_id_fkey")
-  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_user_id_fkey")
-  store_product_review_images store_product_review_images[]
-}
-
-model store_product_review_images {
-  id                   Int                  @id(map: "review_images_pkey") @default(autoincrement())
-  review_id            Int
-  image_url            String
-  created_at           DateTime?            @default(now()) @db.Date
-  store_product_review store_product_review @relation(fields: [review_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_id_fk")
-}
-
-model user_reviews {
-  id                                    Int       @id @default(autoincrement())
-  reviewer_id                           Int
-  reviewee_id                           Int
-  ratings                               String    @db.VarChar
-  comments                              String?
-  created_at                            DateTime? @default(now()) @db.Date
-  users_user_reviews_reviewee_idTousers users     @relation("user_reviews_reviewee_idTousers", fields: [reviewee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviewee_fk")
-  users_user_reviews_reviewer_idTousers users     @relation("user_reviews_reviewer_idTousers", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviewers_fk")
-}
-
-model gaming_console {
-  id              Int     @id(map: "gaming_gizmo_pkey") @default(autoincrement())
-  product_id      Int
-  color           String? @db.VarChar
-  accessories     String?
-  connectivity    String? @db.VarChar
-  warranty_status String? @db.VarChar
-  battery_life    String? @db.VarChar
-  product         product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "gaming _console_product_id_fkey")
-}
-
-model location {
-  id                                 Int       @id @default(autoincrement())
-  name                               String    @db.VarChar
-  product_product_locationTolocation product[] @relation("product_locationTolocation")
-}
-
-model processor_variant {
-  id                                                                         Int                  @id @default(autoincrement())
-  name                                                                       String?              @db.VarChar
-  laptops_laptops_processor_variantToprocessor_variant                       laptops[]            @relation("laptops_processor_variantToprocessor_variant")
-  personal_computers_personal_computers_processor_variantToprocessor_variant personal_computers[] @relation("personal_computers_processor_variantToprocessor_variant")
-  processors                                                                 processors[]
-}
-
-model processors {
-  id                 Int                  @id(map: "Processors_pkey") @default(autoincrement())
-  name               String?              @db.VarChar
-  variant_id         Int
-  laptops            laptops[]
-  personal_computers personal_computers[]
-  processor_variant  processor_variant    @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vraint_fk")
-}
-
-model condition {
-  id                                   Int       @id @default(autoincrement())
-  created_at                           DateTime  @default(now()) @db.Date
-  name                                 String    @db.VarChar
-  product_product_conditionTocondition product[] @relation("product_conditionTocondition")
-}
-
-model gpu {
-  id                                             Int                  @id @default(autoincrement())
-  created_at                                     DateTime?            @default(now()) @db.Date
-  name                                           String               @db.VarChar
-  laptops_laptops_gpuTogpu                       laptops[]            @relation("laptops_gpuTogpu")
-  personal_computers_personal_computers_gpuTogpu personal_computers[] @relation("personal_computers_gpuTogpu")
-}
-
 model ram {
   id                                             Int                  @id @default(autoincrement())
   name                                           String               @db.VarChar
@@ -437,4 +353,89 @@ model storage_type {
   name                                                             String               @db.VarChar
   laptops_laptops_storage_typeTostorage_type                       laptops[]            @relation("laptops_storage_typeTostorage_type")
   personal_computers_personal_computers_storage_typeTostorage_type personal_computers[] @relation("personal_computers_storage_typeTostorage_type")
+}
+
+model store_product_review {
+  id                          Int                           @id(map: "review_pkey") @default(autoincrement())
+  user_id                     Int
+  product_id                  Int
+  comments                    String?                       @db.VarChar
+  ratings                     Int
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  product                     product                       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_id_fkey")
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_user_id_fkey")
+  store_product_review_images store_product_review_images[]
+}
+
+model store_product_review_images {
+  id                   Int                  @id(map: "review_images_pkey") @default(autoincrement())
+  review_id            Int
+  image_url            String
+  created_at           DateTime?            @default(now()) @db.Date
+  store_product_review store_product_review @relation(fields: [review_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_id_fk")
+}
+
+model tokens {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  token      String    @unique(map: "unique_token")
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  platform   String
+  region     String
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
+}
+
+model transactions {
+  id                 Int       @id @default(autoincrement())
+  order_id           Int
+  transaction_status String    @db.VarChar
+  payment_method     String    @db.VarChar
+  payment_amount     String    @db.VarChar
+  transaction_date   DateTime? @default(now()) @db.Timestamp(6)
+  orders             orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_reviews {
+  id                                    Int       @id @default(autoincrement())
+  reviewer_id                           Int
+  reviewee_id                           Int
+  ratings                               String    @db.VarChar
+  comments                              String?
+  created_at                            DateTime? @default(now()) @db.Date
+  users_user_reviews_reviewee_idTousers users     @relation("user_reviews_reviewee_idTousers", fields: [reviewee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviewee_fk")
+  users_user_reviews_reviewer_idTousers users     @relation("user_reviews_reviewer_idTousers", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviewers_fk")
+}
+
+model users {
+  id                                           Int                       @id @default(autoincrement())
+  username                                     String                    @unique(map: "unique_username") @db.VarChar
+  email                                        String                    @unique(map: "unique_email") @db.VarChar
+  password                                     String                    @db.VarChar
+  first_name                                   String?                   @db.VarChar
+  last_name                                    String?                   @db.VarChar
+  is_seller                                    Boolean?                  @default(false)
+  is_email_verified                            Boolean?                  @default(false)
+  created_at                                   DateTime?                 @default(now()) @db.Timestamp(6)
+  phone                                        String?                   @db.VarChar(15)
+  is_admin_verified                            Boolean?                  @default(false)
+  dob                                          DateTime                  @db.Date
+  gender                                       String                    @db.VarChar
+  nic_front_image                              String?
+  nic_back_image                               String?
+  address                                      String?
+  profile                                      String?
+  applied_for_verification                     Boolean?                  @default(false)
+  cart                                         cart[]
+  chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")
+  chats_chats_user2_idTousers                  chats[]                   @relation("chats_user2_idTousers")
+  community_chat_members                       community_chat_members[]
+  community_chat_messages                      community_chat_messages[]
+  favourite_products                           favourite_products[]
+  messages                                     messages[]
+  orders                                       orders[]
+  product                                      product[]
+  store_product_review                         store_product_review[]
+  tokens                                       tokens[]
+  user_reviews_user_reviews_reviewee_idTousers user_reviews[]            @relation("user_reviews_reviewee_idTousers")
+  user_reviews_user_reviews_reviewer_idTousers user_reviews[]            @relation("user_reviews_reviewer_idTousers")
 }
