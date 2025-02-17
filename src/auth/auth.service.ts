@@ -93,17 +93,11 @@ export class AuthService {
   }
 
   async Adminsignup(createUserDto: CreateAdminDto) {
-    const {
-      email,
-      password,
-      name,
-    } = createUserDto;
+    const { email, password, name } = createUserDto;
 
-  
     const doesUserExist = await this.prisma.admin.findUnique({
       where: { email: email },
     });
-
 
     if (doesUserExist) {
       throw new BadRequestException('Email already in use');
@@ -113,7 +107,7 @@ export class AuthService {
       data: {
         name: name,
         email: email,
-        password:hashedPassword,
+        password: hashedPassword,
       },
     });
     if (!newUser) {
@@ -127,14 +121,12 @@ export class AuthService {
     };
   }
 
-
   async AdminSignin(createUserDto: LoginAdminDto) {
     const { email, password } = createUserDto;
 
     let user = await this.prisma.admin.findUnique({
       where: { email: email },
     });
-   
 
     if (!user) {
       throw new BadRequestException('No User Found');
@@ -144,17 +136,16 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new BadRequestException('Incorrect email or password');
     }
-    
+
     const payload = {
       id: user.id,
       email: user.email,
       username: user.type,
     };
-  
 
-    const token = await this.jwtService.signAsync(payload,{
+    const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET_ADMIN'),
-      expiresIn: '7d', 
+      expiresIn: '7d',
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
@@ -189,6 +180,11 @@ export class AuthService {
         'User is not Verified, Email is sent to the registerd email',
       );
     }
+    if (!user.is_active) {
+      throw new BadRequestException(
+        'Account is deactivated right now. Contact Support',
+      );
+    }
     const payload = {
       id: user.id,
       email: user.email,
@@ -210,9 +206,9 @@ export class AuthService {
       });
     }
 
-    const token = await this.jwtService.signAsync(payload,{
+    const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: '7d', 
+      expiresIn: '7d',
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
