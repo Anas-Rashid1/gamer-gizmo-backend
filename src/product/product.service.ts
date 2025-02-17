@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateProductDto } from './dto/product.dto';
+import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
 import * as fs from 'fs/promises';
 import { CreateReviewDto } from './dto/review.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -38,7 +38,7 @@ export class ProductService {
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
-
+      WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
@@ -227,6 +227,35 @@ export class ProductService {
     }
   }
 
+  async invertStatus(pid: InverProductStatusDto) {
+    try {
+      let data = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      if (!data) {
+        throw new BadRequestException('No Product Found');
+      }
+      if (data.user_id != parseInt(pid.user_id)) {
+        throw new BadRequestException('Not Allowed');
+      }
+
+      await this.prismaService.product.update({
+        data: {
+          is_published: !Boolean(data.is_published),
+        },
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+
+      return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
   async DeleteProductById(pid: any) {
     try {
       let data = await this.prismaService.product.findUnique({
@@ -245,8 +274,12 @@ export class ProductService {
           product_id: parseInt(pid.product_id),
         },
       });
-      for (let i = 0; images.length > i; i++) {
-        await fs.unlink(images[i].image_url);
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
       }
       await this.prismaService.product_images.deleteMany({
         where: {
@@ -567,8 +600,12 @@ export class ProductService {
             review_id: parseInt(data.review_id),
           },
         });
-      for (let i = 0; images.length > i; i++) {
-        await fs.unlink(images[i].image_url);
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('erre');
       }
       await this.prismaService.store_product_review_images.deleteMany({
         where: {
@@ -589,203 +626,87 @@ export class ProductService {
     }
   }
 
-  // async GetUserProducts(queryData: any, user: any) {
-  //   try {
-  //     const token = this.extractTokenFromHeader(user);
-  //     let payload = null;
-  //     if (token) {
-  //       try {
-  //         payload = await this.jwtService.verifyAsync(token, {
-  //           secret: process.env.JWT_SECRET,
-  //         });
-  //       } catch (error) {
-  //         console.warn('JWT Verification Failed:', error.message);
-  //         // Continue execution even if JWT is invalid
-  //         payload = null;
-  //       }
-  //     }
+  async GetUserProducts(queryData: any) {
+    try {
+      const limit = 8;
+      // Build the `where` parameters dynamically
+      const WhereParameters: Record<string, any> = {
+        user_id: parseInt(queryData.userId),
+      };
 
-  //     const limit = 10;
-  //     // Build the `where` parameters dynamically
-  //     const WhereParameters: Record<string, any> = {
-  //       user_id: parseInt(payload.id),
-  //     };
+      if (queryData.category_id) {
+        WhereParameters.category_id = parseInt(queryData.category_id, 10);
+      }
 
-  //     // Standard filters for show_on_home, top_rated, etc.
-  //     if (queryData.show_on_home) {
-  //       WhereParameters.show_on_home = Boolean(queryData.show_on_home);
-  //     }
-  //     if (queryData.top_rated) {
-  //       WhereParameters.top_rated = Boolean(queryData.top_rated);
-  //     }
-  //     if (queryData.category_id) {
-  //       WhereParameters.category_id = parseInt(queryData.category_id, 10);
-  //     }
-  //     if (queryData.model_id) {
-  //       WhereParameters.model_id = parseInt(queryData.model_id, 10);
-  //     }
-  //     if (queryData.brand_id) {
-  //       WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
-  //     }
-  //     if (queryData.condition) {
-  //       WhereParameters.condition = parseInt(queryData.condition, 10);
-  //     }
+      if (queryData.brand_id) {
+        WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
+      }
+      if (queryData.condition) {
+        WhereParameters.condition = parseInt(queryData.condition, 10);
+      }
+      if (queryData.location) {
+        WhereParameters.location = parseInt(queryData.location, 10);
+      }
+      if (queryData.is_verified_by_admin) {
+        WhereParameters.is_verified_by_admin = Boolean(
+          queryData.is_verified_by_admin,
+        );
+      }
 
-  //     // Combine processor filter for both laptops and personal_computers with AND
-  //     if (queryData.processor) {
-  //       const processorValue = parseInt(queryData.processor, 10);
-  //       WhereParameters.AND = WhereParameters.AND || []; // Initialize AND if not present
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 processor: processorValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 processor: processorValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
+      // Pagination setup
+      const queryOptions: any = {
+        include: {
+          brands: true,
+          models: true,
+          categories: true,
+          components: {
+            include: {
+              component_type_components_component_typeTocomponent_type: true, // Correct relation
+            },
+          },
+          personal_computers: true,
+          gaming_console: true,
+          laptops: true,
+          product_images: true,
+          location_product_locationTolocation: true,
+        },
+        where: WhereParameters,
+      };
 
-  //     // Apply RAM filter for both laptops and personal_computers
-  //     if (queryData.ram) {
-  //       const ramValue = parseInt(queryData.ram, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 ram: ramValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 ram: ramValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
+      // Handle pagination
+      if (queryData.pageNo) {
+        queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
+        queryOptions.take = limit;
+      }
 
-  //     // Apply storage filter for both laptops and personal_computers
-  //     if (queryData.storage) {
-  //       const storageValue = parseInt(queryData.storage, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 storage_type: storageValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 storage_type: storageValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
-
-  //     // Apply GPU filter for both laptops and personal_computers
-  //     if (queryData.gpu) {
-  //       const gpuValue = parseInt(queryData.gpu, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           {
-  //             laptops: {
-  //               some: {
-  //                 gpu: gpuValue,
-  //               },
-  //             },
-  //           },
-  //           {
-  //             personal_computers: {
-  //               some: {
-  //                 gpu: gpuValue,
-  //               },
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
-
-  //     // Apply location filter
-  //     if (queryData.location) {
-  //       WhereParameters.location = parseInt(queryData.location, 10);
-  //     }
-
-  //     // Apply admin verification filter
-  //     if (queryData.is_verified_by_admin) {
-  //       WhereParameters.is_verified_by_admin = Boolean(
-  //         queryData.is_verified_by_admin,
-  //       );
-  //     }
-
-  //     // Pagination setup
-  //     const queryOptions: any = {
-  //       include: {
-  //         brands: true,
-  //         models: true,
-  //         categories: true,
-  //         components: {
-  //           include: {
-  //             component_type_components_component_typeTocomponent_type: true, // Correct relation
-  //           },
-  //         },
-  //         personal_computers: true,
-  //         gaming_console: true,
-  //         laptops: true,
-  //         product_images: true,
-  //         location_product_locationTolocation: true,
-  //       },
-  //       where: WhereParameters,
-  //     };
-
-  //     // Handle pagination
-  //     if (queryData.pageNo) {
-  //       queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
-  //       queryOptions.take = limit;
-  //     }
-
-  //     // Fetch data
-  //     const data = await this.prismaService.product.findMany(queryOptions);
-  //     let dataToSend = [];
-  //     dataToSend = await Promise.all(
-  //       data.map(async (e) => ({
-  //         name: e.name,
-  //         id: e.id,
-  //         description: e.description,
-  //         price: e.price,
-  //         // @ts-expect-error
-  //         images: e.product_images,
-  //       })),
-  //     );
-  //     console.log(dataToSend[0]);
-  //     return { data: dataToSend, message: 'success' };
-  //   } catch (error) {
-  //     // Throw a standardized internal server error
-  //     throw new InternalServerErrorException(
-  //       'Failed to fetch products',
-  //       error.message,
-  //     );
-  //   }
-  // }
+      // Fetch data
+      const data = await this.prismaService.product.findMany(queryOptions);
+      const count = await this.prismaService.product.count({
+        where: {
+          user_id: parseInt(queryData.userId),
+        },
+      });
+      let dataToSend = [];
+      dataToSend = await Promise.all(
+        data.map(async (e) => ({
+          name: e.name,
+          id: e.id,
+          active: e.is_published,
+          description: e.description,
+          // @ts-expect-error jhk
+          category: e.categories.name,
+          price: e.price,
+          // @ts-expect-error
+          images: e.product_images,
+        })),
+      );
+      return { total: count, data: dataToSend, message: 'success' };
+    } catch (error) {
+      // Throw a standardized internal server error
+      throw new InternalServerErrorException(
+        'Failed to fetch products',
+        error.message,
+      );
+    }
+  }
 }

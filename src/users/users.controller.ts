@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Query,
   Req,
   UploadedFile,
@@ -29,6 +30,8 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { GetBrandsDto } from './dto/getbrands.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
+import { getAllUsersDto } from './dto/getUsersDto';
 
 @ApiTags('Users')
 @Controller('/user')
@@ -39,6 +42,95 @@ export class UserContoller {
   @Get('/getUserData')
   async GetUserData(@Req() data: any) {
     return this.userService.GetUserData(data.user);
+  }
+
+  // @ApiBearerAuth()
+  // @UseGuards(AdminAuthGuard)
+  @Get('/getAllUsers')
+  @ApiQuery({
+    name: 'pageNo',
+    required: false, // Make pageNo optional
+    type: Number,
+    description:
+      'Page number for pagination (if not provided, all brands will be returned)',
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async getAllUsers(@Query() { pageNo = null }: getAllUsersDto) {
+    return this.userService.getAllUsers(pageNo);
+  }
+
+  @Get('/getVerifiedByAdminUsers')
+  @ApiQuery({
+    name: 'pageNo',
+    required: false, // Make pageNo optional
+    type: Number,
+    description:
+      'Page number for pagination (if not provided, all brands will be returned)',
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async getVerifiedByAdminUsers(@Query() { pageNo = null }: getAllUsersDto) {
+    return this.userService.getVerifiedByAdminUsers(pageNo);
+  }
+  @Get('/getVerificationRequests')
+  @ApiQuery({
+    name: 'pageNo',
+    required: false, // Make pageNo optional
+    type: Number,
+    description:
+      'Page number for pagination (if not provided, all brands will be returned)',
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async getVerificationRequests(@Query() { pageNo = null }: getAllUsersDto) {
+    return this.userService.getVerificationRequests(pageNo);
+  }
+
+  @Get('/changeUserStatus')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async changeUserStatus(@Query() { userId }: { userId: any }) {
+    return this.userService.changeUserStatus(userId);
+  }
+  @Get('/approveUserVerification')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async approveUserVerification(@Query() { userId }: { userId: any }) {
+    return this.userService.approveUserVerification(userId);
+  }
+  @Get('/rejectUserVerification')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async rejectUserVerification(@Query() { userId }: { userId: any }) {
+    return this.userService.rejectUserVerification(userId);
+  }
+
+  @Delete('/deleteUser')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async deleteUser(@Query() { userId }: { userId: any }) {
+    return this.userService.deleteUser(userId);
   }
 
   @ApiBearerAuth()
