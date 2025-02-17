@@ -9,7 +9,7 @@ import { Request } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class AdminAuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
@@ -17,26 +17,16 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-
     const token = this.extractTokenFromHeader(request);
-    console.log(token, 'loll');
     if (!token) {
       throw new UnauthorizedException();
     }
 
     try {
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET_ADMIN,
       });
-      const tokenCount = await this.prisma.tokens.count({
-        where: { token: token },
-      });
-      console.log(tokenCount, 'tokenCount');
-      if (!tokenCount) {
-        throw new UnauthorizedException();
-      }
-      console.log(payload, 'ppppayload');
-      request['user'] = payload;
+      request['admin'] = payload;
     } catch (e) {
       throw new UnauthorizedException(e);
     }

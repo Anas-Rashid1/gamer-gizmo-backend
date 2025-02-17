@@ -25,6 +25,18 @@ export class AddToFavouriteService {
               personal_computers: true,
               laptops: true,
               product_images: true,
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
+              },
             },
           },
         },
@@ -57,7 +69,7 @@ export class AddToFavouriteService {
         data: {
           user_id: parseInt(data.userId),
           product_id: parseInt(data.productId),
-        }, 
+        },
       });
 
       return { data: data, message: 'Successfully Added' };

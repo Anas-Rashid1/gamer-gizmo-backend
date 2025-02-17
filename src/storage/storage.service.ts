@@ -26,8 +26,8 @@ export class StorageService {
   }
   async DeleteStorage(data: DeleteDto) {
     try {
-      const cat = await this.prisma.storage.create({
-        data: { name: data.id },
+      const cat = await this.prisma.storage.delete({
+        where: { id: parseInt(data.id) },
       });
       return { message: 'Success Created' };
     } catch (e) {
@@ -54,8 +54,8 @@ export class StorageService {
   }
   async DeleteStorageType(data: DeleteDto) {
     try {
-      const cat = await this.prisma.storage_type.create({
-        data: { name: data.id },
+      const cat = await this.prisma.storage_type.delete({
+        where: { id: parseInt(data.id) },
       });
       return { message: 'Success Created' };
     } catch (e) {

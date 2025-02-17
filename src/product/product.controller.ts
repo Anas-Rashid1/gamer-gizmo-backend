@@ -5,12 +5,12 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/auth/auth.gurad';
 import { CreateProductDto } from './dto/product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -95,9 +95,83 @@ export class ProductsContoller {
     type: String,
   })
   @Get('/getAll')
-  async getAllProducts(@Query() query: any) {
-    return this.productService.GetAllProducts(query);
+  async getAllProducts(@Query() query: any, @Req() user: any) {
+    return this.productService.GetAllProducts(query, user);
   }
+  // @ApiQuery({
+  //   name: 'is_verified_by_admin',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'top_rated',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'condition',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'processor',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'ram',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'stoarge',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'gpu',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'location',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'price',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'brand_id',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'model_id',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'category_id',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'show_on_home',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'pageNo',
+  //   required: false, // Make category optional
+  //   type: String,
+  // })
+  // @Get('/getUserProducts')
+  // async GetUserProducts(@Query() query: any, @Req() user: any) {
+  //   return this.productService.GetUserProducts(query, user);
+  // }
 
   @Get('/getProductById')
   @ApiQuery({
@@ -105,8 +179,8 @@ export class ProductsContoller {
     required: true, // Make category optional
     type: String,
   })
-  async GetProductById(@Query() id: string) {
-    return this.productService.GetProductById(id);
+  async GetProductById(@Query() id: string, @Req() user: any) {
+    return this.productService.GetProductById(id, user);
   }
 
   @Delete('/deleteProductById')

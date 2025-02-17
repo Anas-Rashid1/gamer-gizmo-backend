@@ -17,13 +17,14 @@ import {
   ApiTags,
   ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard } from 'src/auth/auth.gurad';
+
 import { CreateBrandsDto } from './dto/createbrands.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { GetBrandsDto } from './dto/getbrands.dto';
 import { DeleteBrandsDto } from './dto/deletebrands.dto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Products Brands')
 @Controller('/brands')
@@ -63,7 +64,7 @@ export class BrandsContoller {
     }),
   )
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminAuthGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Create a new brand with logo',
@@ -93,7 +94,7 @@ export class BrandsContoller {
     return this.brandsService.createBrand(CreateCategoriesDto, logo);
   }
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('/delete')
   async deleteBrand(@Query() id: DeleteBrandsDto) {
     return this.brandsService.DeleteBrand(id);

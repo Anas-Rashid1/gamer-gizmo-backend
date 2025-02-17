@@ -21,6 +21,7 @@ import { CreateCatDto } from './dto/createCatdto';
 import { GetCatData } from './dto/getcat.dto';
 import { ComponentCategoryService } from './componentCategory.service';
 import { DeleteCatDto } from './dto/deleteCat.dto';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Component Category')
 @Controller('/component-category')
@@ -42,13 +43,13 @@ export class ComponentCategoryController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Post('/create')
   async createCategories(@Body() CatDto: CreateCatDto) {
     return this.componentCategoryService.createCategories(CatDto);
   }
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete('/delete')
   async DeleteCategory(@Query() id: DeleteCatDto) {
     return this.componentCategoryService.DeleteCategory(id);

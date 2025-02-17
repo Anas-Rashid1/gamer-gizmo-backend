@@ -9,10 +9,11 @@ datasource db {
 
 model admin {
   id         Int          @id @default(autoincrement())
-  email      String       @db.VarChar
+  email      String       @unique(map: "email") @db.VarChar
   password   String       @db.VarChar
   name       String       @db.VarChar
   created_at DateTime?    @default(now()) @db.Timestamp(6)
+  type       String?      @default("child") @db.VarChar
   blog_posts blog_posts[]
   product    product[]
 }
@@ -185,7 +186,7 @@ model models {
   name     String    @db.VarChar
   brand_id Int
   status   Boolean?  @default(true)
-  brands   brands    @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands   brands    @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product  product[]
 }
 
@@ -262,9 +263,9 @@ model product {
   personal_computers                     personal_computers[]
   condition_product_conditionTocondition condition?             @relation("product_conditionTocondition", fields: [condition], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "condition_fk")
   location_product_locationTolocation    location?              @relation("product_locationTolocation", fields: [location], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "location_fkry")
-  brands                                 brands?                @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands                                 brands?                @relation(fields: [brand_id], references: [id], onUpdate: NoAction)
   categories                             categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  models                                 models?                @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  models                                 models?                @relation(fields: [model_id], references: [id], onUpdate: NoAction)
   users                                  users                  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   admin                                  admin?                 @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_images                         product_images[]

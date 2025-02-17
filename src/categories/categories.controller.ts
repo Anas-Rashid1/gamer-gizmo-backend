@@ -13,6 +13,10 @@ export class CategoriesContoller {
   async GetAllCategories() {
     return this.categoriesService.GetAllCategories();
   }
+  @Get('admin/getAll')
+  async GetAllAdminCategories() {
+    return this.categoriesService.GetAllAdminCategories();
+  }
   @Post('/create')
   async createCategory(@Body() CreateCategoriesDto: CreateCategoriesDto) {
     return this.categoriesService.createCategory(CreateCategoriesDto);

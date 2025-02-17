@@ -59,3 +59,19 @@ export class CreateUserDto {
   @IsString()
   gender: string;
 }
+export class CreateAdminDto {
+  @ApiProperty()
+  @IsNotEmpty({ message: 'name is required' })
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'Password is required' })
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  password: string;
+
+  @ApiProperty()
+  @IsEmail({}, { message: 'Invalid email format' })
+  email: string;
+
+}

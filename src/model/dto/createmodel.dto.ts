@@ -12,8 +12,5 @@ export class CreateModelsto {
   // @IsNumber()
   brand_id: string;
 
-  @ApiProperty({ required: true })
-  @IsNotEmpty()
-  // @IsBoolean()
-  status: boolean;
+ 
 }
