@@ -42,6 +42,49 @@ export class UserService {
       throw new InternalServerErrorException(e);
     }
   }
+  async getVerifiedByAdminUsers(pageNo) {
+    try {
+      const limit = 10;
+      const queryOptions: any = {
+        where: {
+          is_admin_verified: false,
+        },
+      };
+
+      if (pageNo) {
+        queryOptions.skip = (parseInt(pageNo) - 1) * limit;
+        queryOptions.take = limit;
+      }
+      const total = await this.prisma.users.count(queryOptions);
+      const user = await this.prisma.users.findMany(queryOptions);
+      return { message: 'Success', data: user, total };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async getVerificationRequests(pageNo) {
+    try {
+      const limit = 10;
+      const queryOptions: any = {
+        where: {
+          applied_for_verification: true,
+          is_admin_verified: false,
+        },
+      };
+
+      if (pageNo) {
+        queryOptions.skip = (parseInt(pageNo) - 1) * limit;
+        queryOptions.take = limit;
+      }
+      const total = await this.prisma.users.count(queryOptions);
+      const user = await this.prisma.users.findMany(queryOptions);
+      return { message: 'Success', data: user, total };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
   async getAllUsers(pageNo) {
     try {
       const limit = 10;
@@ -73,6 +116,47 @@ export class UserService {
       const total = await this.prisma.users.count();
       const user = await this.prisma.users.findMany(queryOptions);
       return { message: 'Success', data: user, total };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async approveUserVerification(id: any) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      await this.prisma.users.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          is_admin_verified: true,
+        },
+      });
+      return { message: 'Success', data: user };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async rejectUserVerification(id: any) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      await this.prisma.users.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          is_admin_verified: false,
+          applied_for_verification: false,
+        },
+      });
+      return { message: 'Success', data: user };
     } catch (e) {
       throw new InternalServerErrorException(e);
     }
