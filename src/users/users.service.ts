@@ -47,7 +47,7 @@ export class UserService {
       const limit = 10;
       const queryOptions: any = {
         where: {
-          is_admin_verified: false,
+          is_admin_verified: true,
         },
       };
 
