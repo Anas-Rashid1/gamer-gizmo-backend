@@ -57,6 +57,7 @@ export class UserService {
           is_seller: true,
           created_at: true,
           phone: true,
+          is_active: true,
           is_admin_verified: true,
           dob: true,
           gender: true,
@@ -83,6 +84,26 @@ export class UserService {
           id: data.id,
         },
         data: dataToUpdate,
+      });
+      return { message: 'Success', data: user };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async changeUserStatus(id: any) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      await this.prisma.users.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          is_active: !Boolean(user.is_active),
+        },
       });
       return { message: 'Success', data: user };
     } catch (e) {

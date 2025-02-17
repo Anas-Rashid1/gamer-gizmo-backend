@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Query,
   Req,
   UploadedFile,
@@ -53,8 +54,22 @@ export class UserContoller {
     description:
       'Page number for pagination (if not provided, all brands will be returned)',
   })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
   async getAllUsers(@Query() { pageNo = null }: getAllUsersDto) {
     return this.userService.getAllUsers(pageNo);
+  }
+
+  @Get('/changeUserStatus')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async changeUserStatus(@Query() { userId }: { userId: any }) {
+    return this.userService.changeUserStatus(userId);
   }
 
   @ApiBearerAuth()
