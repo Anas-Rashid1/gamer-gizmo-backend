@@ -449,9 +449,10 @@ export class ProductService {
           brand_id: productbody?.brand_id
             ? parseInt(productbody?.brand_id)
             : null,
-          model_id: productbody.model_id
-            ? parseInt(productbody.model_id)
-            : null,
+          model_id:
+            productbody.model_id && parseInt(productbody.model_id) != 0
+              ? parseInt(productbody.model_id)
+              : null,
           category_id: parseInt(productbody.category_id),
           condition: parseInt(productbody.condition),
           is_published: Boolean(productbody.is_published),
