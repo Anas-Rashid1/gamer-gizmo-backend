@@ -90,6 +90,26 @@ export class UserService {
       throw new InternalServerErrorException(e);
     }
   }
+  async deleteUser(id: any) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      if (!user) {
+        throw new BadRequestException('No User Found');
+      }
+      await this.prisma.users.delete({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      return { message: 'Success', data: user };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
+  }
   async changeUserStatus(id: any) {
     try {
       const user = await this.prisma.users.findUnique({

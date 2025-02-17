@@ -72,6 +72,18 @@ export class UserContoller {
     return this.userService.changeUserStatus(userId);
   }
 
+  @Delete('/deleteUser')
+  @ApiQuery({
+    name: 'userId',
+    required: false, // Make pageNo optional
+    type: Number,
+  })
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  async deleteUser(@Query() { userId }: { userId: any }) {
+    return this.userService.deleteUser(userId);
+  }
+
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Post('/updateUserData')
