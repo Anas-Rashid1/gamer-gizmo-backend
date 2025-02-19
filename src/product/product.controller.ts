@@ -202,11 +202,11 @@ export class ProductsContoller {
   }
 
   @Delete('/deleteReviewById')
-  @ApiQuery({
-    name: 'user_id',
-    required: true, // Make category optional
-    type: String,
-  })
+  // @ApiQuery({
+  //   name: 'user_id',
+  //   required: true, // Make category optional
+  //   type: String,
+  // })
   @ApiQuery({
     name: 'review_id',
     required: true, // Make category optional

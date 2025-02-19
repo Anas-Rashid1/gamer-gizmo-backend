@@ -307,7 +307,7 @@ export class ProductService {
           product_id: parseInt(pid.product_id),
         },
       });
-      let rev = await this.prismaService.store_product_review.findMany({
+      let rev = await this.prismaService.product_reviews.findMany({
         where: {
           product_id: parseInt(pid.product_id),
         },
@@ -328,7 +328,7 @@ export class ProductService {
           },
         });
       }
-      await this.prismaService.store_product_review.deleteMany({
+      await this.prismaService.product_reviews.deleteMany({
         where: {
           product_id: parseInt(pid.product_id),
         },
@@ -374,9 +374,21 @@ export class ProductService {
             },
           },
 
-          store_product_review: {
+          product_reviews: {
             include: {
-              store_product_review_images: true, // Correct nested relation
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
+              },
+              // store_product_review_images: true, // Correct nested relation
             },
           },
           gaming_console: true,
@@ -556,10 +568,10 @@ export class ProductService {
       if (!pro) {
         throw new BadRequestException('No Product Found');
       }
-      if (!pro.is_verified_by_admin) {
-        throw new BadRequestException('No Cant Review this product');
-      }
-      let rev = await this.prismaService.store_product_review.create({
+      // if (!pro.is_verified_by_admin) {
+      //   throw new BadRequestException('No Cant Review this product');
+      // }
+      let rev = await this.prismaService.product_reviews.create({
         data: {
           ratings: parseInt(productbody.ratings),
           user_id: parseInt(productbody.user_id),
@@ -590,37 +602,37 @@ export class ProductService {
 
   async DeleteReviewById(data: any) {
     try {
-      let rev = await this.prismaService.store_product_review.findUnique({
+      let rev = await this.prismaService.product_reviews.findUnique({
         where: {
           id: parseInt(data.review_id),
         },
       });
       if (!rev) {
-        throw new BadRequestException('No Product Found');
+        throw new BadRequestException('No Review Found');
       }
-      if (rev.user_id != data.user_id) {
-        throw new BadRequestException('Not Allowed');
-      }
-      let images =
-        await this.prismaService.store_product_review_images.findMany({
-          where: {
-            review_id: parseInt(data.review_id),
-          },
-        });
-      try {
-        for (let i = 0; images.length > i; i++) {
-          await fs.unlink(images[i].image_url);
-        }
-      } catch (err) {
-        console.log('erre');
-      }
-      await this.prismaService.store_product_review_images.deleteMany({
-        where: {
-          review_id: parseInt(data.review_id),
-        },
-      });
+      // if (rev.user_id != data.user_id) {
+      //   throw new BadRequestException('Not Allowed');
+      // }
+      // let images =
+      //   await this.prismaService.store_product_review_images.findMany({
+      //     where: {
+      //       review_id: parseInt(data.review_id),
+      //     },
+      //   });
+      // try {
+      //   for (let i = 0; images.length > i; i++) {
+      //     await fs.unlink(images[i].image_url);
+      //   }
+      // } catch (err) {
+      //   console.log('erre');
+      // }
+      // await this.prismaService.store_product_review_images.deleteMany({
+      //   where: {
+      //     review_id: parseInt(data.review_id),
+      //   },
+      // });
 
-      await this.prismaService.store_product_review.delete({
+      await this.prismaService.product_reviews.delete({
         where: {
           id: parseInt(data.review_id),
         },
