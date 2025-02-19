@@ -182,6 +182,7 @@ export class ProductService {
           gaming_console: true,
           laptops: true,
           product_images: true,
+          users: true,
           location_product_locationTolocation: true,
         },
         where: WhereParameters,
@@ -198,7 +199,12 @@ export class ProductService {
       let dataToSend = [];
       dataToSend = await Promise.all(
         data.map(async (e) => ({
+          created_at: e.created_at,
+          // @ts-expect-error jkh jhk
+          created_by: e.users.first_name + ' ' + e.users.last_name,
           name: e.name,
+          // @ts-expect-error jkh jhk
+          category: e.categories.name,
           id: e.id,
           description: e.description,
           price: e.price,
