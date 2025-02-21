@@ -541,6 +541,7 @@ export class ProductService {
           },
         });
       } else if (parseInt(productbody.category_id) == 3) {
+        console.log(productbody, 'productbody');
         await this.prismaService.components.create({
           data: {
             product_id: prod.id,
