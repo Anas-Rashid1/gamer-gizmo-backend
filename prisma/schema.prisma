@@ -305,6 +305,7 @@ model product {
   location                               Int?
   condition                              Int?
   other_brand_name                       String?              @db.VarChar
+  is_store_product                       Boolean?             @default(false)
   cart_items                             cart_items[]
   components                             components[]
   favourite_products                     favourite_products[]

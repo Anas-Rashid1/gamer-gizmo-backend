@@ -38,10 +38,14 @@ export class ProductService {
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
+      WhereParameters.is_store_product = false;
       WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
+      }
+      if (queryData.is_store_product) {
+        WhereParameters.is_store_product = Boolean(queryData.is_store_product);
       }
       if (queryData.top_rated) {
         WhereParameters.top_rated = Boolean(queryData.top_rated);
@@ -464,6 +468,7 @@ export class ProductService {
           description: productbody.description,
           price: productbody.price,
           stock: productbody.stock,
+          is_store_product: Boolean(productbody.is_store_product),
           brand_id: productbody?.brand_id
             ? parseInt(productbody?.brand_id)
             : null,
