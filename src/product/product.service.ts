@@ -461,31 +461,39 @@ export class ProductService {
   }
   async CreateProduct(productbody: CreateProductDto, images) {
     try {
-      let prod = await this.prismaService.product.create({
-        data: {
-          name: productbody.name,
-          user_id: parseInt(productbody.user_id),
-          description: productbody.description,
-          price: productbody.price,
-          stock: productbody.stock,
-          is_store_product: Boolean(productbody.is_store_product),
-          brand_id: productbody?.brand_id
-            ? parseInt(productbody?.brand_id)
+      let data = {
+        name: productbody.name,
+        description: productbody.description,
+        price: productbody.price,
+        stock: productbody.stock,
+        is_store_product: Boolean(productbody.is_store_product),
+        brand_id: productbody?.brand_id
+          ? parseInt(productbody?.brand_id)
+          : null,
+        model_id:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? parseInt(productbody.model_id)
             : null,
-          model_id:
-            productbody.model_id && parseInt(productbody.model_id) != 0
-              ? parseInt(productbody.model_id)
-              : null,
-          category_id: parseInt(productbody.category_id),
-          condition: parseInt(productbody.condition),
-          is_published: Boolean(productbody.is_published),
-          is_verified_by_admin: false,
-          verified_by: null,
-          show_on_home: false,
-          top_rated: false,
-          location: parseInt(productbody.location),
-          other_brand_name: productbody.otherBrandName,
-        },
+        category_id: parseInt(productbody.category_id),
+        condition: parseInt(productbody.condition),
+        is_published: Boolean(productbody.is_published),
+        is_verified_by_admin: false,
+        verified_by: null,
+        show_on_home: false,
+        top_rated: false,
+        location: parseInt(productbody.location),
+        other_brand_name: productbody.otherBrandName,
+      };
+      if (Boolean(productbody.is_store_product) == true) {
+        // @ts-expect-error jh jkh
+        data.admin_id = parseInt(productbody.user_id);
+      } else {
+        // @ts-expect-error jh jkh
+        data.user_id = parseInt(productbody.user_id);
+      }
+      console.log(data, 'data');
+      let prod = await this.prismaService.product.create({
+        data: data,
       });
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
@@ -550,10 +558,12 @@ export class ProductService {
           },
         });
       }
-      await this.prismaService.users.update({
-        data: { is_seller: true },
-        where: { id: parseInt(productbody.user_id) },
-      });
+      if (Boolean(productbody.is_store_product) == false) {
+        await this.prismaService.users.update({
+          data: { is_seller: true },
+          where: { id: parseInt(productbody.user_id) },
+        });
+      }
       return { message: 'success' };
     } catch (e) {
       console.log(e);
