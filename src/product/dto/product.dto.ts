@@ -32,9 +32,8 @@ export class CreateProductDto {
   @IsString()
   stock: string;
 
-  @ApiProperty({ default: 'false' })
+  @ApiProperty({ required: false, default: 'false' })
   @IsOptional()
-  @IsString()
   is_store_product: string;
 
   @ApiProperty({ required: true })
