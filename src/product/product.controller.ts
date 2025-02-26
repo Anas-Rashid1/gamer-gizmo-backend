@@ -95,6 +95,11 @@ export class ProductsContoller {
     required: false, // Make category optional
     type: String,
   })
+  @ApiQuery({
+    name: 'is_store_product',
+    required: false, // Make category optional
+    type: String,
+  })
   @Get('/getAll')
   async getAllProducts(@Query() query: any, @Req() user: any) {
     return this.productService.GetAllProducts(query, user);
@@ -202,11 +207,11 @@ export class ProductsContoller {
   }
 
   @Delete('/deleteReviewById')
-  @ApiQuery({
-    name: 'user_id',
-    required: true, // Make category optional
-    type: String,
-  })
+  // @ApiQuery({
+  //   name: 'user_id',
+  //   required: true, // Make category optional
+  //   type: String,
+  // })
   @ApiQuery({
     name: 'review_id',
     required: true, // Make category optional

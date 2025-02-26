@@ -38,10 +38,14 @@ export class ProductService {
       const limit = 10;
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
+      WhereParameters.is_store_product = false;
       WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
+      }
+      if (queryData.is_store_product) {
+        WhereParameters.is_store_product = Boolean(queryData.is_store_product);
       }
       if (queryData.top_rated) {
         WhereParameters.top_rated = Boolean(queryData.top_rated);
@@ -182,6 +186,7 @@ export class ProductService {
           gaming_console: true,
           laptops: true,
           product_images: true,
+          users: true,
           location_product_locationTolocation: true,
         },
         where: WhereParameters,
@@ -198,7 +203,12 @@ export class ProductService {
       let dataToSend = [];
       dataToSend = await Promise.all(
         data.map(async (e) => ({
+          created_at: e.created_at,
+          // @ts-expect-error jkh jhk
+          created_by: e.users.first_name + ' ' + e.users.last_name,
           name: e.name,
+          // @ts-expect-error jkh jhk
+          category: e.categories.name,
           id: e.id,
           description: e.description,
           price: e.price,
@@ -301,7 +311,7 @@ export class ProductService {
           product_id: parseInt(pid.product_id),
         },
       });
-      let rev = await this.prismaService.store_product_review.findMany({
+      let rev = await this.prismaService.product_reviews.findMany({
         where: {
           product_id: parseInt(pid.product_id),
         },
@@ -322,7 +332,7 @@ export class ProductService {
           },
         });
       }
-      await this.prismaService.store_product_review.deleteMany({
+      await this.prismaService.product_reviews.deleteMany({
         where: {
           product_id: parseInt(pid.product_id),
         },
@@ -368,9 +378,21 @@ export class ProductService {
             },
           },
 
-          store_product_review: {
+          product_reviews: {
             include: {
-              store_product_review_images: true, // Correct nested relation
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
+              },
+              // store_product_review_images: true, // Correct nested relation
             },
           },
           gaming_console: true,
@@ -439,30 +461,39 @@ export class ProductService {
   }
   async CreateProduct(productbody: CreateProductDto, images) {
     try {
-      let prod = await this.prismaService.product.create({
-        data: {
-          name: productbody.name,
-          user_id: parseInt(productbody.user_id),
-          description: productbody.description,
-          price: productbody.price,
-          stock: productbody.stock,
-          brand_id: productbody?.brand_id
-            ? parseInt(productbody?.brand_id)
+      let data = {
+        name: productbody.name,
+        description: productbody.description,
+        price: productbody.price,
+        stock: productbody.stock,
+        is_store_product: Boolean(productbody.is_store_product),
+        brand_id: productbody?.brand_id
+          ? parseInt(productbody?.brand_id)
+          : null,
+        model_id:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? parseInt(productbody.model_id)
             : null,
-          model_id:
-            productbody.model_id && parseInt(productbody.model_id) != 0
-              ? parseInt(productbody.model_id)
-              : null,
-          category_id: parseInt(productbody.category_id),
-          condition: parseInt(productbody.condition),
-          is_published: Boolean(productbody.is_published),
-          is_verified_by_admin: false,
-          verified_by: null,
-          show_on_home: false,
-          top_rated: false,
-          location: parseInt(productbody.location),
-          other_brand_name: productbody.otherBrandName,
-        },
+        category_id: parseInt(productbody.category_id),
+        condition: parseInt(productbody.condition),
+        is_published: Boolean(productbody.is_published),
+        is_verified_by_admin: false,
+        verified_by: null,
+        show_on_home: false,
+        top_rated: false,
+        location: parseInt(productbody.location),
+        other_brand_name: productbody.otherBrandName,
+      };
+      if (Boolean(productbody.is_store_product) == true) {
+        // @ts-expect-error jh jkh
+        data.admin_id = parseInt(productbody.user_id);
+      } else {
+        // @ts-expect-error jh jkh
+        data.user_id = parseInt(productbody.user_id);
+      }
+      console.log(data, 'data');
+      let prod = await this.prismaService.product.create({
+        data: data,
       });
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
@@ -518,6 +549,7 @@ export class ProductService {
           },
         });
       } else if (parseInt(productbody.category_id) == 3) {
+        console.log(productbody, 'productbody');
         await this.prismaService.components.create({
           data: {
             product_id: prod.id,
@@ -526,10 +558,12 @@ export class ProductService {
           },
         });
       }
-      await this.prismaService.users.update({
-        data: { is_seller: true },
-        where: { id: parseInt(productbody.user_id) },
-      });
+      if (Boolean(productbody.is_store_product) == false) {
+        await this.prismaService.users.update({
+          data: { is_seller: true },
+          where: { id: parseInt(productbody.user_id) },
+        });
+      }
       return { message: 'success' };
     } catch (e) {
       console.log(e);
@@ -550,10 +584,10 @@ export class ProductService {
       if (!pro) {
         throw new BadRequestException('No Product Found');
       }
-      if (!pro.is_verified_by_admin) {
-        throw new BadRequestException('No Cant Review this product');
-      }
-      let rev = await this.prismaService.store_product_review.create({
+      // if (!pro.is_verified_by_admin) {
+      //   throw new BadRequestException('No Cant Review this product');
+      // }
+      let rev = await this.prismaService.product_reviews.create({
         data: {
           ratings: parseInt(productbody.ratings),
           user_id: parseInt(productbody.user_id),
@@ -584,37 +618,37 @@ export class ProductService {
 
   async DeleteReviewById(data: any) {
     try {
-      let rev = await this.prismaService.store_product_review.findUnique({
+      let rev = await this.prismaService.product_reviews.findUnique({
         where: {
           id: parseInt(data.review_id),
         },
       });
       if (!rev) {
-        throw new BadRequestException('No Product Found');
+        throw new BadRequestException('No Review Found');
       }
-      if (rev.user_id != data.user_id) {
-        throw new BadRequestException('Not Allowed');
-      }
-      let images =
-        await this.prismaService.store_product_review_images.findMany({
-          where: {
-            review_id: parseInt(data.review_id),
-          },
-        });
-      try {
-        for (let i = 0; images.length > i; i++) {
-          await fs.unlink(images[i].image_url);
-        }
-      } catch (err) {
-        console.log('erre');
-      }
-      await this.prismaService.store_product_review_images.deleteMany({
-        where: {
-          review_id: parseInt(data.review_id),
-        },
-      });
+      // if (rev.user_id != data.user_id) {
+      //   throw new BadRequestException('Not Allowed');
+      // }
+      // let images =
+      //   await this.prismaService.store_product_review_images.findMany({
+      //     where: {
+      //       review_id: parseInt(data.review_id),
+      //     },
+      //   });
+      // try {
+      //   for (let i = 0; images.length > i; i++) {
+      //     await fs.unlink(images[i].image_url);
+      //   }
+      // } catch (err) {
+      //   console.log('erre');
+      // }
+      // await this.prismaService.store_product_review_images.deleteMany({
+      //   where: {
+      //     review_id: parseInt(data.review_id),
+      //   },
+      // });
 
-      await this.prismaService.store_product_review.delete({
+      await this.prismaService.product_reviews.delete({
         where: {
           id: parseInt(data.review_id),
         },

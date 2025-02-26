@@ -32,6 +32,10 @@ export class CreateProductDto {
   @IsString()
   stock: string;
 
+  @ApiProperty({ required: false, default: 'false' })
+  @IsOptional()
+  is_store_product: string;
+
   @ApiProperty({ required: true })
   @IsOptional()
   brand_id?: string;

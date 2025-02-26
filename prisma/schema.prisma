@@ -16,6 +16,7 @@ model admin {
   type                                     String?      @default("child") @db.VarChar
   blog_posts_blog_posts_admin_idToadmin    blog_posts[] @relation("blog_posts_admin_idToadmin")
   blog_posts_blog_posts_verified_byToadmin blog_posts[] @relation("blog_posts_verified_byToadmin")
+  product_product_admin_idToadmin          product[]    @relation("product_admin_idToadmin")
   product                                  product[]
 }
 
@@ -287,24 +288,26 @@ model processors {
 }
 
 model product {
-  id                                     Int                    @id @default(autoincrement())
-  name                                   String                 @db.VarChar
-  user_id                                Int
-  description                            String                 @db.VarChar
-  price                                  String                 @db.VarChar
-  stock                                  String                 @db.VarChar
+  id                                     Int                  @id @default(autoincrement())
+  name                                   String               @db.VarChar
+  user_id                                Int?
+  description                            String               @db.VarChar
+  price                                  String               @db.VarChar
+  stock                                  String               @db.VarChar
   brand_id                               Int?
   model_id                               Int?
   category_id                            Int
-  is_published                           Boolean?               @default(false)
-  is_verified_by_admin                   Boolean?               @default(false)
+  is_published                           Boolean?             @default(false)
+  is_verified_by_admin                   Boolean?             @default(false)
   verified_by                            Int?
-  created_at                             DateTime?              @default(now()) @db.Timestamp(6)
-  show_on_home                           Boolean?               @default(false)
-  top_rated                              Boolean?               @default(false)
+  created_at                             DateTime?            @default(now()) @db.Timestamp(6)
+  show_on_home                           Boolean?             @default(false)
+  top_rated                              Boolean?             @default(false)
   location                               Int?
   condition                              Int?
-  other_brand_name                       String?                @db.VarChar
+  other_brand_name                       String?              @db.VarChar
+  is_store_product                       Boolean?             @default(false)
+  admin_id                               Int?
   cart_items                             cart_items[]
   components                             components[]
   favourite_products                     favourite_products[]
@@ -312,15 +315,16 @@ model product {
   laptops                                laptops[]
   order_items                            order_items[]
   personal_computers                     personal_computers[]
-  condition_product_conditionTocondition condition?             @relation("product_conditionTocondition", fields: [condition], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "condition_fk")
-  location_product_locationTolocation    location?              @relation("product_locationTolocation", fields: [location], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "location_fkry")
-  brands                                 brands?                @relation(fields: [brand_id], references: [id], onUpdate: NoAction)
-  categories                             categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  models                                 models?                @relation(fields: [model_id], references: [id], onUpdate: NoAction)
-  users                                  users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  admin                                  admin?                 @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  condition_product_conditionTocondition condition?           @relation("product_conditionTocondition", fields: [condition], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "condition_fk")
+  location_product_locationTolocation    location?            @relation("product_locationTolocation", fields: [location], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "location_fkry")
+  admin_product_admin_idToadmin          admin?               @relation("product_admin_idToadmin", fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  brands                                 brands?              @relation(fields: [brand_id], references: [id], onUpdate: NoAction)
+  categories                             categories           @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  models                                 models?              @relation(fields: [model_id], references: [id], onUpdate: NoAction)
+  users                                  users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  admin                                  admin?               @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_images                         product_images[]
-  store_product_review                   store_product_review[]
+  product_reviews                        product_reviews[]
 }
 
 model product_images {
@@ -355,24 +359,12 @@ model storage_type {
   personal_computers_personal_computers_storage_typeTostorage_type personal_computers[] @relation("personal_computers_storage_typeTostorage_type")
 }
 
-model store_product_review {
-  id                          Int                           @id(map: "review_pkey") @default(autoincrement())
-  user_id                     Int
-  product_id                  Int
-  comments                    String?                       @db.VarChar
-  ratings                     Int
-  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
-  product                     product                       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_id_fkey")
-  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_user_id_fkey")
-  store_product_review_images store_product_review_images[]
-}
-
 model store_product_review_images {
-  id                   Int                  @id(map: "review_images_pkey") @default(autoincrement())
+  id                   Int             @id(map: "review_images_pkey") @default(autoincrement())
   review_id            Int
   image_url            String
-  created_at           DateTime?            @default(now()) @db.Date
-  store_product_review store_product_review @relation(fields: [review_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_id_fk")
+  created_at           DateTime?       @default(now()) @db.Date
+  store_product_review product_reviews @relation(fields: [review_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_id_fk")
 }
 
 model tokens {
@@ -435,8 +427,20 @@ model users {
   messages                                     messages[]
   orders                                       orders[]
   product                                      product[]
-  store_product_review                         store_product_review[]
+  product_reviews                              product_reviews[]
   tokens                                       tokens[]
   user_reviews_user_reviews_reviewee_idTousers user_reviews[]            @relation("user_reviews_reviewee_idTousers")
   user_reviews_user_reviews_reviewer_idTousers user_reviews[]            @relation("user_reviews_reviewer_idTousers")
+}
+
+model product_reviews {
+  id                          Int                           @id(map: "review_pkey") @default(autoincrement())
+  user_id                     Int
+  product_id                  Int
+  comments                    String?                       @db.VarChar
+  ratings                     Int
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  product                     product                       @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_product_id_fkey")
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_user_id_fkey")
+  store_product_review_images store_product_review_images[]
 }
