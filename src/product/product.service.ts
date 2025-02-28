@@ -4,7 +4,11 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  InverProductStatusDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import * as fs from 'fs/promises';
 import { CreateReviewDto } from './dto/review.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -456,6 +460,138 @@ export class ProductService {
       return { data: data, message: 'success' };
     } catch (e) {
       console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async UpdateProduct(productbody: UpdateProductDto, images) {
+    try {
+      let pro = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(productbody.prod_id),
+        },
+      });
+      if (!pro) {
+        throw new BadRequestException('No Product Found');
+      }
+
+      let data = {
+        name: productbody.name,
+        description: productbody.description,
+        price: productbody.price,
+        stock: productbody.stock,
+        is_store_product: Boolean(productbody.is_store_product),
+        brand_id: productbody?.brand_id
+          ? parseInt(productbody?.brand_id)
+          : null,
+        model_id:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? parseInt(productbody.model_id)
+            : null,
+        category_id: parseInt(productbody.category_id),
+        condition: parseInt(productbody.condition),
+        is_published: Boolean(productbody.is_published),
+        is_verified_by_admin: false,
+        verified_by: null,
+        show_on_home: false,
+        top_rated: false,
+        location: parseInt(productbody.location),
+        other_brand_name: productbody.otherBrandName,
+      };
+      let prod = await this.prismaService.product.update({
+        where: {
+          id: parseInt(productbody.prod_id),
+        },
+        data: data,
+      });
+      let imagesToDelete = await this.prismaService.product_images.findMany({
+        where: {
+          product_id: parseInt(productbody.prod_id),
+        },
+      });
+      try {
+        for (let i = 0; imagesToDelete.length > i; i++) {
+          await fs.unlink(imagesToDelete[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
+      }
+      for (let i = 0; images.length > i; i++) {
+        await this.prismaService.product_images.create({
+          data: {
+            product_id: parseInt(productbody.prod_id),
+            image_url: images[i].path,
+            created_at: new Date(),
+          },
+        });
+      }
+      if (parseInt(productbody.category_id) == 1) {
+        await this.prismaService.laptops.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            ram: parseInt(productbody.ram),
+            processor: parseInt(productbody.processor),
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
+            graphics: productbody.graphics,
+            ports: productbody.ports,
+            battery_life: productbody.battery_life,
+            screen_size: productbody.screen_size,
+            weight: productbody.weight,
+            screen_resolution: productbody.screen_resolution,
+            color: productbody.color,
+            processor_variant: parseInt(productbody.processorVariant),
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 4) {
+        await this.prismaService.gaming_console.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            accessories: productbody.accessories,
+            warranty_status: productbody.warranty_status,
+            color: productbody.color,
+            battery_life: productbody.battery_life,
+            connectivity: productbody.connectivity,
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 2) {
+        await this.prismaService.personal_computers.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            ram: parseInt(productbody.ram),
+            processor: parseInt(productbody.processor),
+            processor_variant: parseInt(productbody.processorVariant),
+            graphics: productbody.graphics,
+            ports: productbody.ports,
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 3) {
+        await this.prismaService.components.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            component_type: parseInt(productbody.component_type),
+            text: productbody.text,
+          },
+        });
+      }
+
+      return { message: 'Successfully Updated' };
+    } catch (e) {
+      console.log(e);
+      for (let i = 0; images.length > i; i++) {
+        await fs.unlink(images[i].path);
+      }
       throw new InternalServerErrorException(e);
     }
   }

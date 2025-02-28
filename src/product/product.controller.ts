@@ -12,7 +12,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  InverProductStatusDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -179,6 +183,32 @@ export class ProductsContoller {
     @UploadedFiles() images: any,
   ) {
     return this.productService.CreateProduct(productbody, images);
+  }
+  @Post('/updateProduct')
+  @ApiConsumes('multipart/form-data')
+  // @ApiBearerAuth()
+  // @UseGuards(AuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, './public/productImages');
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname); // Extract the file extension
+          const fileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
+          cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  async UpdateProduct(
+    @Body() productbody: UpdateProductDto,
+    @UploadedFiles() images: any,
+  ) {
+    return this.productService.UpdateProduct(productbody, images);
   }
 
   @UseInterceptors(
