@@ -40,6 +40,7 @@ export class ProductService {
         }
       }
       const limit = 10;
+
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
       WhereParameters.is_store_product = false;
@@ -48,7 +49,7 @@ export class ProductService {
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
       }
-      if (queryData.is_store_product) {
+      if (queryData.is_store_product && queryData.is_store_product == 'true') {
         WhereParameters.is_store_product = Boolean(queryData.is_store_product);
       }
       if (queryData.top_rated) {
@@ -174,25 +175,28 @@ export class ProductService {
           queryData.is_verified_by_admin,
         );
       }
+      let selectFilters = {
+        brands: true,
+        models: true,
+        categories: true,
+        components: {
+          include: {
+            component_type_components_component_typeTocomponent_type: true, // Correct relation
+          },
+        },
+        personal_computers: true,
+        gaming_console: true,
+        laptops: true,
+        admin: true,
+        admin_product_admin_idToadmin: true,
+        users: true,
+        product_images: true,
+        location_product_locationTolocation: true,
+      };
 
       // Pagination setup
       const queryOptions: any = {
-        include: {
-          brands: true,
-          models: true,
-          categories: true,
-          components: {
-            include: {
-              component_type_components_component_typeTocomponent_type: true, // Correct relation
-            },
-          },
-          personal_computers: true,
-          gaming_console: true,
-          laptops: true,
-          product_images: true,
-          users: true,
-          location_product_locationTolocation: true,
-        },
+        include: selectFilters,
         where: WhereParameters,
       };
       // Handle pagination
@@ -208,8 +212,10 @@ export class ProductService {
       dataToSend = await Promise.all(
         data.map(async (e) => ({
           created_at: e.created_at,
-          // @ts-expect-error jkh jhk
-          created_by: e.users.first_name + ' ' + e.users.last_name,
+          created_by: e.is_store_product
+            ? 'GamerGizmo Store'
+            : // @ts-expect-error jkh jhk
+              e.users.first_name + ' ' + e.users.last_name,
           name: e.name,
           // @ts-expect-error jkh jhk
           category: e.categories.name,
