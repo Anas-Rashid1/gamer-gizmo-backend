@@ -22,6 +22,8 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ProductService } from './product.service';
 import { CreateReviewDto } from './dto/review.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Products')
 @Controller('/products')
@@ -152,6 +154,18 @@ export class ProductsContoller {
   })
   async DeleteProductById(@Query() id: string) {
     return this.productService.DeleteProductById(id);
+  }
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  @Delete('/deleteProductByIdFromAdmin')
+  @ApiQuery({
+    name: 'product_id',
+    required: true,
+    type: String,
+  })
+  async DeleteProductByIdFromAdmin(@Query() id: string) {
+    console.log(id);
+    return this.productService.DeleteProductByIdFromAdmin(id);
   }
 
   @Put('/invertStatus')

@@ -402,7 +402,9 @@ export class ProductService {
                   gender: true,
                 },
               },
-              // store_product_review_images: true, // Correct nested relation
+            },
+            orderBy: {
+              created_at: 'desc', // ✅ Orders latest reviews first
             },
           },
           gaming_console: true,
@@ -443,6 +445,7 @@ export class ProductService {
           product_images: true,
           location_product_locationTolocation: true,
         },
+
         where: {
           id: parseInt(pid.id),
         },
@@ -884,6 +887,89 @@ export class ProductService {
         'Failed to fetch products',
         error.message,
       );
+    }
+  }
+  async DeleteProductByIdFromAdmin(pid: any) {
+    try {
+      console.log(pid, 'pid');
+      let data = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      if (!data) {
+        throw new BadRequestException('No Product Found');
+      }
+
+      let images = await this.prismaService.product_images.findMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
+      }
+      await this.prismaService.product_images.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.laptops.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.personal_computers.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.components.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      let rev = await this.prismaService.product_reviews.findMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      for (let i = 0; rev.length > i; i++) {
+        let rev_images =
+          await this.prismaService.store_product_review_images.findMany({
+            where: {
+              review_id: rev[i].id,
+            },
+          });
+        for (let i = 0; rev_images.length > i; i++) {
+          await fs.unlink(rev_images[i].image_url);
+        }
+        await this.prismaService.store_product_review_images.deleteMany({
+          where: {
+            review_id: rev[i].id,
+          },
+        });
+      }
+      await this.prismaService.product_reviews.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.product.delete({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      console.log(images, 'data');
+
+      return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
     }
   }
 }
