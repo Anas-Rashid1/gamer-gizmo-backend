@@ -46,6 +46,12 @@ export class ProductService {
       WhereParameters.is_store_product = false;
       WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
+      if (queryData.title) {
+        WhereParameters.name = {
+          contains: queryData.title,
+          mode: 'insensitive',
+        };
+      }
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
       }
@@ -967,6 +973,95 @@ export class ProductService {
       console.log(images, 'data');
 
       return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async SearchProductByTitle(title: string) {
+    try {
+      let data = await this.prismaService.product.findMany({
+        where: {
+          name: {
+            contains: title, // Searching for products with titles that contain the provided title
+            mode: 'insensitive', // Case-insensitive search
+          },
+        },
+        include: {
+          brands: true,
+          models: true,
+          categories: true,
+          condition_product_conditionTocondition: true,
+          components: {
+            include: {
+              component_type_components_component_typeTocomponent_type: true, // Correct nested relation
+            },
+          },
+          product_reviews: {
+            include: {
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
+              },
+            },
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
+          gaming_console: true,
+          users: {
+            select: {
+              username: true,
+              profile: true,
+              created_at: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              gender: true,
+            },
+          },
+          personal_computers: {
+            include: {
+              processors: true,
+              ram_personal_computers_ramToram: true,
+              storage_personal_computers_storageTostorage: true,
+              storage_type_personal_computers_storage_typeTostorage_type: true,
+              gpu_personal_computers_gpuTogpu: true,
+              processor_variant_personal_computers_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          laptops: {
+            include: {
+              ram_laptops_ramToram: true,
+              storage_laptops_storageTostorage: true,
+              storage_type_laptops_storage_typeTostorage_type: true,
+              gpu_laptops_gpuTogpu: true,
+              processors: true,
+              processor_variant_laptops_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          product_images: true,
+          location_product_locationTolocation: true,
+        },
+      });
+
+      if (data.length === 0) {
+        return { data: null, message: 'No products found' };
+      }
+
+      return { data: data, message: 'success' };
     } catch (e) {
       console.log(e);
       throw new InternalServerErrorException(e);

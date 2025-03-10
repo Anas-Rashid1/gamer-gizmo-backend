@@ -57,6 +57,11 @@ export class ProductsContoller {
     type: String,
   })
   @ApiQuery({
+    name: 'title',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
     name: 'stoarge',
     required: false, // Make category optional
     type: String,
