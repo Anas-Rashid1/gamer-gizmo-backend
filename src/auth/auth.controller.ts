@@ -46,8 +46,8 @@ export class AuthController {
   async logoutOtherAccounts(@Body() logoutDto: LogoutUserDto) {
     return this.authService.logoutOtherAccounts(logoutDto);
   }
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  // @ApiBearerAuth()
+  // @UseGuards(AuthGuard)
   @Post('logoutUser')
   async logoutUser(@Body() logoutDto: LogoutUserDto) {
     return this.authService.logoutUser(logoutDto);
