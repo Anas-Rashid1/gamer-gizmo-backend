@@ -23,6 +23,7 @@ import { GPUModule } from './gpu/gpu.module';
 import { ConditionModule } from './condition/condition.module';
 import { StorageModule } from './storage/storage.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BlogsModule } from './blogs/blogs.module';
     GPUModule,
     ConditionModule,
     StorageModule,
+    ChatModule,
     BlogsModule,
     ProcessorModule,
     RamModule,
