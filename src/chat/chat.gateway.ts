@@ -26,7 +26,20 @@ export class ChatGateway {
 
   @SubscribeMessage('fetchMessages')
   async fetchMessages(@ConnectedSocket() client: Socket) {
-    const messages = await this.chatService.getMessages();
+    const messages = await this.chatService.getMessages({ }); // Fetch latest 20 messages    
     client.emit('loadMessages', messages);
+  }
+
+
+  @SubscribeMessage('fetchMoreMessages')
+  async fetchMoreMessages(
+    @MessageBody() { lastMessageId }: { lastMessageId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log("called",lastMessageId)
+    const messages = await this.chatService.getMessages({
+      beforeId: lastMessageId,
+    });
+      client.emit('loadMoreMessages', messages);
   }
 }

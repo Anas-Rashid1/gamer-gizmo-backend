@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateMessageDto } from './dto/CreateMessageDto';
 
 @Injectable()
 export class ChatService {
@@ -34,9 +33,12 @@ export class ChatService {
     return res;
   }
 
-  async getMessages() {
+    async getMessages({  beforeId }: { beforeId?: number }) {
+
     let res = await this.prisma.community_messages.findMany({
-      orderBy: { created_at: 'asc' },
+      where: beforeId ? { id: { lt: beforeId } } : undefined,
+      orderBy: { created_at: 'desc' },
+      take: 10,
       include: {
         users: {
           select: {
@@ -46,7 +48,8 @@ export class ChatService {
         },
       },
     });
-    console.log(res);
+    res = res.reverse();
+    // console.log(res);
     return res;
   }
 }
