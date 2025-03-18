@@ -223,10 +223,7 @@ export class ProductsContoller {
       }),
     }),
   )
-  async UpdateProduct(
-    @Body() productbody: UpdateProductDto,
-    @UploadedFiles() images: any,
-  ) {
+  async UpdateProduct(@Body() productbody: any, @UploadedFiles() images: any) {
     return this.productService.UpdateProduct(productbody, images);
   }
 

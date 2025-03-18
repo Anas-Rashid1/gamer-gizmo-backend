@@ -478,7 +478,7 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
-  async UpdateProduct(productbody: UpdateProductDto, images) {
+  async UpdateProduct(productbody: any, images) {
     try {
       let pro = await this.prismaService.product.findUnique({
         where: {
@@ -548,19 +548,21 @@ export class ProductService {
             product_id: parseInt(productbody.prod_id),
           },
           data: {
-            ram: parseInt(productbody.ram),
-            processor: parseInt(productbody.processor),
-            storage: parseInt(productbody.storage),
-            storage_type: parseInt(productbody.storageType),
-            gpu: parseInt(productbody.gpu),
-            graphics: productbody.graphics,
-            ports: productbody.ports,
-            battery_life: productbody.battery_life,
-            screen_size: productbody.screen_size,
-            weight: productbody.weight,
-            screen_resolution: productbody.screen_resolution,
-            color: productbody.color,
-            processor_variant: parseInt(productbody.processorVariant),
+            ram: parseInt(productbody.laptops[0].ram),
+            processor: parseInt(productbody.laptops[0].processor),
+            storage: parseInt(productbody.laptops[0].storage),
+            storage_type: parseInt(productbody.laptops[0].storage_type),
+            gpu: parseInt(productbody.laptops[0].gpu),
+            graphics: productbody.laptops[0].graphics,
+            ports: productbody.laptops[0].ports,
+            battery_life: productbody.laptops[0].battery_life,
+            screen_size: productbody.laptops[0].screen_size,
+            weight: productbody.laptops[0].weight,
+            screen_resolution: productbody.laptops[0].screen_resolution,
+            color: productbody.laptops[0].color,
+            processor_variant: parseInt(
+              productbody.laptops[0].processor_variant,
+            ),
           },
         });
       } else if (parseInt(productbody.category_id) == 4) {
@@ -569,11 +571,11 @@ export class ProductService {
             product_id: parseInt(productbody.prod_id),
           },
           data: {
-            accessories: productbody.accessories,
-            warranty_status: productbody.warranty_status,
-            color: productbody.color,
-            battery_life: productbody.battery_life,
-            connectivity: productbody.connectivity,
+            accessories: productbody.gaming_console[0].accessories,
+            warranty_status: productbody.gaming_console[0].warranty_status,
+            color: productbody.gaming_console[0].color,
+            battery_life: productbody.gaming_console[0].battery_life,
+            connectivity: productbody.gaming_console[0].connectivity,
           },
         });
       } else if (parseInt(productbody.category_id) == 2) {
@@ -582,14 +584,18 @@ export class ProductService {
             product_id: parseInt(productbody.prod_id),
           },
           data: {
-            ram: parseInt(productbody.ram),
-            processor: parseInt(productbody.processor),
-            processor_variant: parseInt(productbody.processorVariant),
-            graphics: productbody.graphics,
-            ports: productbody.ports,
-            storage: parseInt(productbody.storage),
-            storage_type: parseInt(productbody.storageType),
-            gpu: parseInt(productbody.gpu),
+            ram: parseInt(productbody.personal_computers[0].ram),
+            processor: parseInt(productbody.personal_computers[0].processor),
+            processor_variant: parseInt(
+              productbody.personal_computers[0].processorVariant,
+            ),
+            graphics: productbody.personal_computers[0].graphics,
+            ports: productbody.personal_computers[0].ports,
+            storage: parseInt(productbody.personal_computers[0].storage),
+            storage_type: parseInt(
+              productbody.personal_computers[0].storageType,
+            ),
+            gpu: parseInt(productbody.personal_computers[0].gpu),
           },
         });
       } else if (parseInt(productbody.category_id) == 3) {
@@ -598,8 +604,8 @@ export class ProductService {
             product_id: parseInt(productbody.prod_id),
           },
           data: {
-            component_type: parseInt(productbody.component_type),
-            text: productbody.text,
+            component_type: parseInt(productbody.components[0].component_type),
+            text: productbody.components[0].text,
           },
         });
       }
