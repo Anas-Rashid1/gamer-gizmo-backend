@@ -518,27 +518,30 @@ export class ProductService {
         },
         data: data,
       });
-      let imagesToDelete = await this.prismaService.product_images.findMany({
-        where: {
-          product_id: parseInt(productbody.prod_id),
-        },
-      });
-      try {
-        for (let i = 0; imagesToDelete.length > i; i++) {
-          await fs.unlink(imagesToDelete[i].image_url);
-        }
-      } catch (err) {
-        console.log('some');
-      }
-      for (let i = 0; images.length > i; i++) {
-        await this.prismaService.product_images.create({
-          data: {
+      if (images && images.length > 0) {
+        let imagesToDelete = await this.prismaService.product_images.findMany({
+          where: {
             product_id: parseInt(productbody.prod_id),
-            image_url: images[i].path,
-            created_at: new Date(),
           },
         });
+        try {
+          for (let i = 0; imagesToDelete.length > i; i++) {
+            await fs.unlink(imagesToDelete[i].image_url);
+          }
+        } catch (err) {
+          console.log('some');
+        }
+        for (let i = 0; images.length > i; i++) {
+          await this.prismaService.product_images.create({
+            data: {
+              product_id: parseInt(productbody.prod_id),
+              image_url: images[i].path,
+              created_at: new Date(),
+            },
+          });
+        }
       }
+
       if (parseInt(productbody.category_id) == 1) {
         await this.prismaService.laptops.updateMany({
           where: {
