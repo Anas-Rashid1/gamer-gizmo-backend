@@ -9,6 +9,7 @@ import { GetBlogsDto } from './dto/getblogs.dto';
 import { DeleteBlogsDto } from './dto/deletebrands.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { UpdateBlogDto } from './dto/updateblogs.dto';
 
 @Injectable()
 export class BlogsService {
@@ -109,6 +110,51 @@ export class BlogsService {
         },
       });
       return { message: 'Successfully Created' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async updateBlog(data: UpdateBlogDto, image: any) {
+    try {
+      console.log(image, 'image');
+      const blogs = await this.prisma.blog_posts.findUnique({
+        where: {
+          id: parseInt(data.id),
+        },
+      });
+      if (!blogs) {
+        throw new BadRequestException('No Blog Found');
+      }
+      let dataToUpdate = {
+        updated_at: new Date(),
+      };
+      if (data.title) {
+        // @ts-expect-error jb jhg
+        dataToUpdate.title = data.title;
+      }
+      if (data.content) {
+        // @ts-expect-error jb jhg
+        dataToUpdate.content = data.content;
+      }
+      if (data.tags) {
+        // @ts-expect-error jb jhg
+        dataToUpdate.tags = data.tags;
+      }
+      if (image) {
+        if (blogs.images) {
+          await fs.unlink(blogs.images.slice(1));
+        }
+        // @ts-expect-error jb jhg
+        dataToUpdate.images = `/public/blog_images/${image.filename}`;
+      }
+      const blog = await this.prisma.blog_posts.update({
+        where: {
+          id: parseInt(data.id),
+        },
+        data: dataToUpdate,
+      });
+      return { message: 'Successfully Updated' };
     } catch (e) {
       console.log(e);
       throw new InternalServerErrorException(e);

@@ -12,12 +12,18 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  InverProductStatusDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ProductService } from './product.service';
 import { CreateReviewDto } from './dto/review.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
 
 @ApiTags('Products')
 @Controller('/products')
@@ -47,6 +53,11 @@ export class ProductsContoller {
   })
   @ApiQuery({
     name: 'ram',
+    required: false, // Make category optional
+    type: String,
+  })
+  @ApiQuery({
+    name: 'title',
     required: false, // Make category optional
     type: String,
   })
@@ -149,6 +160,18 @@ export class ProductsContoller {
   async DeleteProductById(@Query() id: string) {
     return this.productService.DeleteProductById(id);
   }
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  @Delete('/deleteProductByIdFromAdmin')
+  @ApiQuery({
+    name: 'product_id',
+    required: true,
+    type: String,
+  })
+  async DeleteProductByIdFromAdmin(@Query() id: string) {
+    console.log(id);
+    return this.productService.DeleteProductByIdFromAdmin(id);
+  }
 
   @Put('/invertStatus')
   async invertStatus(@Body() productbody: InverProductStatusDto) {
@@ -179,6 +202,32 @@ export class ProductsContoller {
     @UploadedFiles() images: any,
   ) {
     return this.productService.CreateProduct(productbody, images);
+  }
+  @Post('/updateProduct')
+  @ApiConsumes('multipart/form-data')
+  // @ApiBearerAuth()
+  // @UseGuards(AuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, './public/productImages');
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname); // Extract the file extension
+          const fileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
+          cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  async UpdateProduct(
+    @Body() productbody: UpdateProductDto,
+    @UploadedFiles() images: any,
+  ) {
+    return this.productService.UpdateProduct(productbody, images);
   }
 
   @UseInterceptors(

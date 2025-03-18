@@ -25,6 +25,7 @@ import { extname } from 'path';
 import { GetBlogsDto } from './dto/getblogs.dto';
 import { DeleteBlogsDto } from './dto/deletebrands.dto';
 import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
+import { UpdateBlogDto } from './dto/updateblogs.dto';
 
 @ApiTags('Blogs')
 @Controller('/blogs')
@@ -103,6 +104,55 @@ export class BlogsContoller {
   ) {
     return this.blogsService.createBlog(CreateCategoriesDto, images);
   }
+
+  @UseInterceptors(
+    FileInterceptor('images', {
+      storage: diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, './public/blog_images');
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname); // Extract the file extension
+          const fileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
+          cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Update a Blog',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'blog ID to associate',
+        },
+        title: { type: 'string', description: 'Blog title' },
+        content: { type: 'string', description: 'Blog Content' },
+        tags: { type: 'string', description: 'Blog tags' },
+        images: {
+          type: 'string',
+          format: 'binary', // Mark this field as a binary file for Swagger
+          description: 'blog image file (image)',
+        },
+      },
+    },
+  })
+  @Post('/update')
+  async updateBlog(
+    @Body() updateBlog: UpdateBlogDto,
+    @UploadedFile() images: Express.Multer.File,
+  ) {
+    return this.blogsService.updateBlog(updateBlog, images);
+  }
+
   @ApiBearerAuth()
   @UseGuards(AdminAuthGuard)
   @Delete('/delete')

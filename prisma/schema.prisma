@@ -8,15 +8,16 @@ datasource db {
 }
 
 model admin {
-  id                                       Int          @id @default(autoincrement())
-  email                                    String       @unique(map: "email") @db.VarChar
-  password                                 String       @db.VarChar
-  name                                     String       @db.VarChar
-  created_at                               DateTime?    @default(now()) @db.Timestamp(6)
-  type                                     String?      @default("child") @db.VarChar
-  blog_posts_blog_posts_admin_idToadmin    blog_posts[] @relation("blog_posts_admin_idToadmin")
-  blog_posts_blog_posts_verified_byToadmin blog_posts[] @relation("blog_posts_verified_byToadmin")
-  product_product_admin_idToadmin          product[]    @relation("product_admin_idToadmin")
+  id                                       Int                  @id @default(autoincrement())
+  email                                    String               @unique(map: "email") @db.VarChar
+  password                                 String               @db.VarChar
+  name                                     String               @db.VarChar
+  created_at                               DateTime?            @default(now()) @db.Timestamp(6)
+  type                                     String?              @default("child") @db.VarChar
+  blog_posts_blog_posts_admin_idToadmin    blog_posts[]         @relation("blog_posts_admin_idToadmin")
+  blog_posts_blog_posts_verified_byToadmin blog_posts[]         @relation("blog_posts_verified_byToadmin")
+  community_messages                       community_messages[]
+  product_product_admin_idToadmin          product[]            @relation("product_admin_idToadmin")
   product                                  product[]
 }
 
@@ -423,6 +424,7 @@ model users {
   chats_chats_user2_idTousers                  chats[]                   @relation("chats_user2_idTousers")
   community_chat_members                       community_chat_members[]
   community_chat_messages                      community_chat_messages[]
+  community_messages                           community_messages[]
   favourite_products                           favourite_products[]
   messages                                     messages[]
   orders                                       orders[]
@@ -443,4 +445,15 @@ model product_reviews {
   product                     product                       @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_product_id_fkey")
   users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_user_id_fkey")
   store_product_review_images store_product_review_images[]
+}
+
+model community_messages {
+  sender_id  Int?
+  content    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  is_admin   Boolean?  @default(false)
+  admin_id   Int?
+  id         Int       @id @default(autoincrement())
+  admin      admin?    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
+  users      users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
 }

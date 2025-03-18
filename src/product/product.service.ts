@@ -4,7 +4,11 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateProductDto, InverProductStatusDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  InverProductStatusDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import * as fs from 'fs/promises';
 import { CreateReviewDto } from './dto/review.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -36,15 +40,22 @@ export class ProductService {
         }
       }
       const limit = 10;
+
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
       WhereParameters.is_store_product = false;
       WhereParameters.is_published = true;
       // Standard filters for show_on_home, top_rated, etc.
+      if (queryData.title) {
+        WhereParameters.name = {
+          contains: queryData.title,
+          mode: 'insensitive',
+        };
+      }
       if (queryData.show_on_home) {
         WhereParameters.show_on_home = Boolean(queryData.show_on_home);
       }
-      if (queryData.is_store_product) {
+      if (queryData.is_store_product && queryData.is_store_product == 'true') {
         WhereParameters.is_store_product = Boolean(queryData.is_store_product);
       }
       if (queryData.top_rated) {
@@ -170,25 +181,28 @@ export class ProductService {
           queryData.is_verified_by_admin,
         );
       }
+      let selectFilters = {
+        brands: true,
+        models: true,
+        categories: true,
+        components: {
+          include: {
+            component_type_components_component_typeTocomponent_type: true, // Correct relation
+          },
+        },
+        personal_computers: true,
+        gaming_console: true,
+        laptops: true,
+        admin: true,
+        admin_product_admin_idToadmin: true,
+        users: true,
+        product_images: true,
+        location_product_locationTolocation: true,
+      };
 
       // Pagination setup
       const queryOptions: any = {
-        include: {
-          brands: true,
-          models: true,
-          categories: true,
-          components: {
-            include: {
-              component_type_components_component_typeTocomponent_type: true, // Correct relation
-            },
-          },
-          personal_computers: true,
-          gaming_console: true,
-          laptops: true,
-          product_images: true,
-          users: true,
-          location_product_locationTolocation: true,
-        },
+        include: selectFilters,
         where: WhereParameters,
       };
       // Handle pagination
@@ -204,8 +218,10 @@ export class ProductService {
       dataToSend = await Promise.all(
         data.map(async (e) => ({
           created_at: e.created_at,
-          // @ts-expect-error jkh jhk
-          created_by: e.users.first_name + ' ' + e.users.last_name,
+          created_by: e.is_store_product
+            ? 'GamerGizmo Store'
+            : // @ts-expect-error jkh jhk
+              e.users.first_name + ' ' + e.users.last_name,
           name: e.name,
           // @ts-expect-error jkh jhk
           category: e.categories.name,
@@ -392,7 +408,9 @@ export class ProductService {
                   gender: true,
                 },
               },
-              // store_product_review_images: true, // Correct nested relation
+            },
+            orderBy: {
+              created_at: 'desc', // ✅ Orders latest reviews first
             },
           },
           gaming_console: true,
@@ -433,6 +451,7 @@ export class ProductService {
           product_images: true,
           location_product_locationTolocation: true,
         },
+
         where: {
           id: parseInt(pid.id),
         },
@@ -456,6 +475,138 @@ export class ProductService {
       return { data: data, message: 'success' };
     } catch (e) {
       console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+  async UpdateProduct(productbody: UpdateProductDto, images) {
+    try {
+      let pro = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(productbody.prod_id),
+        },
+      });
+      if (!pro) {
+        throw new BadRequestException('No Product Found');
+      }
+
+      let data = {
+        name: productbody.name,
+        description: productbody.description,
+        price: productbody.price,
+        stock: productbody.stock,
+        is_store_product: Boolean(productbody.is_store_product),
+        brand_id: productbody?.brand_id
+          ? parseInt(productbody?.brand_id)
+          : null,
+        model_id:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? parseInt(productbody.model_id)
+            : null,
+        category_id: parseInt(productbody.category_id),
+        condition: parseInt(productbody.condition),
+        is_published: Boolean(productbody.is_published),
+        is_verified_by_admin: false,
+        verified_by: null,
+        show_on_home: false,
+        top_rated: false,
+        location: parseInt(productbody.location),
+        other_brand_name: productbody.otherBrandName,
+      };
+      let prod = await this.prismaService.product.update({
+        where: {
+          id: parseInt(productbody.prod_id),
+        },
+        data: data,
+      });
+      let imagesToDelete = await this.prismaService.product_images.findMany({
+        where: {
+          product_id: parseInt(productbody.prod_id),
+        },
+      });
+      try {
+        for (let i = 0; imagesToDelete.length > i; i++) {
+          await fs.unlink(imagesToDelete[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
+      }
+      for (let i = 0; images.length > i; i++) {
+        await this.prismaService.product_images.create({
+          data: {
+            product_id: parseInt(productbody.prod_id),
+            image_url: images[i].path,
+            created_at: new Date(),
+          },
+        });
+      }
+      if (parseInt(productbody.category_id) == 1) {
+        await this.prismaService.laptops.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            ram: parseInt(productbody.ram),
+            processor: parseInt(productbody.processor),
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
+            graphics: productbody.graphics,
+            ports: productbody.ports,
+            battery_life: productbody.battery_life,
+            screen_size: productbody.screen_size,
+            weight: productbody.weight,
+            screen_resolution: productbody.screen_resolution,
+            color: productbody.color,
+            processor_variant: parseInt(productbody.processorVariant),
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 4) {
+        await this.prismaService.gaming_console.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            accessories: productbody.accessories,
+            warranty_status: productbody.warranty_status,
+            color: productbody.color,
+            battery_life: productbody.battery_life,
+            connectivity: productbody.connectivity,
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 2) {
+        await this.prismaService.personal_computers.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            ram: parseInt(productbody.ram),
+            processor: parseInt(productbody.processor),
+            processor_variant: parseInt(productbody.processorVariant),
+            graphics: productbody.graphics,
+            ports: productbody.ports,
+            storage: parseInt(productbody.storage),
+            storage_type: parseInt(productbody.storageType),
+            gpu: parseInt(productbody.gpu),
+          },
+        });
+      } else if (parseInt(productbody.category_id) == 3) {
+        await this.prismaService.components.updateMany({
+          where: {
+            product_id: parseInt(productbody.prod_id),
+          },
+          data: {
+            component_type: parseInt(productbody.component_type),
+            text: productbody.text,
+          },
+        });
+      }
+
+      return { message: 'Successfully Updated' };
+    } catch (e) {
+      console.log(e);
+      for (let i = 0; images.length > i; i++) {
+        await fs.unlink(images[i].path);
+      }
       throw new InternalServerErrorException(e);
     }
   }
@@ -742,6 +893,178 @@ export class ProductService {
         'Failed to fetch products',
         error.message,
       );
+    }
+  }
+  async DeleteProductByIdFromAdmin(pid: any) {
+    try {
+      console.log(pid, 'pid');
+      let data = await this.prismaService.product.findUnique({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      if (!data) {
+        throw new BadRequestException('No Product Found');
+      }
+
+      let images = await this.prismaService.product_images.findMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      try {
+        for (let i = 0; images.length > i; i++) {
+          await fs.unlink(images[i].image_url);
+        }
+      } catch (err) {
+        console.log('some');
+      }
+      await this.prismaService.product_images.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.laptops.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.personal_computers.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.components.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      let rev = await this.prismaService.product_reviews.findMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      for (let i = 0; rev.length > i; i++) {
+        let rev_images =
+          await this.prismaService.store_product_review_images.findMany({
+            where: {
+              review_id: rev[i].id,
+            },
+          });
+        for (let i = 0; rev_images.length > i; i++) {
+          await fs.unlink(rev_images[i].image_url);
+        }
+        await this.prismaService.store_product_review_images.deleteMany({
+          where: {
+            review_id: rev[i].id,
+          },
+        });
+      }
+      await this.prismaService.product_reviews.deleteMany({
+        where: {
+          product_id: parseInt(pid.product_id),
+        },
+      });
+      await this.prismaService.product.delete({
+        where: {
+          id: parseInt(pid.product_id),
+        },
+      });
+      console.log(images, 'data');
+
+      return { data: data, message: 'successfully deleted' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async SearchProductByTitle(title: string) {
+    try {
+      let data = await this.prismaService.product.findMany({
+        where: {
+          name: {
+            contains: title, // Searching for products with titles that contain the provided title
+            mode: 'insensitive', // Case-insensitive search
+          },
+        },
+        include: {
+          brands: true,
+          models: true,
+          categories: true,
+          condition_product_conditionTocondition: true,
+          components: {
+            include: {
+              component_type_components_component_typeTocomponent_type: true, // Correct nested relation
+            },
+          },
+          product_reviews: {
+            include: {
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
+              },
+            },
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
+          gaming_console: true,
+          users: {
+            select: {
+              username: true,
+              profile: true,
+              created_at: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              gender: true,
+            },
+          },
+          personal_computers: {
+            include: {
+              processors: true,
+              ram_personal_computers_ramToram: true,
+              storage_personal_computers_storageTostorage: true,
+              storage_type_personal_computers_storage_typeTostorage_type: true,
+              gpu_personal_computers_gpuTogpu: true,
+              processor_variant_personal_computers_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          laptops: {
+            include: {
+              ram_laptops_ramToram: true,
+              storage_laptops_storageTostorage: true,
+              storage_type_laptops_storage_typeTostorage_type: true,
+              gpu_laptops_gpuTogpu: true,
+              processors: true,
+              processor_variant_laptops_processor_variantToprocessor_variant:
+                true,
+            },
+          },
+          product_images: true,
+          location_product_locationTolocation: true,
+        },
+      });
+
+      if (data.length === 0) {
+        return { data: null, message: 'No products found' };
+      }
+
+      return { data: data, message: 'success' };
+    } catch (e) {
+      console.log(e);
+      throw new InternalServerErrorException(e);
     }
   }
 }
