@@ -587,13 +587,13 @@ export class ProductService {
             ram: parseInt(productbody.personal_computers[0].ram),
             processor: parseInt(productbody.personal_computers[0].processor),
             processor_variant: parseInt(
-              productbody.personal_computers[0].processorVariant,
+              productbody.personal_computers[0].processor_variant,
             ),
             graphics: productbody.personal_computers[0].graphics,
             ports: productbody.personal_computers[0].ports,
             storage: parseInt(productbody.personal_computers[0].storage),
             storage_type: parseInt(
-              productbody.personal_computers[0].storageType,
+              productbody.personal_computers[0].storage_type,
             ),
             gpu: parseInt(productbody.personal_computers[0].gpu),
           },
