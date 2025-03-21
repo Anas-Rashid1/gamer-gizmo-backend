@@ -146,7 +146,7 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET_ADMIN'),
-      expiresIn: '7d',
+     
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
@@ -210,7 +210,7 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: '7d',
+     
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
