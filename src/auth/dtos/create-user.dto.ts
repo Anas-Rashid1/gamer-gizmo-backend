@@ -44,9 +44,6 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsNotEmpty({ message: 'Phone number is required' })
-  @Matches(/^\+?[1-9]\d{1,14}$/, {
-    message: 'Invalid phone number format. Must be in international format.',
-  })
   phone: string;
 
   @ApiProperty()
@@ -73,5 +70,4 @@ export class CreateAdminDto {
   @ApiProperty()
   @IsEmail({}, { message: 'Invalid email format' })
   email: string;
-
 }
