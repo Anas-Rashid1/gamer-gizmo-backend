@@ -24,6 +24,7 @@ import { ConditionModule } from './condition/condition.module';
 import { StorageModule } from './storage/storage.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { ChatModule } from './chat/chat.module';
+import { ThirdPartyAdsModule } from './third-party-ads/third-party-ads.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ChatModule } from './chat/chat.module';
     FavouriteModule,
     LocationModule,
     CartModule,
+    ThirdPartyAdsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

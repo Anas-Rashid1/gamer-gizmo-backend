@@ -651,10 +651,12 @@ export class ProductService {
         // @ts-expect-error jh jkh
         data.user_id = parseInt(productbody.user_id);
       }
-      console.log(data, 'data');
+      // console.log(data, 'data');
       let prod = await this.prismaService.product.create({
         data: data,
       });
+      console.log(prod, 'data kkkkk');
+
       for (let i = 0; images.length > i; i++) {
         await this.prismaService.product_images.create({
           data: {
@@ -714,6 +716,10 @@ export class ProductService {
           data: {
             product_id: prod.id,
             component_type: parseInt(productbody.component_type),
+            // component_type:
+            //   productbody.component_type && productbody.component_type !== ''
+            //     ? parseInt(productbody.component_type)
+            //     : null,
             text: productbody.text,
           },
         });
