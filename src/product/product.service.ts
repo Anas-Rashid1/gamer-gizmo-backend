@@ -627,9 +627,14 @@ export class ProductService {
         price: productbody.price,
         stock: productbody.stock,
         is_store_product: Boolean(productbody.is_store_product),
-        brand_id: productbody?.brand_id
-          ? parseInt(productbody?.brand_id)
-          : null,
+        // brand_id: productbody?.brand_id
+        //   ? parseInt(productbody?.brand_id)
+        //   : null,
+        brand_id:
+          productbody.brand_id && parseInt(productbody.brand_id) != 0
+            ? parseInt(productbody.brand_id)
+            : null,
+
         model_id:
           productbody.model_id && parseInt(productbody.model_id) != 0
             ? parseInt(productbody.model_id)

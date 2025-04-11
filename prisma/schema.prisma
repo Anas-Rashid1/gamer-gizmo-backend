@@ -47,7 +47,8 @@ model blog_posts {
 }
 
 model brands {
-  id          Int        @id @default(autoincrement())
+id Int @id @default(autoincrement())
+
   category_id Int
   name        String     @db.VarChar
   logo        String?    @db.VarChar
