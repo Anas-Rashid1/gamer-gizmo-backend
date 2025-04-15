@@ -70,10 +70,19 @@ export class ProductService {
       if (queryData.brand_id) {
         WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
       }
-      if (queryData.condition) {
-        WhereParameters.condition = parseInt(queryData.condition, 10);
-      }
+      // if (queryData.condition) {
+      //   WhereParameters.condition = parseInt(queryData.condition, 10);
+      // }
 
+      if (queryData.condition) {
+        const conditionValue = parseInt(queryData.condition, 10);
+
+        if (conditionValue === 2) {
+          WhereParameters.condition = { in: [2, 3, 4] };
+        } else {
+          WhereParameters.condition = conditionValue;
+        }
+      }
       // Combine processor filter for both laptops and personal_computers with AND
       if (queryData.processor) {
         const processorValue = parseInt(queryData.processor, 10);
