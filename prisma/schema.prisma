@@ -327,6 +327,9 @@ model product {
   admin                                  admin?               @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_images                         product_images[]
   product_reviews                        product_reviews[]
+  is_featured       Boolean   @default(false)
+  feature_start_date DateTime?
+  feature_end_date   DateTime?
 }
 
 model product_images {
