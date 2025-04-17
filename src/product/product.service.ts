@@ -70,9 +70,7 @@ export class ProductService {
       if (queryData.brand_id) {
         WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
       }
-      // if (queryData.condition) {
-      //   WhereParameters.condition = parseInt(queryData.condition, 10);
-      // }
+     
 
       if (queryData.condition) {
         const conditionValue = parseInt(queryData.condition, 10);
@@ -208,6 +206,7 @@ export class ProductService {
         product_images: true,
         location_product_locationTolocation: true,
       };
+      const totalCount = await this.prismaService.product.count({ where: WhereParameters });
 
       // Pagination setup
       const queryOptions: any = {
@@ -231,19 +230,25 @@ export class ProductService {
       const expiredFeaturedProductIds: number[] = [];
       
       for (const e of data) {
-        if (e.is_featured && e.feature_start_date && e.feature_end_date) {
-          const start = new Date(e.feature_start_date);
-          const end = new Date(e.feature_end_date);
-          
-          // checking expired products having is_featured  = true
-          if (today < start || today > end) {
-            expiredFeaturedProductIds.push(e.id);//marking expired products to update them later
-            e.is_featured = false;
-            e.feature_start_date = null;
-            e.feature_end_date = null;
+        // if (e.is_featured && e.feature_start_date && e.feature_end_date) {
+        if(e.is_featured){
+          if (e.feature_start_date && e.feature_end_date) {
+            const start = new Date(e.feature_start_date);
+            const end = new Date(e.feature_end_date);
+            
+            // checking expired products having is_featured  = true
+            if (today < start || today > end) {
+              expiredFeaturedProductIds.push(e.id);//marking expired products to update them later
+              e.is_featured = false;
+              e.feature_start_date = null;
+              e.feature_end_date = null;
+            }
           }
-        }
-      
+          else{
+            expiredFeaturedProductIds.push(e.id);
+            e.is_featured = false;
+          }
+      }
         const productInfo = {
           is_featured: e.is_featured,
           feature_start_date: e.feature_start_date,
@@ -280,7 +285,7 @@ export class ProductService {
         }
       }
       
-      // Now, updating the products whcih are marked expired above in the code
+      // updating the products whcih are marked expired above in the code
       if (expiredFeaturedProductIds.length > 0) {
         await this.prismaService.product.updateMany({
           where: {
@@ -296,7 +301,7 @@ export class ProductService {
       
       const finalData = [...featured, ...nonFeatured];
       
-      return { data: finalData, message: 'success' };
+      return { data: finalData, totalCount, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
       throw new InternalServerErrorException(
