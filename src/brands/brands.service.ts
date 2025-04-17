@@ -53,11 +53,13 @@ export class BrandsService {
         try {
           await fs.unlink(brands.logo.slice(1)); // Remove first character if needed
         } catch (unlinkError) {
-          console.warn(`Failed to delete logo file: ${brands.logo}`, unlinkError);
+          console.warn(
+            `Failed to delete logo file: ${brands.logo}`,
+            unlinkError,
+          );
           // Continue execution even if unlink fails
         }
       }
-      
 
       // Delete the brand from the database
       await this.prisma.brands.delete({
