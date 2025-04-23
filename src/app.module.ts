@@ -25,6 +25,7 @@ import { StorageModule } from './storage/storage.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { ChatModule } from './chat/chat.module';
 import { ThirdPartyAdsModule } from './third-party-ads/third-party-ads.module';
+import { AdsModule } from './ads/ads.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ThirdPartyAdsModule } from './third-party-ads/third-party-ads.module';
     LocationModule,
     CartModule,
     ThirdPartyAdsModule,
+    AdsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
