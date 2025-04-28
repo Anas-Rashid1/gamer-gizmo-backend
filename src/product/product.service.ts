@@ -70,7 +70,6 @@ export class ProductService {
       if (queryData.brand_id) {
         WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
       }
-     
 
       if (queryData.condition) {
         const conditionValue = parseInt(queryData.condition, 10);
@@ -206,7 +205,9 @@ export class ProductService {
         product_images: true,
         location_product_locationTolocation: true,
       };
-      const totalCount = await this.prismaService.product.count({ where: WhereParameters });
+      const totalCount = await this.prismaService.product.count({
+        where: WhereParameters,
+      });
 
       // Pagination setup
       const queryOptions: any = {
@@ -230,25 +231,38 @@ export class ProductService {
       const expiredFeaturedProductIds: number[] = [];
 
       for (const e of data) {
+        //@ts-ignore
 
-        if(e.is_featured){
+        if (e.is_featured) {
+          //@ts-ignore
           if (e.feature_start_date && e.feature_end_date) {
+            //@ts-ignore
+
             const start = new Date(e.feature_start_date);
+            //@ts-ignore
+
             const end = new Date(e.feature_end_date);
-            
+
             // checking expired products having is_featured  = true
             if (today < start || today > end) {
-              expiredFeaturedProductIds.push(e.id);//marking expired products to update them later
+              expiredFeaturedProductIds.push(e.id);
+              //@ts-ignore
+
               e.is_featured = false;
+              //@ts-ignore
+
               e.feature_start_date = null;
+              //@ts-ignore
+
               e.feature_end_date = null;
             }
-          }
-          else{
+          } else {
             expiredFeaturedProductIds.push(e.id);
+            //@ts-ignore
+
             e.is_featured = false;
           }
-      }
+        }
 
         const productInfo = {
           //@ts-ignore
@@ -288,7 +302,7 @@ export class ProductService {
           nonFeatured.push(productInfo);
         }
       }
-      
+
       // updating the products whcih are marked expired above in the code
 
       if (expiredFeaturedProductIds.length > 0) {
@@ -306,9 +320,8 @@ export class ProductService {
       }
 
       const finalData = [...featured, ...nonFeatured];
-      
-      return { data: finalData, totalCount, message: 'success' };
 
+      return { data: finalData, totalCount, message: 'success' };
     } catch (error) {
       // Throw a standardized internal server error
       throw new InternalServerErrorException(
