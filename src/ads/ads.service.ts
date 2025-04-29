@@ -15,13 +15,16 @@ export class AdsService {
     const page = createOrUpdateAdDto.page;
     let imageUrl: string | null = null;
 
+    // Ensure both ad_id and page are provided
     if (!ad_id || !page) {
       throw new Error('Both ad_id and page must be provided.');
     }
 
+    // Handle image update or creation
     if (image) {
       imageUrl = `/uploads/${image.filename}`;
 
+      // Find existing ad by composite key (ad_id, page)
       const existingAd = await this.prisma.blog_ads.findUnique({
         where: {
           page_ad_id: {
@@ -31,18 +34,26 @@ export class AdsService {
         },
       });
 
+      // If the ad exists, delete the old image and update the ad
       if (existingAd) {
-        if (existingAd.url) {
-          const previousImagePath = path.join(
-            __dirname,
-            '../../uploads',
-            path.basename(existingAd.url),
-          );
-          if (fs.existsSync(previousImagePath)) {
-            fs.unlinkSync(previousImagePath);
+        try {
+          if (existingAd.url) {
+            const previousImagePath = path.join(
+              __dirname,
+              '../../uploads',
+              path.basename(existingAd.url),
+            );
+            if (fs.existsSync(previousImagePath)) {
+              fs.unlinkSync(previousImagePath); // Delete the previous image
+              console.log(`Deleted old image: ${previousImagePath}`);
+            }
           }
+        } catch (err) {
+          console.error('Error deleting old image:', err);
+          throw new Error('Failed to delete the old image.');
         }
 
+        // Update the ad with the new image URL
         return this.prisma.blog_ads.update({
           where: {
             page_ad_id: {
@@ -59,6 +70,7 @@ export class AdsService {
         });
       }
 
+      // If the ad doesn't exist, create a new ad with the image
       return this.prisma.blog_ads.create({
         data: {
           ad_id,
@@ -71,44 +83,55 @@ export class AdsService {
       });
     }
 
-    // No image, delete the ad if exists
+    // If no image is provided, proceed to delete the ad
     return this.deleteAdByCompositeKey(page, ad_id);
   }
 
   async deleteAdByCompositeKey(page: string, ad_id: number) {
+    console.log('Trying to delete ad with:', { page, ad_id });
+
     const ad = await this.prisma.blog_ads.findUnique({
       where: {
         page_ad_id: {
-          ad_id,
           page,
+          ad_id,
         },
       },
     });
 
     if (!ad) {
+      console.error('No ad found for:', { page, ad_id });
       throw new Error('Ad not found for deletion.');
     }
 
     if (ad.url) {
       const filename = path.basename(ad.url);
       const filePath = path.join(__dirname, '../../uploads', filename);
+      console.log('Checking for file:', filePath);
+
       if (fs.existsSync(filePath)) {
+        console.log('Deleting file:', filePath);
         fs.unlinkSync(filePath);
+      } else {
+        console.warn('File not found, skipping file deletion:', filePath);
       }
     }
 
     await this.prisma.blog_ads.delete({
       where: {
         page_ad_id: {
-          ad_id,
           page,
+          ad_id,
         },
       },
     });
 
+    console.log('Ad deleted successfully for:', { page, ad_id });
+
     return { message: 'Ad deleted successfully' };
   }
 
+  // Example method to get ads by page
   async getAdsByPage(page: string) {
     return this.prisma.blog_ads.findMany({
       where: {
@@ -119,8 +142,7 @@ export class AdsService {
       },
     });
   }
-}  
-
+}
 // import { Injectable } from '@nestjs/common';
 // import { PrismaService } from '../prisma/prisma.service';
 // import * as fs from 'fs';

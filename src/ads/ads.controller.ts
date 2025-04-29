@@ -9,7 +9,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { AdsService } from './ads.service';
-import { Query, Get } from '@nestjs/common'; 
+import { Query, Get } from '@nestjs/common';
 @Controller('ads')
 export class AdsController {
   constructor(private readonly adsService: AdsService) {}
@@ -22,7 +22,8 @@ export class AdsController {
           cb(null, path.join(__dirname, '../../uploads'));
         },
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = path.extname(file.originalname);
           cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
         },
@@ -37,12 +38,12 @@ export class AdsController {
   }
 
   @Get('fetch')
-async getAdsByPage(@Query('page') page: string) {
-  if (!page) {
-    throw new Error('Page query parameter is required');
+  async getAdsByPage(@Query('page') page: string) {
+    if (!page) {
+      throw new Error('Page query parameter is required');
+    }
+    return this.adsService.getAdsByPage(page);
   }
-  return this.adsService.getAdsByPage(page);
-}
 }
 
 // import {
