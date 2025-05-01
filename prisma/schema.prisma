@@ -38,6 +38,7 @@ model blog_ads {
   start_date DateTime
   end_date   DateTime
   url        String   @db.VarChar(2048)
+  type       String   // <-- Add this line to specify 'image' or 'video'
 
   @@unique([page, ad_id])
 }

@@ -57,11 +57,24 @@
 //   @IsString()
 //   url?: string;
 // }
+import { ApiProperty } from '@nestjs/swagger';
+
 export class CreateOrUpdateAdDto {
-  id?: number;
-  ad_id: string;
-  price: number;
-  start_date: Date;
-  end_date: Date;
+  @ApiProperty()
+  ad_id: number;
+
+  @ApiProperty()
   page: string;
+
+  @ApiProperty()
+  price: number;
+
+  @ApiProperty()
+  start_date: string;
+
+  @ApiProperty()
+  end_date: string;
+
+  @ApiProperty()
+  type: string; // image, video, etc.
 }
