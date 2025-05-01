@@ -57,10 +57,10 @@ export class AdsController {
           format: 'binary',
         },
       },
-      required: ['ad_id', 'page'],
-    },description:
-    'If file is uploaded, then `price`, `start_date`, `end_date`, and `type` are also required for create/update. If no file is uploaded, it will delete the ad based on `ad_id` and `page`.',
-
+      required: ['ad_id', 'page'], // ✅ Only these are always required
+    },
+    description:
+      'If file is uploaded, then `price`, `start_date`, `end_date`, and `type` are also required for create/update. If no file is uploaded, it will delete the ad based on `ad_id` and `page`.',
   })
   async createOrUpdateAd(
     @Body() createOrUpdateAdDto: CreateOrUpdateAdDto,
@@ -79,6 +79,7 @@ export class AdsController {
     return this.adsService.getAdsByPage(page);
   }
 }
+
 
 
 // import {

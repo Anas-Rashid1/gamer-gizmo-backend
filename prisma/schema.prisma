@@ -29,7 +29,6 @@ model blog_images {
   blog_posts   blog_posts @relation(fields: [blog_post_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-
 model blog_ads {
   id         Int      @id @default(autoincrement())
   ad_id      Int
@@ -38,11 +37,10 @@ model blog_ads {
   start_date DateTime
   end_date   DateTime
   url        String   @db.VarChar(2048)
-  type       String   // <-- Add this line to specify 'image' or 'video'
+  type       String
 
   @@unique([page, ad_id])
 }
-
 
 
 model blog_posts {
@@ -63,8 +61,7 @@ model blog_posts {
 }
 
 model brands {
-id Int @id @default(autoincrement())
-
+  id          Int        @id @default(autoincrement())
   category_id Int
   name        String     @db.VarChar
   logo        String?    @db.VarChar
@@ -326,6 +323,9 @@ model product {
   other_brand_name                       String?              @db.VarChar
   is_store_product                       Boolean?             @default(false)
   admin_id                               Int?
+  is_featured                            Boolean              @default(false)
+  feature_start_date                     DateTime?
+  feature_end_date                       DateTime?
   cart_items                             cart_items[]
   components                             components[]
   favourite_products                     favourite_products[]
@@ -343,9 +343,6 @@ model product {
   admin                                  admin?               @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_images                         product_images[]
   product_reviews                        product_reviews[]
-  is_featured       Boolean   @default(false)
-  feature_start_date DateTime?
-  feature_end_date   DateTime?
 }
 
 model product_images {
@@ -479,14 +476,13 @@ model community_messages {
 }
 
 model ThirdPartyAd {
-  id          Int      @id @default(autoincrement())
-  title       String
-  imageUrl    String
-  link        String
-  isActive    Boolean  @default(true)
-  startTime   DateTime
-  endTime     DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  link      String
+  isActive  Boolean  @default(true)
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
