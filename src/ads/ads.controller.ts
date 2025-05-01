@@ -30,8 +30,17 @@ export class AdsController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          cb(null, path.join(__dirname, '../../uploads'));
+          const ext = path.extname(file.originalname).toLowerCase();
+          const isVideo = ['.mp4', '.avi', '.mov'].includes(ext);
+  
+          const folder = isVideo ? 'videos' : 'images';
+          const destPath = path.join(__dirname, '../../uploads', folder);
+  
+          // Create the folder if it doesn't exist
+     
+          cb(null, destPath);
         },
+        
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = path.extname(file.originalname);
