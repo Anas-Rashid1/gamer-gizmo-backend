@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build && xcopy public dist\\public /E /I /Y",
+    "build": "nest build && copyfiles -u 1 public/**/* dist/public",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "set NODE_OPTIONS=--no-warnings && nest start --watch",
