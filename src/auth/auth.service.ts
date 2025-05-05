@@ -29,6 +29,8 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
   async signup(createUserDto: CreateUserDto) {
+
+    
     const {
       email,
       password,

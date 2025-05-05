@@ -7,6 +7,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto/updateUser.dto';
 import * as fs from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
 export class UserService {
@@ -235,29 +236,38 @@ export class UserService {
     }
   }
   async UpdateProfilePic(data, user) {
-    console.log(data, user);
     try {
       const existUser = await this.prisma.users.findUnique({
-        where: {
-          id: user.id,
-        },
+        where: { id: user.id },
       });
-      console.log(existUser, data);
-      if (existUser.profile != null) {
-        await fs.unlink(existUser.profile);
+
+      // Only try to delete local file if it looks like a local path
+      if (existUser.profile && existUser.profile.startsWith('public/')) {
+        const localPath = join(__dirname, '..', '..', existUser.profile);
+        try {
+          await fs.unlink(localPath);
+        } catch (err) {
+          // If file not found, just warn and move on
+          console.warn(
+            `Failed to delete old profile image: ${localPath}`,
+            err.message,
+          );
+        }
       }
+
       const updatedUser = await this.prisma.users.update({
-        where: {
-          id: user.id,
-        },
+        where: { id: user.id },
         data: {
-          profile: `public/profilePics/${data.filename}`,
+          profile: `public/profilePics/${data.filename}`, // or full AWS URL if moved
         },
       });
-      return { message: 'Successfully Created' };
+
+      return { message: 'Successfully updated profile picture.' };
     } catch (e) {
-      console.log(e);
-      throw new InternalServerErrorException(e);
+      console.error('Error updating profile pic:', e);
+      throw new InternalServerErrorException(
+        'Something went wrong while updating the profile picture.',
+      );
     }
   }
 }

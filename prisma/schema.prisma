@@ -32,16 +32,15 @@ model blog_images {
 model blog_ads {
   id         Int      @id @default(autoincrement())
   ad_id      Int
-  page       String
   price      Float
   start_date DateTime
   end_date   DateTime
   url        String   @db.VarChar(2048)
+  page       String
   type       String
 
   @@unique([page, ad_id])
 }
-
 
 model blog_posts {
   id                                  Int           @id @default(autoincrement())
