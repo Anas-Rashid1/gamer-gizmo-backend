@@ -26,6 +26,8 @@ import { BlogsModule } from './blogs/blogs.module';
 import { ChatModule } from './chat/chat.module';
 import { ThirdPartyAdsModule } from './third-party-ads/third-party-ads.module';
 import { AdsModule } from './ads/ads.module';
+import { AnalyticsController } from './analytics/analytics.controller';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -56,6 +58,7 @@ import { AdsModule } from './ads/ads.module';
     CartModule,
     ThirdPartyAdsModule,
     AdsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
