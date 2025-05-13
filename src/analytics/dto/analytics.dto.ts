@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
 
 export class AnalyticsQueryDto {
   @IsOptional()
@@ -19,4 +19,5 @@ export class DailyAnalyticsResponseDto {
 export class LocationDto {
   id: number;
   name: string;
+  productCount: number;
 }

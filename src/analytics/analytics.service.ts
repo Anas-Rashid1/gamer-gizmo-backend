@@ -56,7 +56,7 @@ export class AnalyticsService {
 
       // Populate signups
       signups.forEach((signup) => {
-        const dateStr = signup.date; // Already in YYYY-MM-DD format
+        const dateStr = signup.date;
         if (dateMap.has(dateStr)) {
           dateMap.get(dateStr)!.signups = Number(signup.signups);
         }
@@ -64,7 +64,7 @@ export class AnalyticsService {
 
       // Populate visitors
       visitors.forEach((visitor) => {
-        const dateStr = visitor.date; // Already in YYYY-MM-DD format
+        const dateStr = visitor.date;
         if (dateMap.has(dateStr)) {
           dateMap.get(dateStr)!.visitors = Number(visitor.visitors);
         }
@@ -84,10 +84,27 @@ export class AnalyticsService {
         select: {
           id: true,
           name: true,
+          _count: {
+            select: {
+              product_product_locationTolocation: true,
+            },
+          },
+        },
+        orderBy: {
+          product_product_locationTolocation: {
+            _count: 'desc',
+          },
         },
       });
-      this.logger.log(`Fetched ${locations.length} locations`);
-      return locations;
+
+      const result: LocationDto[] = locations.map((location) => ({
+        id: location.id,
+        name: location.name,
+        productCount: location._count.product_product_locationTolocation,
+      }));
+
+      this.logger.log(`Fetched ${locations.length} locations sorted by product count`);
+      return result;
     } catch (error) {
       this.logger.error(`Failed to fetch locations: ${error.message}`);
       throw new Error(`Failed to fetch locations: ${error.message}`);
