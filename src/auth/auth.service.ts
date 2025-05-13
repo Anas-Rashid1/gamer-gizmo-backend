@@ -19,6 +19,8 @@ import { LogoutUserDto } from './dtos/logout-user.dto';
 import { logoutTemplate } from 'src/views/logout.template';
 import { ForgetPassDto } from './dtos/forgetPass.dto';
 import { SendPassOtpDto } from './dtos/send-pass-otp.dto';
+import { S3Service } from 'src/utils/s3.service';
+
 
 @Injectable()
 export class AuthService {
@@ -27,6 +29,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private s3Service: S3Service,
+
   ) {}
   async signup(createUserDto: CreateUserDto) {
     const {
@@ -153,6 +157,82 @@ export class AuthService {
     const { password: _, ...userWithoutPassword } = user;
     return { token, ...userWithoutPassword };
   }
+  // async signin(createUserDto: LoginUserDto) {
+  //   const { name, password, platform, region = null } = createUserDto;
+
+  //   let user = await this.prisma.users.findUnique({
+  //     where: { email: name },
+  //   });
+  //   if (!user) {
+  //     user = await this.prisma.users.findUnique({
+  //       where: { username: name },
+  //     });
+  //   }
+
+  //   if (!user) {
+  //     throw new BadRequestException('No User Found');
+  //   }
+
+  //   const isPasswordValid = await bcrypt.compare(password, user.password);
+  //   if (!isPasswordValid) {
+  //     throw new BadRequestException('Incorrect email or password');
+  //   }
+  //   //@ts-ignore
+  //   const isUserVerified = user.is_email_verified;
+  //   if (!isUserVerified) {
+  //     await this.authenticateByOtp(user.email);
+  //     throw new BadRequestException(
+  //       'User is not Verified, Email is sent to the registerd email',
+  //     );
+  //   }
+  //   if (!user.is_active) {
+  //     throw new BadRequestException(
+  //       'Account is deactivated right now. Contact Support',
+  //     );
+  //   }
+  //   const payload = {
+  //     id: user.id,
+  //     email: user.email,
+  //     username: user.username,
+  //   };
+  //   // let user_tokens = await this.prisma.tokens.findUnique({
+  //   //   where: { email: name },
+  //   // });
+  //   const tokenCount = await this.prisma.tokens.count({
+  //     where: { user_id: user.id },
+  //   });
+  //   if (tokenCount >= 5) {
+  //     const tokens = await this.prisma.tokens.findMany({
+  //       where: { user_id: user.id },
+  //     });
+  //     throw new BadRequestException({
+  //       message: 'You have reached max account logins',
+  //       accounts: tokens,
+  //     });
+  //   }
+
+  //   const token = await this.jwtService.signAsync(payload, {
+  //     secret: this.configService.get<string>('JWT_SECRET'),
+     
+  //   });
+  //   if (!token) {
+  //     throw new BadRequestException(['Failed To create token']);
+  //   }
+  //   const createdToken = await this.prisma.tokens.create({
+  //     data: {
+  //       user_id: user.id,
+  //       token: token,
+  //       platform: platform,
+  //       //@ts-ignore
+  //       region: region,
+  //     },
+  //   });
+  //   if (!createdToken) {
+  //     throw new BadRequestException(['Failed To create token']);
+  //   }
+  //   const { password: _, ...userWithoutPassword } = user;
+  //   return { token, ...userWithoutPassword };
+  // }
   async signin(createUserDto: LoginUserDto) {
     const { name, password, platform, region = null } = createUserDto;
 
@@ -178,7 +258,7 @@ export class AuthService {
     if (!isUserVerified) {
       await this.authenticateByOtp(user.email);
       throw new BadRequestException(
-        'User is not Verified, Email is sent to the registerd email',
+        'User is not Verified, Email is sent to the registered email',
       );
     }
     if (!user.is_active) {
@@ -191,9 +271,6 @@ export class AuthService {
       email: user.email,
       username: user.username,
     };
-    // let user_tokens = await this.prisma.tokens.findUnique({
-    //   where: { email: name },
-    // });
     const tokenCount = await this.prisma.tokens.count({
       where: { user_id: user.id },
     });
@@ -225,10 +302,12 @@ export class AuthService {
     if (!createdToken) {
       throw new BadRequestException(['Failed To create token']);
     }
-    const { password: _, ...userWithoutPassword } = user;
-    return { token, ...userWithoutPassword };
+    const profileUrl = user.profile
+      ? await this.s3Service.get_image_url(user.profile)
+      : null;
+    const { password: _, profile: __, ...userWithoutPassword } = user;
+    return { token, ...userWithoutPassword, profile: profileUrl };
   }
-
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     try {
       const { email, otp } = verifyOtpDto;

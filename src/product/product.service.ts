@@ -1669,150 +1669,327 @@ export class ProductService {
     }
   }
 
-  async GetProductById(pid: any, user: any) {
-    try {
-      const token = this.extractTokenFromHeader(user);
-      let payload = null;
-      if (token) {
-        try {
-          payload = await this.jwtService.verifyAsync(token, {
-            secret: process.env.JWT_SECRET,
-          });
-        } catch (error) {
-          console.warn('JWT Verification Failed:', error.message);
-          payload = null;
-        }
+  // async GetProductById(pid: any, user: any) {
+  //   try {
+  //     const token = this.extractTokenFromHeader(user);
+  //     let payload = null;
+  //     if (token) {
+  //       try {
+  //         payload = await this.jwtService.verifyAsync(token, {
+  //           secret: process.env.JWT_SECRET,
+  //         });
+  //       } catch (error) {
+  //         console.warn('JWT Verification Failed:', error.message);
+  //         payload = null;
+  //       }
+  //     }
+
+  //     const data = await this.prismaService.product.findUnique({
+  //       include: {
+  //         brands: true,
+  //         models: true,
+  //         categories: true,
+  //         condition_product_conditionTocondition: true,
+  //         components: {
+  //           include: {
+  //             component_type_components_component_typeTocomponent_type: true,
+  //           },
+  //         },
+  //         product_reviews: {
+  //           include: {
+  //             users: {
+  //               select: {
+  //                 username: true,
+  //                 profile: true,
+  //                 created_at: true,
+  //                 first_name: true,
+  //                 last_name: true,
+  //                 email: true,
+  //                 phone: true,
+  //                 gender: true,
+  //               },
+  //             },
+  //             store_product_review_images: true,
+  //           },
+  //           orderBy: { created_at: 'desc' },
+  //         },
+  //         gaming_console: true,
+  //         users: {
+  //           select: {
+  //             username: true,
+  //             profile: true,
+  //             created_at: true,
+  //             first_name: true,
+  //             last_name: true,
+  //             email: true,
+  //             phone: true,
+  //             gender: true,
+  //           },
+  //         },
+  //         personal_computers: {
+  //           include: {
+  //             processors: true,
+  //             ram_personal_computers_ramToram: true,
+  //             storage_personal_computers_storageTostorage: true,
+  //             storage_type_personal_computers_storage_typeTostorage_type: true,
+  //             gpu_personal_computers_gpuTogpu: true,
+  //             processor_variant_personal_computers_processor_variantToprocessor_variant: true,
+  //           },
+  //         },
+  //         laptops: {
+  //           include: {
+  //             ram_laptops_ramToram: true,
+  //             storage_laptops_storageTostorage: true,
+  //             storage_type_laptops_storage_typeTostorage_type: true,
+  //             gpu_laptops_gpuTogpu: true,
+  //             processors: true,
+  //             processor_variant_laptops_processor_variantToprocessor_variant: true,
+  //           },
+  //         },
+  //         product_images: true,
+  //         location_product_locationTolocation: true,
+  //       },
+  //       where: { id: parseInt(pid.id) },
+  //     });
+
+  //     if (!data) {
+  //       return { data: null, message: 'Product not found' };
+  //     }
+
+  //     // Generate signed URLs for product images
+  //     const imageUrls = data.product_images.length
+  //       ? await this.s3Service.get_image_urls(
+  //           data.product_images.map((img) => img.image_url),
+  //         )
+  //       : [];
+  //     const imagesWithUrls = data.product_images.map((img, index) => ({
+  //       ...img,
+  //       image_url: imageUrls[index],
+  //     }));
+
+  //     // Generate signed URLs for review images
+  //     const reviewsWithImageUrls = await Promise.all(
+  //       data.product_reviews.map(async (review) => {
+  //         const reviewImageUrls = review.store_product_review_images.length
+  //           ? await this.s3Service.get_image_urls(
+  //               review.store_product_review_images.map((img) => img.image_url),
+  //             )
+  //           : [];
+  //         const reviewImagesWithUrls = review.store_product_review_images.map(
+  //           (img, index) => ({
+  //             ...img,
+  //             image_url: reviewImageUrls[index],
+  //           }),
+  //         );
+  //         return {
+  //           ...review,
+  //           store_product_review_images: reviewImagesWithUrls,
+  //         };
+  //       }),
+  //     );
+
+  //     const isFavorite = payload
+  //       ? (
+  //           await this.prismaService.favourite_products.findMany({
+  //             where: {
+  //               user_id: parseInt(payload.id),
+  //               product_id: data.id,
+  //             },
+  //           })
+  //         ).length > 0
+  //       : false;
+
+  //     return {
+  //       data: {
+  //         ...data,
+  //         product_images: imagesWithUrls,
+  //         product_reviews: reviewsWithImageUrls,
+  //         fav: isFavorite,
+  //       },
+  //       message: 'success',
+  //     };
+  //   } catch (e) {
+  //     throw new InternalServerErrorException(e);
+  //   }
+  // }
+async GetProductById(pid: any, user: any) {
+  try {
+    const token = this.extractTokenFromHeader(user);
+    let payload = null;
+    if (token) {
+      try {
+        payload = await this.jwtService.verifyAsync(token, {
+          secret: process.env.JWT_SECRET,
+        });
+      } catch (error) {
+        console.warn('JWT Verification Failed:', error.message);
+        payload = null;
       }
-
-      const data = await this.prismaService.product.findUnique({
-        include: {
-          brands: true,
-          models: true,
-          categories: true,
-          condition_product_conditionTocondition: true,
-          components: {
-            include: {
-              component_type_components_component_typeTocomponent_type: true,
-            },
-          },
-          product_reviews: {
-            include: {
-              users: {
-                select: {
-                  username: true,
-                  profile: true,
-                  created_at: true,
-                  first_name: true,
-                  last_name: true,
-                  email: true,
-                  phone: true,
-                  gender: true,
-                },
-              },
-              store_product_review_images: true,
-            },
-            orderBy: { created_at: 'desc' },
-          },
-          gaming_console: true,
-          users: {
-            select: {
-              username: true,
-              profile: true,
-              created_at: true,
-              first_name: true,
-              last_name: true,
-              email: true,
-              phone: true,
-              gender: true,
-            },
-          },
-          personal_computers: {
-            include: {
-              processors: true,
-              ram_personal_computers_ramToram: true,
-              storage_personal_computers_storageTostorage: true,
-              storage_type_personal_computers_storage_typeTostorage_type: true,
-              gpu_personal_computers_gpuTogpu: true,
-              processor_variant_personal_computers_processor_variantToprocessor_variant: true,
-            },
-          },
-          laptops: {
-            include: {
-              ram_laptops_ramToram: true,
-              storage_laptops_storageTostorage: true,
-              storage_type_laptops_storage_typeTostorage_type: true,
-              gpu_laptops_gpuTogpu: true,
-              processors: true,
-              processor_variant_laptops_processor_variantToprocessor_variant: true,
-            },
-          },
-          product_images: true,
-          location_product_locationTolocation: true,
-        },
-        where: { id: parseInt(pid.id) },
-      });
-
-      if (!data) {
-        return { data: null, message: 'Product not found' };
-      }
-
-      // Generate signed URLs for product images
-      const imageUrls = data.product_images.length
-        ? await this.s3Service.get_image_urls(
-            data.product_images.map((img) => img.image_url),
-          )
-        : [];
-      const imagesWithUrls = data.product_images.map((img, index) => ({
-        ...img,
-        image_url: imageUrls[index],
-      }));
-
-      // Generate signed URLs for review images
-      const reviewsWithImageUrls = await Promise.all(
-        data.product_reviews.map(async (review) => {
-          const reviewImageUrls = review.store_product_review_images.length
-            ? await this.s3Service.get_image_urls(
-                review.store_product_review_images.map((img) => img.image_url),
-              )
-            : [];
-          const reviewImagesWithUrls = review.store_product_review_images.map(
-            (img, index) => ({
-              ...img,
-              image_url: reviewImageUrls[index],
-            }),
-          );
-          return {
-            ...review,
-            store_product_review_images: reviewImagesWithUrls,
-          };
-        }),
-      );
-
-      const isFavorite = payload
-        ? (
-            await this.prismaService.favourite_products.findMany({
-              where: {
-                user_id: parseInt(payload.id),
-                product_id: data.id,
-              },
-            })
-          ).length > 0
-        : false;
-
-      return {
-        data: {
-          ...data,
-          product_images: imagesWithUrls,
-          product_reviews: reviewsWithImageUrls,
-          fav: isFavorite,
-        },
-        message: 'success',
-      };
-    } catch (e) {
-      throw new InternalServerErrorException(e);
     }
-  }
 
+    const data = await this.prismaService.product.findUnique({
+      include: {
+        brands: true,
+        models: true,
+        categories: true,
+        condition_product_conditionTocondition: true,
+        components: {
+          include: {
+            component_type_components_component_typeTocomponent_type: true,
+          },
+        },
+        product_reviews: {
+          include: {
+            users: {
+              select: {
+                username: true,
+                profile: true,
+                created_at: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                phone: true,
+                gender: true,
+              },
+            },
+            store_product_review_images: true,
+          },
+          orderBy: { created_at: 'desc' },
+        },
+        gaming_console: true,
+        users: {
+          select: {
+            username: true,
+            profile: true,
+            created_at: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            phone: true,
+            gender: true,
+          },
+        },
+        personal_computers: {
+          include: {
+            processors: true,
+            ram_personal_computers_ramToram: true,
+            storage_personal_computers_storageTostorage: true,
+            storage_type_personal_computers_storage_typeTostorage_type: true,
+            gpu_personal_computers_gpuTogpu: true,
+            processor_variant_personal_computers_processor_variantToprocessor_variant: true,
+          },
+        },
+        laptops: {
+          include: {
+            ram_laptops_ramToram: true,
+            storage_laptops_storageTostorage: true,
+            storage_type_laptops_storage_typeTostorage_type: true,
+            gpu_laptops_gpuTogpu: true,
+            processors: true,
+            processor_variant_laptops_processor_variantToprocessor_variant: true,
+          },
+        },
+        product_images: true,
+        location_product_locationTolocation: true,
+      },
+      where: { id: parseInt(pid.id) },
+    });
+
+    if (!data) {
+      return { data: null, message: 'Product not found' };
+    }
+
+    // Generate signed URLs for product images
+    const imageUrls = data.product_images.length
+      ? await this.s3Service.get_image_urls(
+          data.product_images.map((img) => img.image_url),
+        )
+      : [];
+    const imagesWithUrls = data.product_images.map((img, index) => ({
+      ...img,
+      image_url: imageUrls[index] || img.image_url, // Fallback to original URL
+    }));
+
+    // Generate signed URL for brand logo
+    const brandWithLogoUrl = data.brands
+      ? {
+          ...data.brands,
+          logo: data.brands.logo
+            ? await this.s3Service.get_image_url(data.brands.logo)
+            : null,
+        }
+      : null;
+
+    // Generate signed URL for product owner user profile
+    const userWithProfileUrl = data.users
+      ? {
+          ...data.users,
+          profile: data.users.profile
+            ? await this.s3Service.get_image_url(data.users.profile)
+            : null,
+        }
+      : null;
+
+    // Generate signed URLs for review images and reviewer user profiles
+    const reviewsWithImageUrls = await Promise.all(
+      data.product_reviews.map(async (review) => {
+        // Signed URLs for review images
+        const reviewImageUrls = review.store_product_review_images.length
+          ? await this.s3Service.get_image_urls(
+              review.store_product_review_images.map((img) => img.image_url),
+            )
+          : [];
+        const reviewImagesWithUrls = review.store_product_review_images.map(
+          (img, index) => ({
+            ...img,
+            image_url: reviewImageUrls[index] || img.image_url, // Fallback to original URL
+          }),
+        );
+
+        // Signed URL for reviewer user profile
+        const reviewerWithProfileUrl = review.users
+          ? {
+              ...review.users,
+              profile: review.users.profile
+                ? await this.s3Service.get_image_url(review.users.profile)
+                : null,
+            }
+          : null;
+
+        return {
+          ...review,
+          store_product_review_images: reviewImagesWithUrls,
+          users: reviewerWithProfileUrl,
+        };
+      }),
+    );
+
+    const isFavorite = payload
+      ? (
+          await this.prismaService.favourite_products.findMany({
+            where: {
+              user_id: parseInt(payload.id),
+              product_id: data.id,
+            },
+          })
+        ).length > 0
+      : false;
+
+    return {
+      data: {
+        ...data,
+        product_images: imagesWithUrls,
+        product_reviews: reviewsWithImageUrls,
+        brands: brandWithLogoUrl,
+        users: userWithProfileUrl,
+        fav: isFavorite,
+      },
+      message: 'success',
+    };
+  } catch (e) {
+    throw new InternalServerErrorException(e);
+  }
+}
   async CreateProduct(productbody: CreateProductDto, images: Express.Multer.File[]) {
     try {
       const data: Prisma.productCreateInput = {
