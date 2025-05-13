@@ -29,8 +29,6 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
   async signup(createUserDto: CreateUserDto) {
-
-    
     const {
       email,
       password,
@@ -119,7 +117,7 @@ export class AuthService {
     // const otp_res = await this.authenticateByOtp(email);
     const { password: _, ...userWithoutPassword } = newUser;
     return {
-      message: 'Admin has been Craeted',
+      message: 'Admin has been Created',
       data: { user: userWithoutPassword },
     };
   }
@@ -148,7 +146,6 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET_ADMIN'),
-     
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
@@ -212,7 +209,6 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
-     
     });
     if (!token) {
       throw new BadRequestException(['Failed To create token']);
