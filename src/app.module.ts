@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthModule } from './auth/auth.module';
+
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductModule } from './product/product.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -26,6 +27,10 @@ import { BlogsModule } from './blogs/blogs.module';
 import { ChatModule } from './chat/chat.module';
 import { ThirdPartyAdsModule } from './third-party-ads/third-party-ads.module';
 import { AdsModule } from './ads/ads.module';
+import { AnalyticsController } from './analytics/analytics.controller';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { OrderController } from './order/order.controller';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -56,6 +61,8 @@ import { AdsModule } from './ads/ads.module';
     CartModule,
     ThirdPartyAdsModule,
     AdsModule,
+    AnalyticsModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService],
