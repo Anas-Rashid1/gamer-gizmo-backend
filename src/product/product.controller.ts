@@ -824,4 +824,20 @@ export class ProductsContoller {
 async DeleteProductImage(@Query('image_ids') imageIds: string | string[]) {
   return this.productService.DeleteProductImage(imageIds);
 }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  @Put('/setFeatured')
+  @ApiQuery({ name: 'product_id', required: true, type: String })
+  async SetFeatured(@Query('product_id') productId: string) {
+    return this.productService.SetFeatured(productId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminAuthGuard)
+  @Put('/setNonFeatured')
+  @ApiQuery({ name: 'product_id', required: true, type: String })
+  async SetNonFeatured(@Query('product_id') productId: string) {
+    return this.productService.SetNonFeatured(productId);
+  }
 }

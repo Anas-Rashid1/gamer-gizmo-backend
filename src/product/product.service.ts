@@ -2831,4 +2831,61 @@ async DeleteProductImage(imageIds: string | string[]) {
     throw new InternalServerErrorException('Failed to delete image(s)', error.message);
   }
 }
+    async SetFeatured(productId: string) {
+    try {
+      const parsedId = parseInt(productId);
+      if (isNaN(parsedId)) {
+        throw new BadRequestException('Invalid product ID');
+      }
+
+      const product = await this.prismaService.product.findUnique({
+        where: { id: parsedId },
+      });
+
+      if (!product) {
+        throw new BadRequestException('Product not found');
+      }
+
+      await this.prismaService.product.update({
+        where: { id: parsedId },
+        data: { is_featured: true },
+      });
+
+      return { message: 'Product marked as featured successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to mark product as featured', error.message);
+    }
+  }
+
+  async SetNonFeatured(productId: string) {
+    try {
+      const parsedId = parseInt(productId);
+      if (isNaN(parsedId)) {
+        throw new BadRequestException('Invalid product ID');
+      }
+
+      const product = await this.prismaService.product.findUnique({
+        where: { id: parsedId },
+      });
+
+      if (!product) {
+        throw new BadRequestException('Product not found');
+      }
+
+      await this.prismaService.product.update({
+        where: { id: parsedId },
+        data: { is_featured: false },
+      });
+
+      return { message: 'Product marked as non-featured successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to mark product as non-featured', error.message);
+    }
+  }
 }
