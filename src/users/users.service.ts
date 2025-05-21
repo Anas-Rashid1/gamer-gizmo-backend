@@ -484,6 +484,8 @@ export class UserService {
           gender: true,
           address: true,
           applied_for_verification: true,
+          nic_front_image :true,
+          nic_back_image :true
         },
       };
 
