@@ -2627,78 +2627,168 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
-  async searchProducts(query: {
-    query: string;
-    pageNo?: string;
-    limit?: string;
-  }) {
-    try {
-      const searchTerm = query.query?.trim();
-      if (!searchTerm) {
-        return { products: [], total: 0, message: 'No search term provided' };
-      }
+  // async searchProducts(query: {
+  //   query: string;
+  //   pageNo?: string;
+  //   limit?: string;
+  // }) {
+  //   try {
+  //     const searchTerm = query.query?.trim();
+  //     if (!searchTerm) {
+  //       return { products: [], total: 0, message: 'No search term provided' };
+  //     }
 
-      const page = parseInt(query.pageNo) || 1;
-      const limit = parseInt(query.limit) || 10;
-      const skip = (page - 1) * limit;
+  //     const page = parseInt(query.pageNo) || 1;
+  //     const limit = parseInt(query.limit) || 10;
+  //     const skip = (page - 1) * limit;
 
-      const whereParameters: Prisma.productWhereInput = {
-        name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode },
-        is_published: true,
-      };
+  //     const whereParameters: Prisma.productWhereInput = {
+  //       name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode },
+  //       is_published: true,
+  //     };
 
-      const [products, total] = await Promise.all([
-        this.prismaService.product.findMany({
-          where: whereParameters,
-          include: {
-            categories: { select: { name: true } },
-            product_images: { select: { image_url: true } },
-            brands: { select: { name: true } },
-            models: { select: { name: true } },
-          },
-          skip,
-          take: limit,
-        }),
-        this.prismaService.product.count({ where: whereParameters }),
-      ]);
+  //     const [products, total] = await Promise.all([
+  //       this.prismaService.product.findMany({
+  //         where: whereParameters,
+  //         include: {
+  //           categories: { select: { name: true } },
+  //           product_images: { select: { image_url: true } },
+  //           brands: { select: { name: true } },
+  //           models: { select: { name: true } },
+  //         },
+  //         skip,
+  //         take: limit,
+  //       }),
+  //       this.prismaService.product.count({ where: whereParameters }),
+  //     ]);
 
-      const productsWithImageUrls = await Promise.all(
-        products.map(async (product) => {
-          const imageUrls = product.product_images.length
-            ? await this.s3Service.get_image_urls(
-                product.product_images.map((img) => img.image_url),
-              )
-            : [];
-          const imagesWithUrls = product.product_images.map((img, index) => ({
-            ...img,
-            image_url: imageUrls[index] || img.image_url,
-          }));
+  //     const productsWithImageUrls = await Promise.all(
+  //       products.map(async (product) => {
+  //         const imageUrls = product.product_images.length
+  //           ? await this.s3Service.get_image_urls(
+  //               product.product_images.map((img) => img.image_url),
+  //             )
+  //           : [];
+  //         const imagesWithUrls = product.product_images.map((img, index) => ({
+  //           ...img,
+  //           image_url: imageUrls[index] || img.image_url,
+  //         }));
 
-          return {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            category: product.categories?.name,
-            images: imagesWithUrls,
-            brand: product.brands?.name,
-            model: product.models?.name,
-          };
-        }),
-      );
+  //         return {
+  //           id: product.id,
+  //           name: product.name,
+  //           price: product.price,
+  //           category: product.categories?.name,
+  //           images: imagesWithUrls,
+  //           brand: product.brands?.name,
+  //           model: product.models?.name,
+  //         };
+  //       }),
+  //     );
 
-      return {
-        products: productsWithImageUrls,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to search products',
-        error.message,
-      );
+  //     return {
+  //       products: productsWithImageUrls,
+  //       total,
+  //       page,
+  //       limit,
+  //       totalPages: Math.ceil(total / limit),
+  //       message: 'success',
+  //     };
+  //   } catch (error) {
+  //     throw new InternalServerErrorException(
+  //       'Failed to search products',
+  //       error.message,
+  //     );
+  //   }
+  // }
+async searchProducts(query: {
+  query: string;
+  pageNo?: string;
+  limit?: string;
+}) {
+  try {
+    const searchTerm = query.query?.trim();
+    if (!searchTerm) {
+      return { products: [], total: 0, message: 'No search term provided' };
     }
+
+    const page = parseInt(query.pageNo) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build where clause to search across multiple fields
+    const whereParameters: Prisma.productWhereInput = {
+      AND: [
+        { is_published: true },
+        {
+          OR: [
+            { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
+            { description: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
+            { other_brand_name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
+            { categories: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
+            { brands: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
+            { models: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
+          ],
+        },
+      ],
+    };
+
+    const [products, total] = await Promise.all([
+      this.prismaService.product.findMany({
+        where: whereParameters,
+        include: {
+          categories: { select: { id: true, name: true } },
+          product_images: { select: { id: true, image_url: true } },
+          brands: { select: { id: true, name: true } },
+          models: { select: { id: true, name: true } },
+        },
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' }, // Optional: sort by name for consistent results
+      }),
+      this.prismaService.product.count({ where: whereParameters }),
+    ]);
+
+    const productsWithImageUrls = await Promise.all(
+      products.map(async (product) => {
+        const imageUrls = product.product_images.length
+          ? await this.s3Service.get_image_urls(
+              product.product_images.map((img) => img.image_url),
+            )
+          : [];
+        const imagesWithUrls = product.product_images.map((img, index) => ({
+          ...img,
+          image_url: imageUrls[index] || img.image_url,
+        }));
+
+        return {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.categories?.name,
+          category_id: product.categories?.id,
+          brand: product.brands?.name,
+          brand_id: product.brands?.id,
+          model: product.models?.name,
+          model_id: product.models?.id,
+          images: imagesWithUrls,
+        };
+      }),
+    );
+
+    return {
+      products: productsWithImageUrls,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      message: 'success',
+    };
+  } catch (error) {
+    throw new InternalServerErrorException(
+      'Failed to search products',
+      error.message,
+    );
   }
+}
 }
