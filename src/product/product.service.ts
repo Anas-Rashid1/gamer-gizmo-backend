@@ -2627,4 +2627,78 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
+  async searchProducts(query: {
+    query: string;
+    pageNo?: string;
+    limit?: string;
+  }) {
+    try {
+      const searchTerm = query.query?.trim();
+      if (!searchTerm) {
+        return { products: [], total: 0, message: 'No search term provided' };
+      }
+
+      const page = parseInt(query.pageNo) || 1;
+      const limit = parseInt(query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const whereParameters: Prisma.productWhereInput = {
+        name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode },
+        is_published: true,
+      };
+
+      const [products, total] = await Promise.all([
+        this.prismaService.product.findMany({
+          where: whereParameters,
+          include: {
+            categories: { select: { name: true } },
+            product_images: { select: { image_url: true } },
+            brands: { select: { name: true } },
+            models: { select: { name: true } },
+          },
+          skip,
+          take: limit,
+        }),
+        this.prismaService.product.count({ where: whereParameters }),
+      ]);
+
+      const productsWithImageUrls = await Promise.all(
+        products.map(async (product) => {
+          const imageUrls = product.product_images.length
+            ? await this.s3Service.get_image_urls(
+                product.product_images.map((img) => img.image_url),
+              )
+            : [];
+          const imagesWithUrls = product.product_images.map((img, index) => ({
+            ...img,
+            image_url: imageUrls[index] || img.image_url,
+          }));
+
+          return {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.categories?.name,
+            images: imagesWithUrls,
+            brand: product.brands?.name,
+            model: product.models?.name,
+          };
+        }),
+      );
+
+      return {
+        products: productsWithImageUrls,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to search products',
+        error.message,
+      );
+    }
+  }
 }
