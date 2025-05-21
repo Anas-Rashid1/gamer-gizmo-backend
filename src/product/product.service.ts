@@ -1167,7 +1167,6 @@
 //   }
 // }
 
-
 import {
   BadRequestException,
   Injectable,
@@ -1209,18 +1208,98 @@ interface ProductWithRelations {
   is_featured: boolean;
   feature_start_date?: Date | null;
   feature_end_date?: Date | null;
-  admin?: { id: number; email: string; password: string; name: string; created_at: Date; type: string } | null;
-  brands?: { id: number; name: string; category_id: number; logo: string | null; status: boolean } | null;
-  models?: { id: number; name: string; brand_id: number; status: boolean } | null;
+  admin?: {
+    id: number;
+    email: string;
+    password: string;
+    name: string;
+    created_at: Date;
+    type: string;
+  } | null;
+  brands?: {
+    id: number;
+    name: string;
+    category_id: number;
+    logo: string | null;
+    status: boolean;
+  } | null;
+  models?: {
+    id: number;
+    name: string;
+    brand_id: number;
+    status: boolean;
+  } | null;
   categories?: { id: number; name: string };
-  components?: { id: number; product_id: number; text: string | null; component_type: number; component_type_components_component_typeTocomponent_type: { id: number; name: string } }[];
-  personal_computers?: { id: number; product_id: number; graphics: string | null; ports: string | null; processor: number | null; processor_variant: number | null; storage: number | null; storage_type: number | null; ram: number | null; gpu: number | null }[];
-  gaming_console?: { id: number; product_id: number; color: string | null; accessories: string | null; connectivity: string | null; warranty_status: string | null; battery_life: string | null }[];
-  laptops?: { id: number; product_id: number; graphics: string | null; ports: string | null; battery_life: string | null; screen_size: string | null; weight: string | null; screen_resolution: string | null; color: string | null; processor: number | null; processor_variant: number | null; storage: number | null; storage_type: number | null; ram: number | null; gpu: number | null }[];
-  users?: { id: number; username: string; email: string; first_name: string | null; last_name: string | null } | null;
-  product_images?: { id: number; product_id: number; image_url: string; created_at: Date }[];
+  components?: {
+    id: number;
+    product_id: number;
+    text: string | null;
+    component_type: number;
+    component_type_components_component_typeTocomponent_type: {
+      id: number;
+      name: string;
+    };
+  }[];
+  personal_computers?: {
+    id: number;
+    product_id: number;
+    graphics: string | null;
+    ports: string | null;
+    processor: number | null;
+    processor_variant: number | null;
+    storage: number | null;
+    storage_type: number | null;
+    ram: number | null;
+    gpu: number | null;
+  }[];
+  gaming_console?: {
+    id: number;
+    product_id: number;
+    color: string | null;
+    accessories: string | null;
+    connectivity: string | null;
+    warranty_status: string | null;
+    battery_life: string | null;
+  }[];
+  laptops?: {
+    id: number;
+    product_id: number;
+    graphics: string | null;
+    ports: string | null;
+    battery_life: string | null;
+    screen_size: string | null;
+    weight: string | null;
+    screen_resolution: string | null;
+    color: string | null;
+    processor: number | null;
+    processor_variant: number | null;
+    storage: number | null;
+    storage_type: number | null;
+    ram: number | null;
+    gpu: number | null;
+  }[];
+  users?: {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  product_images?: {
+    id: number;
+    product_id: number;
+    image_url: string;
+    created_at: Date;
+  }[];
   location_product_locationTolocation?: { id: number; name: string } | null;
-  admin_product_admin_idToadmin?: { id: number; email: string; password: string; name: string; created_at: Date; type: string } | null;
+  admin_product_admin_idToadmin?: {
+    id: number;
+    email: string;
+    password: string;
+    name: string;
+    created_at: Date;
+    type: string;
+  } | null;
 }
 
 // Define the type for product with included relations for SearchProductByTitle
@@ -1437,7 +1516,8 @@ export class ProductService {
         queryOptions.take = limit;
       }
 
-      const data: ProductWithRelations[] = await this.prismaService.product.findMany(queryOptions);
+      const data: ProductWithRelations[] =
+        await this.prismaService.product.findMany(queryOptions);
 
       const today = new Date();
       const featured: any[] = [];
@@ -1573,9 +1653,10 @@ export class ProductService {
         where: { product_id: parseInt(pid.product_id) },
       });
       for (const rev of reviews) {
-        const revImages = await this.prismaService.store_product_review_images.findMany({
-          where: { review_id: rev.id },
-        });
+        const revImages =
+          await this.prismaService.store_product_review_images.findMany({
+            where: { review_id: rev.id },
+          });
         for (const revImg of revImages) {
           await this.s3Service.deleteFileByKey(revImg.image_url);
         }
@@ -1632,9 +1713,10 @@ export class ProductService {
         where: { product_id: parseInt(pid.product_id) },
       });
       for (const rev of reviews) {
-        const revImages = await this.prismaService.store_product_review_images.findMany({
-          where: { review_id: rev.id },
-        });
+        const revImages =
+          await this.prismaService.store_product_review_images.findMany({
+            where: { review_id: rev.id },
+          });
         for (const revImg of revImages) {
           await this.s3Service.deleteFileByKey(revImg.image_url);
         }
@@ -1812,185 +1894,190 @@ export class ProductService {
   //     throw new InternalServerErrorException(e);
   //   }
   // }
-async GetProductById(pid: any, user: any) {
-  try {
-    const token = this.extractTokenFromHeader(user);
-    let payload = null;
-    if (token) {
-      try {
-        payload = await this.jwtService.verifyAsync(token, {
-          secret: process.env.JWT_SECRET,
-        });
-      } catch (error) {
-        console.warn('JWT Verification Failed:', error.message);
-        payload = null;
+  async GetProductById(pid: any, user: any) {
+    try {
+      const token = this.extractTokenFromHeader(user);
+      let payload = null;
+      if (token) {
+        try {
+          payload = await this.jwtService.verifyAsync(token, {
+            secret: process.env.JWT_SECRET,
+          });
+        } catch (error) {
+          console.warn('JWT Verification Failed:', error.message);
+          payload = null;
+        }
       }
-    }
 
-    const data = await this.prismaService.product.findUnique({
-      include: {
-        brands: true,
-        models: true,
-        categories: true,
-        condition_product_conditionTocondition: true,
-        components: {
-          include: {
-            component_type_components_component_typeTocomponent_type: true,
+      const data = await this.prismaService.product.findUnique({
+        include: {
+          brands: true,
+          models: true,
+          categories: true,
+          condition_product_conditionTocondition: true,
+          components: {
+            include: {
+              component_type_components_component_typeTocomponent_type: true,
+            },
           },
-        },
-        product_reviews: {
-          include: {
-            users: {
-              select: {
-                username: true,
-                profile: true,
-                created_at: true,
-                first_name: true,
-                last_name: true,
-                email: true,
-                phone: true,
-                gender: true,
+          product_reviews: {
+            include: {
+              users: {
+                select: {
+                  username: true,
+                  profile: true,
+                  created_at: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                  gender: true,
+                },
               },
+              store_product_review_images: true,
             },
-            store_product_review_images: true,
+            orderBy: { created_at: 'desc' },
           },
-          orderBy: { created_at: 'desc' },
-        },
-        gaming_console: true,
-        users: {
-          select: {
-            username: true,
-            profile: true,
-            created_at: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-            phone: true,
-            gender: true,
+          gaming_console: true,
+          users: {
+            select: {
+              username: true,
+              profile: true,
+              created_at: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              phone: true,
+              gender: true,
+            },
           },
-        },
-        personal_computers: {
-          include: {
-            processors: true,
-            ram_personal_computers_ramToram: true,
-            storage_personal_computers_storageTostorage: true,
-            storage_type_personal_computers_storage_typeTostorage_type: true,
-            gpu_personal_computers_gpuTogpu: true,
-            processor_variant_personal_computers_processor_variantToprocessor_variant: true,
+          personal_computers: {
+            include: {
+              processors: true,
+              ram_personal_computers_ramToram: true,
+              storage_personal_computers_storageTostorage: true,
+              storage_type_personal_computers_storage_typeTostorage_type: true,
+              gpu_personal_computers_gpuTogpu: true,
+              processor_variant_personal_computers_processor_variantToprocessor_variant:
+                true,
+            },
           },
-        },
-        laptops: {
-          include: {
-            ram_laptops_ramToram: true,
-            storage_laptops_storageTostorage: true,
-            storage_type_laptops_storage_typeTostorage_type: true,
-            gpu_laptops_gpuTogpu: true,
-            processors: true,
-            processor_variant_laptops_processor_variantToprocessor_variant: true,
+          laptops: {
+            include: {
+              ram_laptops_ramToram: true,
+              storage_laptops_storageTostorage: true,
+              storage_type_laptops_storage_typeTostorage_type: true,
+              gpu_laptops_gpuTogpu: true,
+              processors: true,
+              processor_variant_laptops_processor_variantToprocessor_variant:
+                true,
+            },
           },
+          product_images: true,
+          location_product_locationTolocation: true,
         },
-        product_images: true,
-        location_product_locationTolocation: true,
-      },
-      where: { id: parseInt(pid.id) },
-    });
+        where: { id: parseInt(pid.id) },
+      });
 
-    if (!data) {
-      return { data: null, message: 'Product not found' };
+      if (!data) {
+        return { data: null, message: 'Product not found' };
+      }
+
+      // Generate signed URLs for product images
+      const imageUrls = data.product_images.length
+        ? await this.s3Service.get_image_urls(
+            data.product_images.map((img) => img.image_url),
+          )
+        : [];
+      const imagesWithUrls = data.product_images.map((img, index) => ({
+        ...img,
+        image_url: imageUrls[index] || img.image_url, // Fallback to original URL
+      }));
+
+      // Generate signed URL for brand logo
+      const brandWithLogoUrl = data.brands
+        ? {
+            ...data.brands,
+            logo: data.brands.logo
+              ? await this.s3Service.get_image_url(data.brands.logo)
+              : null,
+          }
+        : null;
+
+      // Generate signed URL for product owner user profile
+      const userWithProfileUrl = data.users
+        ? {
+            ...data.users,
+            profile: data.users.profile
+              ? await this.s3Service.get_image_url(data.users.profile)
+              : null,
+          }
+        : null;
+
+      // Generate signed URLs for review images and reviewer user profiles
+      const reviewsWithImageUrls = await Promise.all(
+        data.product_reviews.map(async (review) => {
+          // Signed URLs for review images
+          const reviewImageUrls = review.store_product_review_images.length
+            ? await this.s3Service.get_image_urls(
+                review.store_product_review_images.map((img) => img.image_url),
+              )
+            : [];
+          const reviewImagesWithUrls = review.store_product_review_images.map(
+            (img, index) => ({
+              ...img,
+              image_url: reviewImageUrls[index] || img.image_url, // Fallback to original URL
+            }),
+          );
+
+          // Signed URL for reviewer user profile
+          const reviewerWithProfileUrl = review.users
+            ? {
+                ...review.users,
+                profile: review.users.profile
+                  ? await this.s3Service.get_image_url(review.users.profile)
+                  : null,
+              }
+            : null;
+
+          return {
+            ...review,
+            store_product_review_images: reviewImagesWithUrls,
+            users: reviewerWithProfileUrl,
+          };
+        }),
+      );
+
+      const isFavorite = payload
+        ? (
+            await this.prismaService.favourite_products.findMany({
+              where: {
+                user_id: parseInt(payload.id),
+                product_id: data.id,
+              },
+            })
+          ).length > 0
+        : false;
+
+      return {
+        data: {
+          ...data,
+          product_images: imagesWithUrls,
+          product_reviews: reviewsWithImageUrls,
+          brands: brandWithLogoUrl,
+          users: userWithProfileUrl,
+          fav: isFavorite,
+        },
+        message: 'success',
+      };
+    } catch (e) {
+      throw new InternalServerErrorException(e);
     }
-
-    // Generate signed URLs for product images
-    const imageUrls = data.product_images.length
-      ? await this.s3Service.get_image_urls(
-          data.product_images.map((img) => img.image_url),
-        )
-      : [];
-    const imagesWithUrls = data.product_images.map((img, index) => ({
-      ...img,
-      image_url: imageUrls[index] || img.image_url, // Fallback to original URL
-    }));
-
-    // Generate signed URL for brand logo
-    const brandWithLogoUrl = data.brands
-      ? {
-          ...data.brands,
-          logo: data.brands.logo
-            ? await this.s3Service.get_image_url(data.brands.logo)
-            : null,
-        }
-      : null;
-
-    // Generate signed URL for product owner user profile
-    const userWithProfileUrl = data.users
-      ? {
-          ...data.users,
-          profile: data.users.profile
-            ? await this.s3Service.get_image_url(data.users.profile)
-            : null,
-        }
-      : null;
-
-    // Generate signed URLs for review images and reviewer user profiles
-    const reviewsWithImageUrls = await Promise.all(
-      data.product_reviews.map(async (review) => {
-        // Signed URLs for review images
-        const reviewImageUrls = review.store_product_review_images.length
-          ? await this.s3Service.get_image_urls(
-              review.store_product_review_images.map((img) => img.image_url),
-            )
-          : [];
-        const reviewImagesWithUrls = review.store_product_review_images.map(
-          (img, index) => ({
-            ...img,
-            image_url: reviewImageUrls[index] || img.image_url, // Fallback to original URL
-          }),
-        );
-
-        // Signed URL for reviewer user profile
-        const reviewerWithProfileUrl = review.users
-          ? {
-              ...review.users,
-              profile: review.users.profile
-                ? await this.s3Service.get_image_url(review.users.profile)
-                : null,
-            }
-          : null;
-
-        return {
-          ...review,
-          store_product_review_images: reviewImagesWithUrls,
-          users: reviewerWithProfileUrl,
-        };
-      }),
-    );
-
-    const isFavorite = payload
-      ? (
-          await this.prismaService.favourite_products.findMany({
-            where: {
-              user_id: parseInt(payload.id),
-              product_id: data.id,
-            },
-          })
-        ).length > 0
-      : false;
-
-    return {
-      data: {
-        ...data,
-        product_images: imagesWithUrls,
-        product_reviews: reviewsWithImageUrls,
-        brands: brandWithLogoUrl,
-        users: userWithProfileUrl,
-        fav: isFavorite,
-      },
-      message: 'success',
-    };
-  } catch (e) {
-    throw new InternalServerErrorException(e);
   }
-}
-  async CreateProduct(productbody: CreateProductDto, images: Express.Multer.File[]) {
+  async CreateProduct(
+    productbody: CreateProductDto,
+    images: Express.Multer.File[],
+  ) {
     try {
       const data: Prisma.productCreateInput = {
         name: productbody.name,
@@ -1998,24 +2085,32 @@ async GetProductById(pid: any, user: any) {
         price: productbody.price,
         stock: productbody.stock,
         is_store_product: Boolean(productbody.is_store_product),
-        brands: productbody.brand_id && parseInt(productbody.brand_id) != 0
-          ? { connect: { id: parseInt(productbody.brand_id) } }
-          : undefined,
-        models: productbody.model_id && parseInt(productbody.model_id) != 0
-          ? { connect: { id: parseInt(productbody.model_id) } }
-          : undefined,
+        brands:
+          productbody.brand_id && parseInt(productbody.brand_id) != 0
+            ? { connect: { id: parseInt(productbody.brand_id) } }
+            : undefined,
+        models:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? { connect: { id: parseInt(productbody.model_id) } }
+            : undefined,
         categories: { connect: { id: parseInt(productbody.category_id) } },
-        condition_product_conditionTocondition: { connect: { id: parseInt(productbody.condition) } },
+        condition_product_conditionTocondition: {
+          connect: { id: parseInt(productbody.condition) },
+        },
         is_published: Boolean(productbody.is_published),
         is_verified_by_admin: false,
         show_on_home: false,
         top_rated: false,
-        location_product_locationTolocation: { connect: { id: parseInt(productbody.location) } },
+        location_product_locationTolocation: {
+          connect: { id: parseInt(productbody.location) },
+        },
         other_brand_name: productbody.otherBrandName,
       };
 
       if (Boolean(productbody.is_store_product)) {
-        data.admin_product_admin_idToadmin = { connect: { id: parseInt(productbody.user_id) } };
+        data.admin_product_admin_idToadmin = {
+          connect: { id: parseInt(productbody.user_id) },
+        };
       } else {
         data.users = { connect: { id: parseInt(productbody.user_id) } };
       }
@@ -2120,16 +2215,21 @@ async GetProductById(pid: any, user: any) {
         brands: productbody.brand_id
           ? { connect: { id: parseInt(productbody.brand_id) } }
           : { disconnect: true },
-        models: productbody.model_id && parseInt(productbody.model_id) != 0
-          ? { connect: { id: parseInt(productbody.model_id) } }
-          : { disconnect: true },
+        models:
+          productbody.model_id && parseInt(productbody.model_id) != 0
+            ? { connect: { id: parseInt(productbody.model_id) } }
+            : { disconnect: true },
         categories: { connect: { id: parseInt(productbody.category_id) } },
-        condition_product_conditionTocondition: { connect: { id: parseInt(productbody.condition) } },
+        condition_product_conditionTocondition: {
+          connect: { id: parseInt(productbody.condition) },
+        },
         is_published: Boolean(productbody.is_published),
         is_verified_by_admin: false,
         show_on_home: false,
         top_rated: false,
-        location_product_locationTolocation: { connect: { id: parseInt(productbody.location) } },
+        location_product_locationTolocation: {
+          connect: { id: parseInt(productbody.location) },
+        },
         other_brand_name: productbody.otherBrandName,
       };
 
@@ -2138,19 +2238,34 @@ async GetProductById(pid: any, user: any) {
         data,
       });
 
-      if (images && images.length > 0) {
-        // Delete existing images from S3
-        const imagesToDelete = await this.prismaService.product_images.findMany({
-          where: { product_id: parseInt(productbody.prod_id) },
-        });
-        for (const img of imagesToDelete) {
-          await this.s3Service.deleteFileByKey(img.image_url);
-        }
-        await this.prismaService.product_images.deleteMany({
-          where: { product_id: parseInt(productbody.prod_id) },
-        });
+      // if (images && images.length > 0) {
+      //   // Delete existing images from S3
+      //   const imagesToDelete = await this.prismaService.product_images.findMany(
+      //     {
+      //       where: { product_id: parseInt(productbody.prod_id) },
+      //     },
+      //   );
+      //   for (const img of imagesToDelete) {
+      //     await this.s3Service.deleteFileByKey(img.image_url);
+      //   }
+      //   await this.prismaService.product_images.deleteMany({
+      //     where: { product_id: parseInt(productbody.prod_id) },
+      //   });
 
-        // Upload new images to S3
+      //   // Upload new images to S3
+      //   for (const image of images) {
+      //     const uploaded = await this.s3Service.upload_file(image);
+      //     await this.prismaService.product_images.create({
+      //       data: {
+      //         product_id: parseInt(productbody.prod_id),
+      //         image_url: uploaded.Key,
+      //         created_at: new Date(),
+      //       },
+      //     });
+      //   }
+      // }
+      if (images && images.length > 0) {
+        // Just upload and add new images without deleting the old ones
         for (const image of images) {
           const uploaded = await this.s3Service.upload_file(image);
           await this.prismaService.product_images.create({
@@ -2180,7 +2295,9 @@ async GetProductById(pid: any, user: any) {
             weight: productbody.laptops[0].weight,
             screen_resolution: productbody.laptops[0].screen_resolution,
             color: productbody.laptops[0].color,
-            processor_variant: parseInt(productbody.laptops[0].processor_variant),
+            processor_variant: parseInt(
+              productbody.laptops[0].processor_variant,
+            ),
           },
         });
       } else if (parseInt(productbody.category_id) == 4) {
@@ -2200,11 +2317,15 @@ async GetProductById(pid: any, user: any) {
           data: {
             ram: parseInt(productbody.personal_computers[0].ram),
             processor: parseInt(productbody.personal_computers[0].processor),
-            processor_variant: parseInt(productbody.personal_computers[0].processor_variant),
+            processor_variant: parseInt(
+              productbody.personal_computers[0].processor_variant,
+            ),
             graphics: productbody.personal_computers[0].graphics,
             ports: productbody.personal_computers[0].ports,
             storage: parseInt(productbody.personal_computers[0].storage),
-            storage_type: parseInt(productbody.personal_computers[0].storage_type),
+            storage_type: parseInt(
+              productbody.personal_computers[0].storage_type,
+            ),
             gpu: parseInt(productbody.personal_computers[0].gpu),
           },
         });
@@ -2270,9 +2391,10 @@ async GetProductById(pid: any, user: any) {
       }
 
       // Delete review images from S3
-      const revImages = await this.prismaService.store_product_review_images.findMany({
-        where: { review_id: parseInt(data.review_id) },
-      });
+      const revImages =
+        await this.prismaService.store_product_review_images.findMany({
+          where: { review_id: parseInt(data.review_id) },
+        });
       for (const img of revImages) {
         await this.s3Service.deleteFileByKey(img.image_url);
       }
@@ -2339,7 +2461,8 @@ async GetProductById(pid: any, user: any) {
         queryOptions.take = limit;
       }
 
-      const data: ProductWithRelations[] = await this.prismaService.product.findMany(queryOptions);
+      const data: ProductWithRelations[] =
+        await this.prismaService.product.findMany(queryOptions);
       const count = await this.prismaService.product.count({
         where: { user_id: parseInt(queryData.userId) },
       });
@@ -2379,75 +2502,79 @@ async GetProductById(pid: any, user: any) {
 
   async SearchProductByTitle(title: string) {
     try {
-      const data: SearchProductWithRelations[] = await this.prismaService.product.findMany({
-        where: {
-          name: { contains: title, mode: 'insensitive' },
-        },
-        include: {
-          brands: true,
-          models: true,
-          categories: true,
-          condition_product_conditionTocondition: true,
-          components: {
-            include: {
-              component_type_components_component_typeTocomponent_type: true,
-            },
+      const data: SearchProductWithRelations[] =
+        await this.prismaService.product.findMany({
+          where: {
+            name: { contains: title, mode: 'insensitive' },
           },
-          product_reviews: {
-            include: {
-              users: {
-                select: {
-                  username: true,
-                  profile: true,
-                  created_at: true,
-                  first_name: true,
-                  last_name: true,
-                  email: true,
-                  phone: true,
-                  gender: true,
-                },
+          include: {
+            brands: true,
+            models: true,
+            categories: true,
+            condition_product_conditionTocondition: true,
+            components: {
+              include: {
+                component_type_components_component_typeTocomponent_type: true,
               },
-              store_product_review_images: true,
             },
-            orderBy: { created_at: 'desc' },
-          },
-          gaming_console: true,
-          users: {
-            select: {
-              username: true,
-              profile: true,
-              created_at: true,
-              first_name: true,
-              last_name: true,
-              email: true,
-              phone: true,
-              gender: true,
+            product_reviews: {
+              include: {
+                users: {
+                  select: {
+                    username: true,
+                    profile: true,
+                    created_at: true,
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    phone: true,
+                    gender: true,
+                  },
+                },
+                store_product_review_images: true,
+              },
+              orderBy: { created_at: 'desc' },
             },
-          },
-          personal_computers: {
-            include: {
-              processors: true,
-              ram_personal_computers_ramToram: true,
-              storage_personal_computers_storageTostorage: true,
-              storage_type_personal_computers_storage_typeTostorage_type: true,
-              gpu_personal_computers_gpuTogpu: true,
-              processor_variant_personal_computers_processor_variantToprocessor_variant: true,
+            gaming_console: true,
+            users: {
+              select: {
+                username: true,
+                profile: true,
+                created_at: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                phone: true,
+                gender: true,
+              },
             },
-          },
-          laptops: {
-            include: {
-              ram_laptops_ramToram: true,
-              storage_laptops_storageTostorage: true,
-              storage_type_laptops_storage_typeTostorage_type: true,
-              gpu_laptops_gpuTogpu: true,
-              processors: true,
-              processor_variant_laptops_processor_variantToprocessor_variant: true,
+            personal_computers: {
+              include: {
+                processors: true,
+                ram_personal_computers_ramToram: true,
+                storage_personal_computers_storageTostorage: true,
+                storage_type_personal_computers_storage_typeTostorage_type:
+                  true,
+                gpu_personal_computers_gpuTogpu: true,
+                processor_variant_personal_computers_processor_variantToprocessor_variant:
+                  true,
+              },
             },
+            laptops: {
+              include: {
+                ram_laptops_ramToram: true,
+                storage_laptops_storageTostorage: true,
+                storage_type_laptops_storage_typeTostorage_type: true,
+                gpu_laptops_gpuTogpu: true,
+                processors: true,
+                processor_variant_laptops_processor_variantToprocessor_variant:
+                  true,
+              },
+            },
+            product_images: true,
+            location_product_locationTolocation: true,
           },
-          product_images: true,
-          location_product_locationTolocation: true,
-        },
-      });
+        });
 
       if (data.length === 0) {
         return { data: null, message: 'No products found' };
@@ -2470,15 +2597,16 @@ async GetProductById(pid: any, user: any) {
             e.product_reviews.map(async (review) => {
               const reviewImageUrls = review.store_product_review_images.length
                 ? await this.s3Service.get_image_urls(
-                    review.store_product_review_images.map((img) => img.image_url),
+                    review.store_product_review_images.map(
+                      (img) => img.image_url,
+                    ),
                   )
                 : [];
-              const reviewImagesWithUrls = review.store_product_review_images.map(
-                (img, index) => ({
+              const reviewImagesWithUrls =
+                review.store_product_review_images.map((img, index) => ({
                   ...img,
                   image_url: reviewImageUrls[index],
-                }),
-              );
+                }));
               return {
                 ...review,
                 store_product_review_images: reviewImagesWithUrls,

@@ -486,8 +486,8 @@ model ThirdPartyAd {
   updatedAt DateTime @updatedAt
 }
 
-model visitors { 
-  id Int @id @default(autoincrement()) 
-  visited_at DateTime? @default(now()) @db.Timestamp(6) 
-  ip_address String? @db.VarChar 
-  }
+model visitors {
+  id         Int       @id @default(autoincrement())
+  visited_at DateTime? @default(now()) @db.Timestamp(6)
+  ip_address String?   @db.VarChar
+}
