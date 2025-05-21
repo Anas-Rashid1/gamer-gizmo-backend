@@ -813,4 +813,15 @@ export class ProductsContoller {
   async searchProducts(@Query() query: { query: string; pageNo?: string; limit?: string }) {
     return this.productService.searchProducts(query);
   }
+
+  @Delete('/deleteProductImage')
+@ApiQuery({ 
+  name: 'image_ids', 
+  required: true, 
+  type: [String], 
+  description: 'Single image ID or array of image IDs' 
+})
+async DeleteProductImage(@Query('image_ids') imageIds: string | string[]) {
+  return this.productService.DeleteProductImage(imageIds);
+}
 }

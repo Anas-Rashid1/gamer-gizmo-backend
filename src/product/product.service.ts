@@ -2791,4 +2791,44 @@ async searchProducts(query: {
     );
   }
 }
+async DeleteProductImage(imageIds: string | string[]) {
+  try {
+    // Normalize input to always be an array
+    const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+    const parsedIds = ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+
+    if (parsedIds.length === 0) {
+      throw new BadRequestException('No valid image IDs provided');
+    }
+
+    // Fetch all images to be deleted
+    const images = await this.prismaService.product_images.findMany({
+      where: { id: { in: parsedIds } },
+    });
+
+    if (images.length === 0) {
+      throw new BadRequestException('No images found for the provided IDs');
+    }
+
+    // Delete images from S3
+    for (const image of images) {
+      await this.s3Service.deleteFileByKey(image.image_url);
+    }
+
+    // Delete image records from database
+    const deleteResult = await this.prismaService.product_images.deleteMany({
+      where: { id: { in: parsedIds } },
+    });
+
+    return { 
+      message: `${deleteResult.count} image(s) successfully deleted`,
+      deletedCount: deleteResult.count
+    };
+  } catch (error) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    throw new InternalServerErrorException('Failed to delete image(s)', error.message);
+  }
+}
 }
