@@ -2223,7 +2223,10 @@ export class ProductService {
         condition_product_conditionTocondition: {
           connect: { id: parseInt(productbody.condition) },
         },
-        is_published: Boolean(productbody.is_published),
+        is_published:
+          productbody.is_published === 'true' ||
+          productbody.is_published === true,
+
         is_verified_by_admin: false,
         show_on_home: false,
         top_rated: false,
@@ -2701,137 +2704,178 @@ export class ProductService {
   //     );
   //   }
   // }
-async searchProducts(query: {
-  query: string;
-  pageNo?: string;
-  limit?: string;
-}) {
-  try {
-    const searchTerm = query.query?.trim();
-    if (!searchTerm) {
-      return { products: [], total: 0, message: 'No search term provided' };
+  async searchProducts(query: {
+    query: string;
+    pageNo?: string;
+    limit?: string;
+  }) {
+    try {
+      const searchTerm = query.query?.trim();
+      if (!searchTerm) {
+        return { products: [], total: 0, message: 'No search term provided' };
+      }
+
+      const page = parseInt(query.pageNo) || 1;
+      const limit = parseInt(query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      // Build where clause to search across multiple fields
+      const whereParameters: Prisma.productWhereInput = {
+        AND: [
+          { is_published: true },
+          {
+            OR: [
+              {
+                name: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as Prisma.QueryMode,
+                },
+              },
+              {
+                description: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as Prisma.QueryMode,
+                },
+              },
+              {
+                other_brand_name: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as Prisma.QueryMode,
+                },
+              },
+              {
+                categories: {
+                  name: {
+                    contains: searchTerm,
+                    mode: 'insensitive' as Prisma.QueryMode,
+                  },
+                },
+              },
+              {
+                brands: {
+                  name: {
+                    contains: searchTerm,
+                    mode: 'insensitive' as Prisma.QueryMode,
+                  },
+                },
+              },
+              {
+                models: {
+                  name: {
+                    contains: searchTerm,
+                    mode: 'insensitive' as Prisma.QueryMode,
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const [products, total] = await Promise.all([
+        this.prismaService.product.findMany({
+          where: whereParameters,
+          include: {
+            categories: { select: { id: true, name: true } },
+            product_images: { select: { id: true, image_url: true } },
+            brands: { select: { id: true, name: true } },
+            models: { select: { id: true, name: true } },
+          },
+          skip,
+          take: limit,
+          orderBy: { name: 'asc' }, // Optional: sort by name for consistent results
+        }),
+        this.prismaService.product.count({ where: whereParameters }),
+      ]);
+
+      const productsWithImageUrls = await Promise.all(
+        products.map(async (product) => {
+          const imageUrls = product.product_images.length
+            ? await this.s3Service.get_image_urls(
+                product.product_images.map((img) => img.image_url),
+              )
+            : [];
+          const imagesWithUrls = product.product_images.map((img, index) => ({
+            ...img,
+            image_url: imageUrls[index] || img.image_url,
+          }));
+
+          return {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.categories?.name,
+            category_id: product.categories?.id,
+            brand: product.brands?.name,
+            brand_id: product.brands?.id,
+            model: product.models?.name,
+            model_id: product.models?.id,
+            images: imagesWithUrls,
+          };
+        }),
+      );
+
+      return {
+        products: productsWithImageUrls,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to search products',
+        error.message,
+      );
     }
-
-    const page = parseInt(query.pageNo) || 1;
-    const limit = parseInt(query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    // Build where clause to search across multiple fields
-    const whereParameters: Prisma.productWhereInput = {
-      AND: [
-        { is_published: true },
-        {
-          OR: [
-            { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
-            { description: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
-            { other_brand_name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
-            { categories: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
-            { brands: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
-            { models: { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } } },
-          ],
-        },
-      ],
-    };
-
-    const [products, total] = await Promise.all([
-      this.prismaService.product.findMany({
-        where: whereParameters,
-        include: {
-          categories: { select: { id: true, name: true } },
-          product_images: { select: { id: true, image_url: true } },
-          brands: { select: { id: true, name: true } },
-          models: { select: { id: true, name: true } },
-        },
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' }, // Optional: sort by name for consistent results
-      }),
-      this.prismaService.product.count({ where: whereParameters }),
-    ]);
-
-    const productsWithImageUrls = await Promise.all(
-      products.map(async (product) => {
-        const imageUrls = product.product_images.length
-          ? await this.s3Service.get_image_urls(
-              product.product_images.map((img) => img.image_url),
-            )
-          : [];
-        const imagesWithUrls = product.product_images.map((img, index) => ({
-          ...img,
-          image_url: imageUrls[index] || img.image_url,
-        }));
-
-        return {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          category: product.categories?.name,
-          category_id: product.categories?.id,
-          brand: product.brands?.name,
-          brand_id: product.brands?.id,
-          model: product.models?.name,
-          model_id: product.models?.id,
-          images: imagesWithUrls,
-        };
-      }),
-    );
-
-    return {
-      products: productsWithImageUrls,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      message: 'success',
-    };
-  } catch (error) {
-    throw new InternalServerErrorException(
-      'Failed to search products',
-      error.message,
-    );
   }
-}
-async DeleteProductImage(imageIds: string | string[]) {
-  try {
-    // Normalize input to always be an array
-    const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
-    const parsedIds = ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+  async DeleteProductImage(imageIds: string | string[]) {
+    try {
+      // Normalize input to always be an array
+      const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+      const parsedIds = ids
+        .map((id) => parseInt(id))
+        .filter((id) => !isNaN(id));
 
-    if (parsedIds.length === 0) {
-      throw new BadRequestException('No valid image IDs provided');
+      if (parsedIds.length === 0) {
+        throw new BadRequestException('No valid image IDs provided');
+      }
+
+      // Fetch all images to be deleted
+      const images = await this.prismaService.product_images.findMany({
+        where: { id: { in: parsedIds } },
+      });
+
+      if (images.length === 0) {
+        throw new BadRequestException('No images found for the provided IDs');
+      }
+
+      // Delete images from S3
+      for (const image of images) {
+        await this.s3Service.deleteFileByKey(image.image_url);
+      }
+
+      // Delete image records from database
+      const deleteResult = await this.prismaService.product_images.deleteMany({
+        where: { id: { in: parsedIds } },
+      });
+
+      return {
+        message: `${deleteResult.count} image(s) successfully deleted`,
+        deletedCount: deleteResult.count,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to delete image(s)',
+        error.message,
+      );
     }
-
-    // Fetch all images to be deleted
-    const images = await this.prismaService.product_images.findMany({
-      where: { id: { in: parsedIds } },
-    });
-
-    if (images.length === 0) {
-      throw new BadRequestException('No images found for the provided IDs');
-    }
-
-    // Delete images from S3
-    for (const image of images) {
-      await this.s3Service.deleteFileByKey(image.image_url);
-    }
-
-    // Delete image records from database
-    const deleteResult = await this.prismaService.product_images.deleteMany({
-      where: { id: { in: parsedIds } },
-    });
-
-    return { 
-      message: `${deleteResult.count} image(s) successfully deleted`,
-      deletedCount: deleteResult.count
-    };
-  } catch (error) {
-    if (error instanceof BadRequestException) {
-      throw error;
-    }
-    throw new InternalServerErrorException('Failed to delete image(s)', error.message);
   }
-}
-    async SetFeatured(productId: string) {
+  async SetFeatured(productId: string) {
     try {
       const parsedId = parseInt(productId);
       if (isNaN(parsedId)) {
@@ -2856,7 +2900,10 @@ async DeleteProductImage(imageIds: string | string[]) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to mark product as featured', error.message);
+      throw new InternalServerErrorException(
+        'Failed to mark product as featured',
+        error.message,
+      );
     }
   }
 
@@ -2885,7 +2932,10 @@ async DeleteProductImage(imageIds: string | string[]) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to mark product as non-featured', error.message);
+      throw new InternalServerErrorException(
+        'Failed to mark product as non-featured',
+        error.message,
+      );
     }
   }
 }
