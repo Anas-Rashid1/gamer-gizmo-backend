@@ -17,10 +17,11 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { S3Service } from 'src/utils/s3.service';
 
 @Module({
   controllers: [CartController],
-  providers: [CartService, PrismaService, JwtService],
+  providers: [S3Service, CartService, PrismaService, JwtService],
   exports: [CartService], // Export CartService for use in OrderModule
 })
 export class CartModule {}
