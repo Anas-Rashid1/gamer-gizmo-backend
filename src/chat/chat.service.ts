@@ -1,55 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async createMessage(data: any) {
-    let DataToSend = {
-      content: data.content,
-      is_admin: Boolean(data.is_admin),
-    };
-    console.log('DataToSend', DataToSend);
-    if (Boolean(data.is_admin)) {
-      // @ts-expect-error kjhn jkh
-      DataToSend.admin_id = data.sender_id;
-    } else {
-      // @ts-expect-error kjhn jkh
-      DataToSend.sender_id = data.sender_id;
+  async createChat(user1Id: number, user2Id: number) {
+    if (user1Id === user2Id) {
+      throw new BadRequestException('Cannot create a chat with the same user');
     }
-    let res = await this.prisma.community_messages.create({
-      data: DataToSend,
-      include: {
-        users: {
-          select: {
-            username: true,
-            profile: true,
-          },
+
+    try {
+      // Check if chat already exists
+      const existingChat = await this.prismaService.chats.findFirst({
+        where: {
+          OR: [
+            { user1_id: user1Id, user2_id: user2Id },
+            { user1_id: user2Id, user2_id: user1Id },
+          ],
         },
-      },
-    });
-    console.log(res);
-    return res;
+      });
+
+      if (existingChat) {
+        return { message: 'Chat already exists', data: existingChat };
+      }
+
+      // Create new chat
+      const chat = await this.prismaService.chats.create({
+        data: {
+          user1_id: user1Id,
+          user2_id: user2Id,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      return { message: 'Chat created successfully', data: chat };
+    } catch (error) {
+      throw new BadRequestException('Failed to create chat: ' + error.message);
+    }
   }
 
-    async getMessages({  beforeId }: { beforeId?: number }) {
+  async getMessages(chatId: number) {
+    try {
+      const messages = await this.prismaService.messages.findMany({
+        where: { chat_id: chatId },
+        orderBy: { sent_at: 'asc' },
+      });
 
-    let res = await this.prisma.community_messages.findMany({
-      where: beforeId ? { id: { lt: beforeId } } : undefined,
-      orderBy: { created_at: 'desc' },
-      take: 10,
-      include: {
-        users: {
-          select: {
-            profile: true,
-            username: true,
-          },
-        },
-      },
-    });
-    res = res.reverse();
-    // console.log(res);
-    return res;
+      return { message: 'Messages retrieved successfully', data: messages };
+    } catch (error) {
+      throw new BadRequestException('Failed to retrieve messages: ' + error.message);
+    }
   }
 }

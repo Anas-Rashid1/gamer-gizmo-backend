@@ -43,12 +43,16 @@
 //       client.emit('loadMoreMessages', messages);
 //   }
 // }
-
-import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import {
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { BadRequestException } from '@nestjs/common';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 @Injectable()
@@ -64,7 +68,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = parseInt(client.handshake.query.userId as string);
     if (isNaN(userId)) {
       client.disconnect();
-      return;
+      throw new BadRequestException('Invalid user ID');
     }
     this.connectedUsers.set(userId, client);
     console.log(`User ${userId} connected`);
@@ -84,7 +88,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      // Create message in database
+      // Validate chat exists
+      const chat = await this.prismaService.chats.findUnique({
+        where: { id: payload.chatId },
+      });
+      if (!chat) {
+        throw new BadRequestException('Chat not found');
+      }
+
+      // Create message
       const message = await this.prismaService.messages.create({
         data: {
           chat_id: payload.chatId,
@@ -93,15 +105,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           sent_at: new Date(),
           is_read: false,
         },
-        include: {
-          chats: true,
-        },
+        include: { chats: true },
       });
 
       // Emit message to sender and receiver
-      const receiverSocket = this.connectedUsers.get(payload.receiverId);
-      const senderSocket = this.connectedUsers.get(senderId);
-
       const messageData = {
         id: message.id,
         chatId: message.chat_id,
@@ -110,6 +117,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         sentAt: message.sent_at,
         isRead: message.is_read,
       };
+
+      const senderSocket = this.connectedUsers.get(senderId);
+      const receiverSocket = this.connectedUsers.get(payload.receiverId);
 
       if (senderSocket) {
         senderSocket.emit('receiveMessage', messageData);
@@ -120,48 +130,53 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { message: 'Message sent successfully', data: messageData };
     } catch (error) {
-      throw new BadRequestException('Failed to send message');
+      throw new BadRequestException(error.message || 'Failed to send message');
     }
   }
 
   @SubscribeMessage('markMessageAsRead')
   async handleMarkMessageAsRead(client: Socket, payload: { messageId: number }) {
     try {
+      const message = await this.prismaService.messages.findUnique({
+        where: { id: payload.messageId },
+        include: { chats: true },
+      });
+
+      if (!message) {
+        throw new BadRequestException('Message not found');
+      }
+
+      // Update read status
       await this.prismaService.messages.update({
         where: { id: payload.messageId },
         data: { is_read: true },
       });
 
       // Notify both users
-      const message = await this.prismaService.messages.findUnique({
-        where: { id: payload.messageId },
-        include: { chats: true },
-      });
+      const senderSocket = this.connectedUsers.get(message.sender_id);
+      const receiverSocket = this.connectedUsers.get(
+        message.chats.user1_id === message.sender_id ? message.chats.user2_id : message.chats.user1_id,
+      );
 
-      if (message) {
-        const senderSocket = this.connectedUsers.get(message.sender_id);
-        const receiverSocket = this.connectedUsers.get(message.chats.user1_id === message.sender_id ? message.chats.user2_id : message.chats.user1_id);
+      const messageData = {
+        id: message.id,
+        chatId: message.chat_id,
+        senderId: message.sender_id,
+        messageText: message.message_text,
+        sentAt: message.sent_at,
+        isRead: true,
+      };
 
-        const messageData = {
-          id: message.id,
-          chatId: message.chat_id,
-          senderId: message.sender_id,
-          messageText: message.message_text,
-          sentAt: message.sent_at,
-          isRead: true,
-        };
-
-        if (senderSocket) {
-          senderSocket.emit('messageRead', messageData);
-        }
-        if (receiverSocket) {
-          receiverSocket.emit('messageRead', messageData);
-        }
+      if (senderSocket) {
+        senderSocket.emit('messageRead', messageData);
+      }
+      if (receiverSocket) {
+        receiverSocket.emit('messageRead', messageData);
       }
 
       return { message: 'Message marked as read' };
     } catch (error) {
-      throw new BadRequestException('Failed to mark message as read');
+      throw new BadRequestException(error.message || 'Failed to mark message as read');
     }
   }
 }
