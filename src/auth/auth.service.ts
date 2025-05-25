@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import axios from 'axios';
 import { CreateAdminDto, CreateUserDto } from './dtos/create-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateOTP } from 'src/utils/otp.generator';
@@ -20,18 +21,23 @@ import { logoutTemplate } from 'src/views/logout.template';
 import { ForgetPassDto } from './dtos/forgetPass.dto';
 import { SendPassOtpDto } from './dtos/send-pass-otp.dto';
 import { S3Service } from 'src/utils/s3.service';
-
-
+import { OAuth2Client } from 'google-auth-library';
+import { GoogleSignInDto } from './dtos/google-signin.dto';
+import { FacebookSignInDto } from './dtos/facebook-signin.dto'; 
 @Injectable()
 export class AuthService {
   private readonly secretKey = process.env.JWT_SECRET; // Replace with your secret key
+  private readonly googleClient: OAuth2Client;
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
     private s3Service: S3Service,
 
-  ) {}
+  ) {
+    this.googleClient = new OAuth2Client(
+      this.configService.get<string>('GOOGLE_CLIENT_ID'),
+    );}
   async signup(createUserDto: CreateUserDto) {
     const {
       email,
@@ -550,5 +556,209 @@ export class AuthService {
       return 'Password Updated';
     }
     return 'WRONG OTP';
+  }
+  async googleSignIn(googleSignInDto: GoogleSignInDto) {
+    const { idToken, platform, region } = googleSignInDto;
+
+    // Verify Google ID token
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      });
+      payload = ticket.getPayload();
+      if (!payload) {
+        throw new BadRequestException('Invalid Google ID token');
+      }
+    } catch (error) {
+      throw new BadRequestException('Failed to verify Google ID token');
+    }
+
+    const { sub: googleId, email, given_name, family_name } = payload;
+
+    // Check if user exists by email or Google ID
+    let user = await this.prisma.users.findFirst({
+      where: { OR: [{ email }, { googleId }] },
+    });
+
+    if (!user) {
+      // Create new user
+      user = await this.prisma.users.create({
+        data: {
+          email,
+          username: email.split('@')[0], // Generate a username (or make it unique)
+          first_name: given_name || '',
+          last_name: family_name || '',
+          googleId, // Add googleId to your schema (see below)
+          is_email_verified: true, // Google verifies email
+          is_active: true,
+          created_at: new Date(),
+          gender: 'unknown', // Default value, adjust as needed
+          dob: new Date(), // Default value, adjust as needed
+        },
+      });
+
+      // Create a cart for the new user
+      await this.prisma.cart.create({
+        data: {
+          user_id: user.id,
+          updated_at: new Date(),
+        },
+      });
+    } else if (!user.googleId) {
+      // Link Google ID to existing user
+      user = await this.prisma.users.update({
+        where: { id: user.id },
+        data: { googleId, is_email_verified: true },
+      });
+    }
+
+    // Check token count (consistent with your signin method)
+    const tokenCount = await this.prisma.tokens.count({
+      where: { user_id: user.id },
+    });
+    if (tokenCount >= 5) {
+      const tokens = await this.prisma.tokens.findMany({
+        where: { user_id: user.id },
+      });
+      throw new BadRequestException({
+        message: 'You have reached max account logins',
+        accounts: tokens,
+      });
+    }
+
+    // Generate JWT
+    const jwtPayload = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
+    const token = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+    });
+
+    // Store token in tokens table
+    const createdToken = await this.prisma.tokens.create({
+      data: {
+        user_id: user.id,
+        token,
+        platform,
+        region: region || null,
+        created_at: new Date(),
+      },
+    });
+
+    if (!createdToken) {
+      throw new BadRequestException('Failed to create token');
+    }
+
+    const profileUrl = user.profile
+      ? await this.s3Service.get_image_url(user.profile)
+      : null;
+
+    const { password, profile, googleId: _, ...userWithoutSensitive } = user;
+    return { token, ...userWithoutSensitive, profile: profileUrl };
+  }
+  async facebookSignIn(facebookSignInDto: FacebookSignInDto) {
+    const { accessToken, platform, region } = facebookSignInDto;
+
+    // Verify Facebook access token
+    let facebookData;
+    try {
+      const response = await axios.get(
+        `https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token=${accessToken}`,
+      );
+      facebookData = response.data;
+      if (!facebookData.id || !facebookData.email) {
+        throw new BadRequestException('Invalid Facebook access token');
+      }
+    } catch (error) {
+      throw new BadRequestException('Failed to verify Facebook access token');
+    }
+
+    const { id: facebookId, email, first_name, last_name } = facebookData;
+
+    let user = await this.prisma.users.findFirst({
+      where: { OR: [{ email }, { facebookId }] },
+    });
+
+    if (!user) {
+      // Create new user
+      user = await this.prisma.users.create({
+        data: {
+          email,
+          username: email.split('@')[0] + Math.random().toString(36).substring(2, 8), // Ensure unique username
+          first_name: first_name || '',
+          last_name: last_name || '',
+          facebookId,
+          is_email_verified: true, 
+          is_active: true,
+          created_at: new Date(),
+          gender: 'unknown',
+          dob: new Date('2000-01-01'), 
+        },
+      });
+
+      // Create a cart for the new user
+      await this.prisma.cart.create({
+        data: {
+          user_id: user.id,
+          updated_at: new Date(),
+        },
+      });
+    } else if (!user.facebookId) {
+      // Link Facebook ID to existing user
+      user = await this.prisma.users.update({
+        where: { id: user.id },
+        data: { facebookId, is_email_verified: true },
+      });
+    }
+
+    // Check token count
+    const tokenCount = await this.prisma.tokens.count({
+      where: { user_id: user.id },
+    });
+    if (tokenCount >= 5) {
+      const tokens = await this.prisma.tokens.findMany({
+        where: { user_id: user.id },
+      });
+      throw new BadRequestException({
+        message: 'You have reached max account logins',
+        accounts: tokens,
+      });
+    }
+
+    // Generate JWT
+    const jwtPayload = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
+    const token = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+    });
+
+    // Store token in tokens table
+    const createdToken = await this.prisma.tokens.create({
+      data: {
+        user_id: user.id,
+        token,
+        platform,
+        region: region || null,
+        created_at: new Date(),
+      },
+    });
+
+    if (!createdToken) {
+      throw new BadRequestException('Failed to create token');
+    }
+
+    const profileUrl = user.profile
+      ? await this.s3Service.get_image_url(user.profile)
+      : null;
+
+    const { password, profile, googleId, facebookId: _, ...userWithoutSensitive } = user;
+    return { token, ...userWithoutSensitive, profile: profileUrl };
   }
 }

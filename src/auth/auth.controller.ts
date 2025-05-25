@@ -16,7 +16,8 @@ import { LogoutUserDto } from './dtos/logout-user.dto';
 import { ForgetPassDto } from './dtos/forgetPass.dto';
 import { SendPassOtpDto } from './dtos/send-pass-otp.dto';
 import { AuthGuard } from './auth.gurad';
-
+import { GoogleSignInDto } from './dtos/google-signin.dto';
+import { FacebookSignInDto } from './dtos/facebook-signin.dto'; 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -69,5 +70,14 @@ export class AuthController {
   @Post('resetPasswordOtp')
   async resetPasswordOtp(@Body() forgetPassDto: ForgetPassDto) {
     return this.authService.updatePassword(forgetPassDto);
+  }
+  @Post('google-signin')
+  async googleSignIn(@Body() googleSignInDto: GoogleSignInDto) {
+    return this.authService.googleSignIn(googleSignInDto);
+  }
+
+  @Post('facebook-signin')
+  async facebookSignIn(@Body() facebookSignInDto: FacebookSignInDto) {
+    return this.authService.facebookSignIn(facebookSignInDto);
   }
 }

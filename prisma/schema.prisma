@@ -419,7 +419,9 @@ model users {
   id                                           Int                       @id @default(autoincrement())
   username                                     String                    @unique(map: "unique_username") @db.VarChar
   email                                        String                    @unique(map: "unique_email") @db.VarChar
-  password                                     String                    @db.VarChar
+  password                                     String?                   @db.VarChar
+  googleId                                     String?                   @unique @db.VarChar
+  facebookId                                   String?                   @unique @db.VarChar // Add this field
   first_name                                   String?                   @db.VarChar
   last_name                                    String?                   @db.VarChar
   is_seller                                    Boolean?                  @default(false)
