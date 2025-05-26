@@ -420,8 +420,6 @@ model users {
   username                                     String                    @unique(map: "unique_username") @db.VarChar
   email                                        String                    @unique(map: "unique_email") @db.VarChar
   password                                     String?                   @db.VarChar
-  googleId                                     String?                   @unique @db.VarChar
-  facebookId                                   String?                   @unique @db.VarChar // Add this field
   first_name                                   String?                   @db.VarChar
   last_name                                    String?                   @db.VarChar
   is_seller                                    Boolean?                  @default(false)
@@ -437,6 +435,8 @@ model users {
   profile                                      String?
   applied_for_verification                     Boolean?                  @default(false)
   is_active                                    Boolean?                  @default(true)
+  googleId                                     String?                   @unique @db.VarChar
+  facebookId                                   String?                   @unique @db.VarChar
   cart                                         cart[]
   chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")
   chats_chats_user2_idTousers                  chats[]                   @relation("chats_user2_idTousers")
