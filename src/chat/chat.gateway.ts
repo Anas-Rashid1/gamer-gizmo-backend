@@ -1,48 +1,3 @@
-// import {
-//   WebSocketGateway,
-//   WebSocketServer,
-//   SubscribeMessage,
-//   MessageBody,
-//   ConnectedSocket,
-// } from '@nestjs/websockets';
-// import { Server, Socket } from 'socket.io';
-// import { ChatService } from './chat.service';
-
-// @WebSocketGateway({ cors: '*' })
-// export class ChatGateway {
-//   @WebSocketServer()
-//   server: Server;
-
-//   constructor(private chatService: ChatService) {}
-
-//   @SubscribeMessage('sendMessage')
-//   async handleMessage(
-//     @MessageBody() data: any,
-//     @ConnectedSocket() client: Socket,
-//   ) {
-//     const message = await this.chatService.createMessage(data);
-//     this.server.emit('receiveMessage', message);
-//   }
-
-//   @SubscribeMessage('fetchMessages')
-//   async fetchMessages(@ConnectedSocket() client: Socket) {
-//     const messages = await this.chatService.getMessages({ }); // Fetch latest 20 messages    
-//     client.emit('loadMessages', messages);
-//   }
-
-
-//   @SubscribeMessage('fetchMoreMessages')
-//   async fetchMoreMessages(
-//     @MessageBody() { lastMessageId }: { lastMessageId: number },
-//     @ConnectedSocket() client: Socket,
-//   ) {
-//     console.log("called",lastMessageId)
-//     const messages = await this.chatService.getMessages({
-//       beforeId: lastMessageId,
-//     });
-//       client.emit('loadMoreMessages', messages);
-//   }
-// }
 import {
   SubscribeMessage,
   WebSocketGateway,
@@ -53,7 +8,9 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Chats')
 @WebSocketGateway({ cors: { origin: '*' } })
 @Injectable()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -81,6 +38,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('sendMessage')
+  @ApiOperation({
+    summary: 'Send a message in a chat (WebSocket)',
+    description: 'Sends a message to a chat and emits a `receiveMessage` event to both sender and receiver (if connected). The receiverId must be one of the chat’s users (user1_id or user2_id).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Message sent successfully, emitted as `receiveMessage` event to sender and receiver',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Response message', example: 'Message sent successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'Message ID', example: 1 },
+            chatId: { type: 'number', description: 'Chat ID', example: 1 },
+            senderId: { type: 'number', description: 'Sender user ID', example: 1 },
+            messageText: { type: 'string', description: 'Message content', example: 'Hello!' },
+            sentAt: { type: 'string', format: 'date-time', description: 'Timestamp when message was sent', example: '2025-05-27T01:38:00.000Z' },
+            isRead: { type: 'boolean', description: 'Whether the message has been read', example: false },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, chat ID, receiver ID, or message data' })
+  @ApiResponse({ status: 404, description: 'Not Found - Chat or users not found' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
   async handleSendMessage(client: Socket, payload: { chatId: number; receiverId: number; messageText: string }) {
     const senderId = parseInt(client.handshake.query.userId as string);
     if (isNaN(senderId)) {
@@ -135,6 +120,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('markMessageAsRead')
+  @ApiOperation({
+    summary: 'Mark a message as read in a chat (WebSocket)',
+    description: 'Marks a message as read and emits a `messageRead` event to both sender and receiver (if connected).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Message marked as read, emitted as `messageRead` event to both users',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Response message', example: 'Message marked as read' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID' })
+  @ApiResponse({ status: 404, description: 'Not Found - Message not found' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
   async handleMarkMessageAsRead(client: Socket, payload: { messageId: number }) {
     try {
       const message = await this.prismaService.messages.findUnique({

@@ -255,6 +255,7 @@ model orders {
   id               Int            @id @default(autoincrement())
   user_id          Int
   total_amount     String         @db.VarChar
+  shipping_rate    String         @db.VarChar @default("10.00") 
   order_status     String         @db.VarChar
   shipping_address String         @db.VarChar
   created_at       DateTime?      @default(now()) @db.Timestamp(6)

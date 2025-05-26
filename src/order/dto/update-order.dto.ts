@@ -1,14 +1,20 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateOrderDto {
-  @ApiProperty({ description: 'Status of the order', example: 'SHIPPED', required: false })
-  @IsString()
+  @ApiProperty({ description: 'Order status', required: false })
   @IsOptional()
+  @IsString()
   order_status?: string;
 
-  @ApiProperty({ description: 'Updated shipping address', example: '456 Updated Street, City, Country', required: false })
-  @IsString()
+  @ApiProperty({ description: 'Shipping address', required: false })
   @IsOptional()
+  @IsString()
   shipping_address?: string;
+
+  @ApiProperty({ description: 'Shipping rate for the order', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  shipping_rate?: number;
 }
