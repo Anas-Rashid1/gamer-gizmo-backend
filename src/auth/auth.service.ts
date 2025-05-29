@@ -285,7 +285,7 @@ export class AuthService {
         where: { user_id: user.id },
       });
       throw new BadRequestException({
-        message: 'You have reached max account logins',
+        message: 'You have  max account logins',
         accounts: tokens,
       });
     }
@@ -618,15 +618,15 @@ export class AuthService {
     const tokenCount = await this.prisma.tokens.count({
       where: { user_id: user.id },
     });
-    if (tokenCount >= 5) {
-      const tokens = await this.prisma.tokens.findMany({
-        where: { user_id: user.id },
-      });
-      throw new BadRequestException({
-        message: 'You have reached max account logins',
-        accounts: tokens,
-      });
-    }
+    // if (tokenCount >= 5) {
+    //   const tokens = await this.prisma.tokens.findMany({
+    //     where: { user_id: user.id },
+    //   });
+    //   throw new BadRequestException({
+    //     message: 'You have reached max account logins',
+    //     accounts: tokens,
+    //   });
+    // }
 
     // Generate JWT
     const jwtPayload = {
@@ -719,15 +719,15 @@ export class AuthService {
     const tokenCount = await this.prisma.tokens.count({
       where: { user_id: user.id },
     });
-    if (tokenCount >= 5) {
-      const tokens = await this.prisma.tokens.findMany({
-        where: { user_id: user.id },
-      });
-      throw new BadRequestException({
-        message: 'You have reached max account logins',
-        accounts: tokens,
-      });
-    }
+    // if (tokenCount >= 5) {
+    //   const tokens = await this.prisma.tokens.findMany({
+    //     where: { user_id: user.id },
+    //   });
+    //   throw new BadRequestException({
+    //     message: 'You have reached max account logins',
+    //     accounts: tokens,
+    //   });
+    // }
 
     // Generate JWT
     const jwtPayload = {
