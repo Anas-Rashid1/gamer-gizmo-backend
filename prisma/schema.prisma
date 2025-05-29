@@ -255,11 +255,11 @@ model orders {
   id               Int            @id @default(autoincrement())
   user_id          Int
   total_amount     String         @db.VarChar
-  shipping_rate    String         @db.VarChar @default("10.00") 
   order_status     String         @db.VarChar
   shipping_address String         @db.VarChar
   created_at       DateTime?      @default(now()) @db.Timestamp(6)
   updated_at       DateTime?      @default(now()) @db.Timestamp(6)
+  shipping_rate    String         @default("10.00") @db.VarChar
   order_items      order_items[]
   users            users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions     transactions[]
