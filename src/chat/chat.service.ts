@@ -173,4 +173,42 @@ export class ChatService {
       throw new BadRequestException('Failed to get messages: ' + error.message);
     }
   }
+
+
+ async getBuyersAndSellers(userId: number) {
+    try {
+      // Validate userId
+      const validUserId = Number(userId);
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new BadRequestException('Invalid user ID');
+      }
+
+      // Fetch chats where user is user2_id (to get buyers as user1_id)
+      const buyerChats = await this.prismaService.chats.findMany({
+        where: { user2_id: validUserId },
+        select: { user1_id: true },
+      });
+
+      // Fetch chats where user is user1_id (to get sellers as user2_id)
+      const sellerChats = await this.prismaService.chats.findMany({
+        where: { user1_id: validUserId },
+        select: { user2_id: true },
+      });
+
+      // Extract unique buyer and seller IDs
+      const buyers = [...new Set(buyerChats.map(chat => chat.user1_id))];
+      const sellers = [...new Set(sellerChats.map(chat => chat.user2_id))];
+
+      return {
+        message: 'Buyers and sellers retrieved successfully',
+        data: {
+          buyers,
+          sellers,
+        },
+      };
+    } catch (error) {
+      console.error('Get buyers and sellers error:', error);
+      throw new BadRequestException('Failed to retrieve buyers and sellers: ' + error.message);
+    }
+  }
 }

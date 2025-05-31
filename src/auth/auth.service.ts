@@ -722,8 +722,7 @@ export class AuthService {
     // if (tokenCount >= 5) {
     //   const tokens = await this.prisma.tokens.findMany({
     //     where: { user_id: user.id },
-    //   });
-    //   throw new BadRequestException({
+    //  hrow new BadRequestException({
     //     message: 'You have reached max account logins',
     //     accounts: tokens,
     //   });

@@ -1,10 +1,20 @@
-import { Controller, Get, Post, Body, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, BadRequestException, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
+import { AuthGuard } from '../auth/auth.gurad';
+import { Request } from 'express';
+
+// Define JwtPayload interface locally
+interface JwtPayload {
+  id: number;
+  [key: string]: any;
+}
 
 @ApiTags('Chats')
 @ApiBearerAuth()
 @Controller('/chats')
+@UseGuards(AuthGuard)
+
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
@@ -97,6 +107,48 @@ export class ChatController {
       return await this.chatService.getMessages(parsedChatId);
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to retrieve messages');
+    }
+  }
+
+  // chat.controller.ts
+
+  @Get('/buyers-and-sellers')
+  @ApiOperation({ summary: 'Retrieve buyers and sellers for the authenticated user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Buyers (user1_id where authenticated user is user2_id) and sellers (user2_id where authenticated user is user1_id) retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', description: 'Response message', example: 'Buyers and sellers retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            buyers: {
+              type: 'array',
+              items: { type: 'number' },
+              description: 'Array of unique buyer user IDs (user1_id where authenticated user is user2_id)',
+              example: [1, 3, 5],
+            },
+            sellers: {
+              type: 'array',
+              items: { type: 'number' },
+              description: 'Array of unique seller user IDs (user2_id where authenticated user is user1_id)',
+              example: [2, 4, 6],
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid user ID or failed to retrieve data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
+  async getBuyersAndSellers(@Req() request: Request & { user: JwtPayload }) {
+    try {
+      return await this.chatService.getBuyersAndSellers(request.user.id);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to retrieve buyers and sellers');
     }
   }
 }
