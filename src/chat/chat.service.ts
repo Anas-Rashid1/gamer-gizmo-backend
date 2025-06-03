@@ -174,7 +174,6 @@ export class ChatService {
     }
   }
 
-
  async getBuyersAndSellers(userId: number) {
     try {
       // Validate userId
@@ -183,21 +182,56 @@ export class ChatService {
         throw new BadRequestException('Invalid user ID');
       }
 
-      // Fetch chats where user is user2_id (to get buyers as user1_id)
+      // Fetch chats where user is user2_id (buyers are user1_id) with user1 data
       const buyerChats = await this.prismaService.chats.findMany({
         where: { user2_id: validUserId },
-        select: { user1_id: true },
+        select: {
+          users_chats_user1_idTousers: {
+            select: {
+              id: true,
+              username: true,
+              first_name: true,
+              last_name: true,
+              is_seller: true,
+            },
+          },
+        },
       });
 
-      // Fetch chats where user is user1_id (to get sellers as user2_id)
+      // Fetch chats where user is user1_id (sellers are user2_id) with user2 data
       const sellerChats = await this.prismaService.chats.findMany({
         where: { user1_id: validUserId },
-        select: { user2_id: true },
+        select: {
+          users_chats_user2_idTousers: {
+            select: {
+              id: true,
+              username: true,
+              first_name: true,
+              last_name: true,
+              is_seller: true,
+            },
+          },
+        },
       });
 
-      // Extract unique buyer and seller IDs
-      const buyers = [...new Set(buyerChats.map(chat => chat.user1_id))];
-      const sellers = [...new Set(sellerChats.map(chat => chat.user2_id))];
+      // Extract unique buyer and seller user objects
+      const buyers = [
+        ...new Set(
+          buyerChats
+            .map(chat => chat.users_chats_user1_idTousers)
+            .filter(user => user !== null)
+            .map(user => JSON.stringify(user))
+        ),
+      ].map(str => JSON.parse(str));
+
+      const sellers = [
+        ...new Set(
+          sellerChats
+            .map(chat => chat.users_chats_user2_idTousers)
+            .filter(user => user !== null)
+            .map(user => JSON.stringify(user))
+        ),
+      ].map(str => JSON.parse(str));
 
       return {
         message: 'Buyers and sellers retrieved successfully',

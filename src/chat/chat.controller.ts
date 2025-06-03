@@ -116,7 +116,7 @@ export class ChatController {
   @ApiOperation({ summary: 'Retrieve buyers and sellers for the authenticated user' })
   @ApiResponse({
     status: 200,
-    description: 'Buyers (user1_id where authenticated user is user2_id) and sellers (user2_id where authenticated user is user1_id) retrieved successfully',
+    description: 'Buyers (user1_id where authenticated user is user2_id) and sellers (user2_id where authenticated user is user1_id) retrieved successfully with user data',
     schema: {
       type: 'object',
       properties: {
@@ -126,15 +126,31 @@ export class ChatController {
           properties: {
             buyers: {
               type: 'array',
-              items: { type: 'number' },
-              description: 'Array of unique buyer user IDs (user1_id where authenticated user is user2_id)',
-              example: [1, 3, 5],
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', description: 'User ID', example: 1 },
+                  username: { type: 'string', description: 'Username', example: 'john_doe' },
+                  first_name: { type: 'string', description: 'First name', example: 'John', nullable: true },
+                  last_name: { type: 'string', description: 'Last name', example: 'Doe', nullable: true },
+                  is_seller: { type: 'boolean', description: 'Whether the user is a seller', example: false },
+                },
+              },
+              description: 'Array of buyer user objects (user1_id where authenticated user is user2_id)',
             },
             sellers: {
               type: 'array',
-              items: { type: 'number' },
-              description: 'Array of unique seller user IDs (user2_id where authenticated user is user1_id)',
-              example: [2, 4, 6],
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', description: 'User ID', example: 2 },
+                  username: { type: 'string', description: 'Username', example: 'jane_seller' },
+                  first_name: { type: 'string', description: 'First name', example: 'Jane', nullable: true },
+                  last_name: { type: 'string', description: 'Last name', example: 'Seller', nullable: true },
+                  is_seller: { type: 'boolean', description: 'Whether the user is a seller', example: true },
+                },
+              },
+              description: 'Array of seller user objects (user2_id where authenticated user is user1_id)',
             },
           },
         },
