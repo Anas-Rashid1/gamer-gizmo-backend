@@ -1,65 +1,34 @@
-// import { Injectable, BadRequestException } from '@nestjs/common';
-// import { PrismaService } from 'src/prisma/prisma.service';
-
-// @Injectable()
-// export class ChatService {
-//   constructor(private readonly prismaService: PrismaService) {}
-
-//   async createChat(user1Id: number, user2Id: number) {
-//     if (user1Id === user2Id) {
-//       throw new BadRequestException('Cannot create a chat with the same user');
-//     }
-
-//     try {
-//       // Check if chat already exists
-//       const existingChat = await this.prismaService.chats.findFirst({
-//         where: {
-//           OR: [
-//             { user1_id: user1Id, user2_id: user2Id },
-//             { user1_id: user2Id, user2_id: user1Id },
-//           ],
-//         },
-//       });
-
-//       if (existingChat) {
-//         return { message: 'Chat already exists', data: existingChat };
-//       }
-
-//       // Create new chat
-//       const chat = await this.prismaService.chats.create({
-//         data: {
-//           user1_id: user1Id,
-//           user2_id: user2Id,
-//           created_at: new Date(),
-//           updated_at: new Date(),
-//         },
-//       });
-
-//       return { message: 'Chat created successfully', data: chat };
-//     } catch (error) {
-//       throw new BadRequestException('Failed to create chat: ' + error.message);
-//     }
-//   }
-
-//   async getMessages(chatId: number) {
-//     try {
-//       const messages = await this.prismaService.messages.findMany({
-//         where: { chat_id: chatId },
-//         orderBy: { sent_at: 'asc' },
-//       });
-
-//       return { message: 'Messages retrieved successfully', data: messages };
-//     } catch (error) {
-//       throw new BadRequestException('Failed to retrieve messages: ' + error.message);
-//     }
-//   }
-// }
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prismaService: PrismaService) {}
+  private s3Client: S3Client;
+
+  constructor(private readonly prismaService: PrismaService) {
+    this.s3Client = new S3Client({
+      region: 'eu-north-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+
+  private async getSignedImageUrl(key: string): Promise<string> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: 'gamergizmobucket',
+        Key: key,
+      });
+      return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 }); // URL expires in 1 hour
+    } catch (error) {
+      console.error('Error generating signed URL:', error);
+      return null;
+    }
+  }
 
   async createChat(user1Id: number, user2Id: number) {
     // Convert to numbers and validate
@@ -76,8 +45,8 @@ export class ChatService {
         originalUser1Type: typeof user1Id,
         originalUser2Type: typeof user2Id,
         convertedId1Type: typeof id1,
-        convertedId2Type: typeof id2
-      }
+        convertedId2Type: typeof id2,
+      },
     });
 
     // Validate that both IDs are valid numbers
@@ -114,7 +83,7 @@ export class ChatService {
       // Verify both users exist
       const [user1Exists, user2Exists] = await Promise.all([
         this.prismaService.users.findUnique({ where: { id: id1 } }),
-        this.prismaService.users.findUnique({ where: { id: id2 } })
+        this.prismaService.users.findUnique({ where: { id: id2 } }),
       ]);
 
       if (!user1Exists || !user2Exists) {
@@ -152,7 +121,7 @@ export class ChatService {
 
       // Verify chat exists
       const chatExists = await this.prismaService.chats.findUnique({
-        where: { id: validChatId }
+        where: { id: validChatId },
       });
 
       if (!chatExists) {
@@ -174,8 +143,7 @@ export class ChatService {
     }
   }
 
-
- async getBuyersAndSellers(userId: number) {
+  async getBuyersAndSellers(userId: number) {
     try {
       // Validate userId
       const validUserId = Number(userId);
@@ -186,18 +154,83 @@ export class ChatService {
       // Fetch chats where user is user2_id (to get buyers as user1_id)
       const buyerChats = await this.prismaService.chats.findMany({
         where: { user2_id: validUserId },
-        select: { user1_id: true },
+        include: {
+          users_chats_user1_idTousers: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              profile: true,
+            },
+          },
+          messages: {
+            orderBy: {
+              sent_at: 'desc',
+            },
+            take: 1,
+            select: {
+              message_text: true,
+              sent_at: true,
+            },
+          },
+        },
       });
 
       // Fetch chats where user is user1_id (to get sellers as user2_id)
       const sellerChats = await this.prismaService.chats.findMany({
         where: { user1_id: validUserId },
-        select: { user2_id: true },
+        include: {
+          users_chats_user2_idTousers: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              profile: true,
+            },
+          },
+          messages: {
+            orderBy: {
+              sent_at: 'desc',
+            },
+            take: 1,
+            select: {
+              message_text: true,
+              sent_at: true,
+            },
+          },
+        },
       });
 
-      // Extract unique buyer and seller IDs
-      const buyers = [...new Set(buyerChats.map(chat => chat.user1_id))];
-      const sellers = [...new Set(sellerChats.map(chat => chat.user2_id))];
+      // Transform the data and generate signed URLs for profile pictures
+      const buyers = await Promise.all(
+        buyerChats.map(async (chat) => ({
+          id: chat.users_chats_user1_idTousers.id,
+          first_name: chat.users_chats_user1_idTousers.first_name,
+          last_name: chat.users_chats_user1_idTousers.last_name,
+          profile_picture: chat.users_chats_user1_idTousers.profile
+            ? await this.getSignedImageUrl(
+                chat.users_chats_user1_idTousers.profile,
+              )
+            : null,
+          last_message: chat.messages[0] || null,
+          chat_id: chat.id,
+        })),
+      );
+
+      const sellers = await Promise.all(
+        sellerChats.map(async (chat) => ({
+          id: chat.users_chats_user2_idTousers.id,
+          first_name: chat.users_chats_user2_idTousers.first_name,
+          last_name: chat.users_chats_user2_idTousers.last_name,
+          profile_picture: chat.users_chats_user2_idTousers.profile
+            ? await this.getSignedImageUrl(
+                chat.users_chats_user2_idTousers.profile,
+              )
+            : null,
+          last_message: chat.messages[0] || null,
+          chat_id: chat.id,
+        })),
+      );
 
       return {
         message: 'Buyers and sellers retrieved successfully',
@@ -208,7 +241,9 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Get buyers and sellers error:', error);
-      throw new BadRequestException('Failed to retrieve buyers and sellers: ' + error.message);
+      throw new BadRequestException(
+        'Failed to retrieve buyers and sellers: ' + error.message,
+      );
     }
   }
 }
