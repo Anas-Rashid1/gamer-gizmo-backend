@@ -23,7 +23,7 @@ export class ChatService {
         Bucket: 'gamergizmobucket',
         Key: key,
       });
-      return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 }); // URL expires in 1 hour
+      return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
     } catch (error) {
       console.error('Error generating signed URL:', error);
       return null;
@@ -145,21 +145,22 @@ export class ChatService {
 
   async getBuyersAndSellers(userId: number) {
     try {
-      // Validate userId
       const validUserId = Number(userId);
       if (isNaN(validUserId) || validUserId <= 0) {
         throw new BadRequestException('Invalid user ID');
       }
 
-      // Fetch chats where user is user2_id (to get buyers as user1_id)
       const buyerChats = await this.prismaService.chats.findMany({
         where: { user2_id: validUserId },
-        include: {
+        select: {
+          id: true,
           users_chats_user1_idTousers: {
             select: {
               id: true,
+              username: true,
               first_name: true,
               last_name: true,
+              is_seller: true,
               profile: true,
             },
           },
@@ -176,15 +177,17 @@ export class ChatService {
         },
       });
 
-      // Fetch chats where user is user1_id (to get sellers as user2_id)
       const sellerChats = await this.prismaService.chats.findMany({
         where: { user1_id: validUserId },
-        include: {
+        select: {
+          id: true,
           users_chats_user2_idTousers: {
             select: {
               id: true,
+              username: true,
               first_name: true,
               last_name: true,
+              is_seller: true,
               profile: true,
             },
           },
@@ -201,12 +204,13 @@ export class ChatService {
         },
       });
 
-      // Transform the data and generate signed URLs for profile pictures
       const buyers = await Promise.all(
         buyerChats.map(async (chat) => ({
           id: chat.users_chats_user1_idTousers.id,
+          username: chat.users_chats_user1_idTousers.username,
           first_name: chat.users_chats_user1_idTousers.first_name,
           last_name: chat.users_chats_user1_idTousers.last_name,
+          is_seller: chat.users_chats_user1_idTousers.is_seller,
           profile_picture: chat.users_chats_user1_idTousers.profile
             ? await this.getSignedImageUrl(
                 chat.users_chats_user1_idTousers.profile,
@@ -220,8 +224,10 @@ export class ChatService {
       const sellers = await Promise.all(
         sellerChats.map(async (chat) => ({
           id: chat.users_chats_user2_idTousers.id,
+          username: chat.users_chats_user2_idTousers.username,
           first_name: chat.users_chats_user2_idTousers.first_name,
           last_name: chat.users_chats_user2_idTousers.last_name,
+          is_seller: chat.users_chats_user2_idTousers.is_seller,
           profile_picture: chat.users_chats_user2_idTousers.profile
             ? await this.getSignedImageUrl(
                 chat.users_chats_user2_idTousers.profile,
