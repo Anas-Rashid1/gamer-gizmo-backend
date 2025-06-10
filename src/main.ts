@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path'; // 👈 Add this
 import * as bodyParser from 'body-parser';
-
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,6 +18,12 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
+
+    // ✅ Apply raw body parser ONLY for the Stripe webhook route
+  app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
+
+  // ✅ Apply JSON parser for all other routes AFTER the raw body
+  app.use(bodyParser.json());
 
   // Swagger Configuration
   const config = new DocumentBuilder()
@@ -35,11 +41,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  
-  app.use(
-  '/webhook/stripe',
-  bodyParser.raw({ type: 'application/json' }),
-);
+ 
 
   await app.listen(4001);
 }
