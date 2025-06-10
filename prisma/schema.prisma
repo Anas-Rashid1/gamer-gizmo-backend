@@ -255,14 +255,18 @@ model orders {
   id               Int            @id @default(autoincrement())
   user_id          Int
   total_amount     String         @db.VarChar
-  order_status     String         @db.VarChar
+  order_status     String         @default("pending") @db.VarChar  // Add default
   shipping_address String         @db.VarChar
   created_at       DateTime?      @default(now()) @db.Timestamp(6)
   updated_at       DateTime?      @default(now()) @db.Timestamp(6)
   shipping_rate    String         @default("10.00") @db.VarChar
+
+  payment_method   String         @default("cash_on_delivery") @db.VarChar  // "online" or "cash_on_delivery"
+  payment_status   String         @default("pending") @db.VarChar          // "pending", "paid", "failed", etc.
+
   order_items      order_items[]
-  users            users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions     transactions[]
+  users            users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model personal_computers {
@@ -398,11 +402,15 @@ model tokens {
 model transactions {
   id                 Int       @id @default(autoincrement())
   order_id           Int
-  transaction_status String    @db.VarChar
-  payment_method     String    @db.VarChar
+  user_id            Int      
+  transaction_status String    @default("pending") @db.VarChar  // Add default
+  payment_intent     String?   @db.VarChar                      // Nullable for COD
+  payment_method     String    @db.VarChar                      // "stripe" or "cash_on_delivery"
   payment_amount     String    @db.VarChar
   transaction_date   DateTime? @default(now()) @db.Timestamp(6)
+
   orders             orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
 }
 
 model user_reviews {

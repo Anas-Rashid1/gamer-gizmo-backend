@@ -77,7 +77,7 @@ export class S3Service {
     });
 
     const url = await getSignedUrl(this.s3, command, {
-      expiresIn: 31536000 * 20, // 20 years (though AWS will cap it at 7 days)
+      expiresIn: 604800,
     });
 
     return url;
