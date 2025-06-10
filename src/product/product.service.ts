@@ -3129,4 +3129,33 @@ export class ProductService {
       );
     }
   }
+
+  async getStoreProductsWithOrders(): Promise<{ id: number; name: string }[]> {
+    try {
+      const products = await this.prismaService.product.findMany({
+        where: {
+          is_store_product: true,
+          order_items: {
+            some: {}, // Ensures at least one order_item exists
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: 'asc', // Sort by name for consistent dropdown
+        },
+      });
+      return products;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to fetch store products with orders',
+        error.message,
+      );
+    }
+  }
+
+ 
+
 }

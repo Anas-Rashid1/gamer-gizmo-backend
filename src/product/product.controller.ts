@@ -840,4 +840,9 @@ async DeleteProductImage(@Query('image_ids') imageIds: string | string[]) {
   async SetNonFeatured(@Query('product_id') productId: string) {
     return this.productService.SetNonFeatured(productId);
   }
+  // New endpoint for store products with orders
+  @Get('store-products-with-orders')
+  async getStoreProductsWithOrders(): Promise<{ id: number; name: string }[]> {
+    return this.productService.getStoreProductsWithOrders();
+  }
 }
