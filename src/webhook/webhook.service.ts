@@ -7,7 +7,7 @@ import { OrderService } from '../order/order.service';
 @Injectable()
 export class WebhookService {
   private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
- apiVersion: '2025-05-28.basil',
+    apiVersion: '2025-05-28.basil',
   });
 
   constructor(
@@ -27,6 +27,7 @@ export class WebhookService {
         sig,
         endpointSecret,
       );
+      console.log('Anas');
     } catch (err) {
       console.error('Stripe webhook error:', err.message);
       throw new BadRequestException(`Stripe error: ${err.message}`);

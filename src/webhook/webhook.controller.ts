@@ -26,6 +26,7 @@ export class WebhookController {
   ) {
     try {
       await this.webhookService.handleStripeEvent(req, signature);
+      console.log('muhammad');
       res.send({ received: true });
     } catch (error) {
       console.error('Webhook Error:', error.message);

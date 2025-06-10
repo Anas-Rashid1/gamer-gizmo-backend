@@ -247,6 +247,8 @@ export class OrderService {
       payment_intent,
     } = data;
 
+    console.log('Rashid');
+
     const products = await this.prisma.product.findMany({
       where: { id: { in: items.map((i) => i.product_id) } },
       include: { product_images: true },
