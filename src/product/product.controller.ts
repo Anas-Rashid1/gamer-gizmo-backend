@@ -551,7 +551,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags, ApiBody,ApiResponse,ApiOperation } from '@nestjs/swagger';
 import {
   CreateProductDto,
   InverProductStatusDto,
@@ -813,6 +813,53 @@ export class ProductsContoller {
   async searchProducts(@Query() query: { query: string; pageNo?: string; limit?: string }) {
     return this.productService.searchProducts(query);
   }
+
+  @ApiQuery({ name: 'query', required: true, type: String })
+@ApiOperation({ summary: 'Search for products by name only' })
+@ApiResponse({
+  status: 200,
+  description: 'Products retrieved successfully',
+  schema: {
+    type: 'object',
+    properties: {
+      products: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Gaming Mouse' },
+            price: { type: 'number', example: 49.99 },
+            category: { type: 'string', example: 'Electronics', nullable: true },
+            category_id: { type: 'number', example: 1, nullable: true },
+            brand: { type: 'string', example: 'Logitech', nullable: true },
+            brand_id: { type: 'number', example: 1, nullable: true },
+            model: { type: 'string', example: 'G502', nullable: true },
+            model_id: { type: 'number', example: 1, nullable: true },
+            images: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  image_url: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/images/product1.jpg?signed' },
+                },
+              },
+            },
+          },
+        },
+      },
+      total: { type: 'number', example: 10 },
+      message: { type: 'string', example: 'success' },
+    },
+  },
+})
+@ApiResponse({ status: 500, description: 'Internal Server Error - Failed to search products' })
+@Get('/search-by-name')
+async searchProductsByName(@Query('query') query: string) {
+  return this.productService.searchProductsByName(query);
+}
+  
 
   @Delete('/deleteProductImage')
 @ApiQuery({ 
