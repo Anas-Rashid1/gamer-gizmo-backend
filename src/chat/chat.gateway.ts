@@ -40,33 +40,66 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('sendMessage')
   @ApiOperation({
     summary: 'Send a message in a chat (WebSocket)',
-    description: 'Sends a message to a chat and emits a `receiveMessage` event to both sender and receiver (if connected). The receiverId must be one of the chat’s users (user1_id or user2_id).',
+    description:
+      'Sends a message to a chat and emits a `receiveMessage` event to both sender and receiver (if connected). The receiverId must be one of the chat’s users (user1_id or user2_id).',
   })
   @ApiResponse({
     status: 200,
-    description: 'Message sent successfully, emitted as `receiveMessage` event to sender and receiver',
+    description:
+      'Message sent successfully, emitted as `receiveMessage` event to sender and receiver',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', description: 'Response message', example: 'Message sent successfully' },
+        message: {
+          type: 'string',
+          description: 'Response message',
+          example: 'Message sent successfully',
+        },
         data: {
           type: 'object',
           properties: {
             id: { type: 'number', description: 'Message ID', example: 1 },
             chatId: { type: 'number', description: 'Chat ID', example: 1 },
-            senderId: { type: 'number', description: 'Sender user ID', example: 1 },
-            messageText: { type: 'string', description: 'Message content', example: 'Hello!' },
-            sentAt: { type: 'string', format: 'date-time', description: 'Timestamp when message was sent', example: '2025-05-27T01:38:00.000Z' },
-            isRead: { type: 'boolean', description: 'Whether the message has been read', example: false },
+            senderId: {
+              type: 'number',
+              description: 'Sender user ID',
+              example: 1,
+            },
+            messageText: {
+              type: 'string',
+              description: 'Message content',
+              example: 'Hello!',
+            },
+            sentAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Timestamp when message was sent',
+              example: '2025-05-27T01:38:00.000Z',
+            },
+            isRead: {
+              type: 'boolean',
+              description: 'Whether the message has been read',
+              example: false,
+            },
           },
         },
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, chat ID, receiver ID, or message data' })
-  @ApiResponse({ status: 404, description: 'Not Found - Chat or users not found' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid sender ID, chat ID, receiver ID, or message data',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Chat or users not found',
+  })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  async handleSendMessage(client: Socket, payload: { chatId: number; receiverId: number; messageText: string }) {
+  async handleSendMessage(
+    client: Socket,
+    payload: { chatId: number; receiverId: number; messageText: string },
+  ) {
     const senderId = parseInt(client.handshake.query.userId as string);
     if (isNaN(senderId)) {
       throw new BadRequestException('Invalid sender ID');
@@ -122,22 +155,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('markMessageAsRead')
   @ApiOperation({
     summary: 'Mark a message as read in a chat (WebSocket)',
-    description: 'Marks a message as read and emits a `messageRead` event to both sender and receiver (if connected).',
+    description:
+      'Marks a message as read and emits a `messageRead` event to both sender and receiver (if connected).',
   })
   @ApiResponse({
     status: 200,
-    description: 'Message marked as read, emitted as `messageRead` event to both users',
+    description:
+      'Message marked as read, emitted as `messageRead` event to both users',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', description: 'Response message', example: 'Message marked as read' },
+        message: {
+          type: 'string',
+          description: 'Response message',
+          example: 'Message marked as read',
+        },
       },
     },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID' })
   @ApiResponse({ status: 404, description: 'Not Found - Message not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  async handleMarkMessageAsRead(client: Socket, payload: { messageId: number }) {
+  async handleMarkMessageAsRead(
+    client: Socket,
+    payload: { messageId: number },
+  ) {
     try {
       const message = await this.prismaService.messages.findUnique({
         where: { id: payload.messageId },
@@ -157,7 +199,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Notify both users
       const senderSocket = this.connectedUsers.get(message.sender_id);
       const receiverSocket = this.connectedUsers.get(
-        message.chats.user1_id === message.sender_id ? message.chats.user2_id : message.chats.user1_id,
+        message.chats.user1_id === message.sender_id
+          ? message.chats.user2_id
+          : message.chats.user1_id,
       );
 
       const messageData = {
@@ -178,7 +222,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { message: 'Message marked as read' };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to mark message as read');
+      throw new BadRequestException(
+        error.message || 'Failed to mark message as read',
+      );
     }
   }
 }
