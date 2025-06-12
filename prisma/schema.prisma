@@ -255,11 +255,13 @@ model orders {
   id               Int            @id @default(autoincrement())
   user_id          Int
   total_amount     String         @db.VarChar
-  order_status     String         @db.VarChar
+  order_status     String         @default("pending") @db.VarChar
   shipping_address String         @db.VarChar
   created_at       DateTime?      @default(now()) @db.Timestamp(6)
   updated_at       DateTime?      @default(now()) @db.Timestamp(6)
   shipping_rate    String         @default("10.00") @db.VarChar
+  payment_method   String         @default("cash_on_delivery") @db.VarChar
+  payment_status   String         @default("pending") @db.VarChar
   order_items      order_items[]
   users            users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions     transactions[]
@@ -398,10 +400,11 @@ model tokens {
 model transactions {
   id                 Int       @id @default(autoincrement())
   order_id           Int
-  transaction_status String    @db.VarChar
+  transaction_status String    @default("pending") @db.VarChar
   payment_method     String    @db.VarChar
   payment_amount     String    @db.VarChar
   transaction_date   DateTime? @default(now()) @db.Timestamp(6)
+  payment_intent     String?   @db.VarChar
   orders             orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 

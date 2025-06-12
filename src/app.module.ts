@@ -31,6 +31,9 @@ import { AnalyticsController } from './analytics/analytics.controller';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { OrderController } from './order/order.controller';
 import { OrderModule } from './order/order.module';
+import { WebhookController } from './webhook/webhook.controller';
+import { WebhookService } from './webhook/webhook.service';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -63,8 +66,9 @@ import { OrderModule } from './order/order.module';
     AdsModule,
     AnalyticsModule,
     OrderModule,
+    WebhookModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService ],
 })
 export class AppModule {}
