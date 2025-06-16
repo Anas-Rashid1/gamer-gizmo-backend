@@ -455,6 +455,7 @@ model users {
   tokens                                       tokens[]
   user_reviews_user_reviews_reviewee_idTousers user_reviews[]            @relation("user_reviews_reviewee_idTousers")
   user_reviews_user_reviews_reviewer_idTousers user_reviews[]            @relation("user_reviews_reviewer_idTousers")
+  message_reactions                            message_reactions[]
 }
 
 model product_reviews {
@@ -470,15 +471,17 @@ model product_reviews {
 }
 
 model community_messages {
-  sender_id  Int?
-  content    String
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  is_admin   Boolean?  @default(false)
-  admin_id   Int?
-  id         Int       @id @default(autoincrement())
-  admin      admin?    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
-  users      users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
+  sender_id       Int?
+  content         String
+  created_at      DateTime?           @default(now()) @db.Timestamp(6)
+  is_admin        Boolean?            @default(false)
+  admin_id        Int?
+  id              Int                 @id @default(autoincrement())
+  admin           admin?              @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
+  users           users?              @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
+  message_reactions message_reactions[]
 }
+
 
 model ThirdPartyAd {
   id        Int      @id @default(autoincrement())
@@ -496,4 +499,17 @@ model visitors {
   id         Int       @id @default(autoincrement())
   visited_at DateTime? @default(now()) @db.Timestamp(6)
   ip_address String?   @db.VarChar
+}
+
+
+model message_reactions {
+  id                Int                @id @default(autoincrement())
+  message_id        Int
+  user_id           Int
+  emoji_type        String             @db.VarChar
+  created_at        DateTime           @default(now()) @db.Timestamp(6)
+  community_messages community_messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([message_id, user_id, emoji_type])
 }
