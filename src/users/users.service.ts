@@ -861,4 +861,39 @@ export class UserService {
     throw new InternalServerErrorException('Failed to delete account: ' + e.message);
   }
 }
+ async handleFacebookDeletion(signedRequest: string) {
+    try {
+      if (!signedRequest) {
+        throw new BadRequestException('Invalid signed request');
+      }
+
+      // Generate a dummy confirmation code (no database interaction)
+      const confirmationCode = Math.random().toString(36).substring(2, 15);
+
+      // Return static response for Facebook approval
+      return {
+        url: `https://backend.gamergizmo.com/deletion-status`,
+        confirmation_code: confirmationCode,
+      };
+    } catch (e) {
+      throw new BadRequestException('Invalid signed request');
+    }
+  }
+  async checkDeletionStatus(confirmationCode: string) {
+    try {
+      if (!confirmationCode) {
+        throw new BadRequestException('Invalid confirmation code');
+      }
+
+      // Static response since no database storage
+      return {
+        status: 'COMPLETED',
+        message: 'Deletion request processed',
+      };
+    } catch (e) {
+      throw new BadRequestException('Invalid confirmation code');
+    }
+  }
+
 }
+

@@ -464,4 +464,54 @@ export class UserContoller {
   async deleteOwnAccount(@Req() request: any) {
     return this.userService.deleteOwnAccount(request.user.id);
   }
+  @Post('/facebook/deletion-callback')
+  @ApiOperation({ summary: 'Handle Facebook data deletion requests' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        signed_request: { type: 'string', description: 'Facebook signed request' },
+      },
+      required: ['signed_request'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deletion request received',
+    schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', example: 'https://backend.gamergizmo.com/deletion-status' },
+        confirmation_code: { type: 'string', example: 'abc123' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid signed request' })
+  async handleFacebookDeletion(@Body() body: { signed_request: string }) {
+    return this.userService.handleFacebookDeletion(body.signed_request);
+  }
+
+  @Get('/facebook/deletion-status')
+  @ApiOperation({ summary: 'Check Facebook data deletion status' })
+  @ApiQuery({
+    name: 'confirmation_code',
+    required: true,
+    type: String,
+    description: 'Confirmation code from deletion request',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deletion status retrieved',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'COMPLETED' },
+        message: { type: 'string', example: 'Deletion request processed' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid confirmation code' })
+  async checkDeletionStatus(@Query('confirmation_code') confirmationCode: string) {
+    return this.userService.checkDeletionStatus(confirmationCode);
+  }
 }
