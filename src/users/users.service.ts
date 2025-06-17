@@ -695,4 +695,170 @@ export class UserService {
       throw new InternalServerErrorException(e);
     }
   }
+  async deleteOwnAccount(userId: number) {
+  try {
+    // Fetch user to check existence and get S3 keys and details
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        profile: true,
+        nic_front_image: true,
+        nic_back_image: true,
+        username: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        phone: true,
+        address: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Perform all deletions in a transaction with increased timeout
+    await this.prisma.$transaction(async (tx) => {
+      // Handle tables with onDelete: NoAction referencing users
+      // 1. messages (delete messages in chats where user is user1_id or user2_id, and sent by user)
+      await tx.messages.deleteMany({
+        where: {
+          OR: [
+            { chats: { user1_id: userId } },
+            { chats: { user2_id: userId } },
+            { sender_id: userId },
+          ],
+        },
+      });
+
+      // 2. chats (delete where user is user1_id or user2_id)
+      await tx.chats.deleteMany({
+        where: {
+          OR: [
+            { user1_id: userId },
+            { user2_id: userId },
+          ],
+        },
+      });
+
+      // 3. community_chat_members (delete memberships)
+      await tx.community_chat_members.deleteMany({
+        where: { user_id: userId },
+      });
+
+      // 4. community_chat_messages (delete messages)
+      await tx.community_chat_messages.deleteMany({
+        where: { user_id: userId },
+      });
+
+      // 5. user_reviews (delete reviews given or received)
+      await tx.user_reviews.deleteMany({
+        where: {
+          OR: [
+            { reviewer_id: userId },
+            { reviewee_id: userId },
+          ],
+        },
+      });
+
+      // Handle tables with onDelete: NoAction referencing product
+      // 6. cart_items (delete items referencing user's products)
+      await tx.cart_items.deleteMany({
+        where: {
+          product: { user_id: userId },
+        },
+      });
+
+      // 7. components (delete components of user's products)
+      await tx.components.deleteMany({
+        where: {
+          product: { user_id: userId },
+        },
+      });
+
+      // 8. order_items (set product_id to null and store product details in product_details)
+      const orderItems = await tx.order_items.findMany({
+        where: {
+          product: { user_id: userId },
+        },
+        include: {
+          product: {
+            include: {
+              categories: true,
+              brands: true,
+            },
+          },
+        },
+      });
+
+      // Update each order_item individually to store correct product details
+      for (const item of orderItems) {
+        const productDetails = {
+          product_id: item.product_id,
+          name: item.product?.name,
+          description: item.product?.description,
+          price: item.product?.price,
+          stock: item.product?.stock,
+          quantity: item.quantity,
+          category: item.product?.categories?.name,
+          brand: item.product?.brands?.name,
+          created_at: item.product?.created_at?.toISOString(),
+        };
+
+        await tx.order_items.update({
+          where: { id: item.id },
+          data: {
+            product_id: null,
+            product_details: productDetails,
+          },
+        });
+      }
+
+      // 9. orders (set user_id to null, store user details in user_details)
+      const userDetails = {
+        user_id: user.id,
+        username: user.username,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone: user.phone,
+        address: user.address,
+      };
+
+      await tx.orders.updateMany({
+        where: { user_id: userId },
+        data: {
+          user_id: null,
+          user_details: userDetails,
+        },
+      });
+
+      // Delete user (cascades to cart, favourite_products, tokens, product, product_reviews, community_messages, message_reactions)
+      await tx.users.delete({
+        where: { id: userId },
+      });
+    }, {
+      timeout: 20000, 
+    });
+
+    // Delete S3 files outside the transaction
+    if (user.profile) {
+      await this.s3Service.deleteFileByKey(user.profile);
+    }
+    if (user.nic_front_image) {
+      await this.s3Service.deleteFileByKey(user.nic_front_image);
+    }
+    if (user.nic_back_image) {
+      await this.s3Service.deleteFileByKey(user.nic_back_image);
+    }
+
+    return { message: 'Account deleted successfully' };
+  } catch (e) {
+    if (e instanceof BadRequestException) {
+      throw e;
+    }
+    throw new InternalServerErrorException('Failed to delete account: ' + e.message);
+  }
+}
 }

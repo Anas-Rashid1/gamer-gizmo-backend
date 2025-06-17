@@ -255,7 +255,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './users.service';
 import {
-  ApiBearerAuth,
+  ApiBearerAuth,ApiOperation,
+  ApiResponse,
   ApiBody,
   ApiConsumes,
   ApiTags,
@@ -441,5 +442,26 @@ export class UserContoller {
     @Req() user: any,
   ) {
     return this.userService.UpdateProfilePic(profile, user.user);
+  }
+
+    @Delete('/deleteOwnAccount')
+  @ApiOperation({ summary: 'Delete the authenticated user’s account' })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: 'Account deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Account deleted successfully' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - User not found or cannot delete due to active transactions' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error - Failed to delete account' })
+  async deleteOwnAccount(@Req() request: any) {
+    return this.userService.deleteOwnAccount(request.user.id);
   }
 }

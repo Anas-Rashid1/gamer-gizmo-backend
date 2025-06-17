@@ -240,20 +240,21 @@ model models {
 }
 
 model order_items {
-  id         Int       @id @default(autoincrement())
-  order_id   Int
-  product_id Int
-  quantity   Int
-  price      String    @db.VarChar
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @default(now()) @db.Timestamp(6)
-  orders     orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product    product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              Int       @id @default(autoincrement())
+  order_id        Int
+  product_id      Int?      // Already nullable as per your schema
+  quantity        Int
+  price           String    @db.VarChar
+  product_details Json?     // New JSON column
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  orders          orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product         product?  @relation(fields: [product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 }
 
 model orders {
   id               Int            @id @default(autoincrement())
-  user_id          Int
+  user_id          Int?           // Changed from Int to Int? to allow null
   total_amount     String         @db.VarChar
   order_status     String         @default("pending") @db.VarChar
   shipping_address String         @db.VarChar
@@ -262,8 +263,9 @@ model orders {
   shipping_rate    String         @default("10.00") @db.VarChar
   payment_method   String         @default("cash_on_delivery") @db.VarChar
   payment_status   String         @default("pending") @db.VarChar
+  user_details     Json?          // JSON column to store user details
   order_items      order_items[]
-  users            users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users?         @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Updated to SetNull
   transactions     transactions[]
 }
 
