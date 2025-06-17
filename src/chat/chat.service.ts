@@ -1228,6 +1228,4 @@ export class ChatService {
       throw new BadRequestException('Failed to update reaction: ' + error.message);
     }
   }
-
-  
 }
