@@ -279,49 +279,69 @@
 //   }
 
 //   async createCommunityMessage(data: { content: string; is_admin: boolean; sender_id: number }) {
-//     try {
-//       const dataToSend = {
-//         content: data.content,
-//         is_admin: Boolean(data.is_admin),
-//         ...(data.is_admin ? { admin_id: data.sender_id } : { sender_id: data.sender_id }),
-//       };
+//   try {
+//     const dataToSend = {
+//       content: data.content,
+//       is_admin: Boolean(data.is_admin),
+//       ...(data.is_admin ? { admin_id: data.sender_id } : { sender_id: data.sender_id }),
+//     };
 
-//       const message = await this.prismaService.community_messages.create({
-//         data: dataToSend,
-//         include: {
-//           users: {
-//             select: {
-//               username: true,
-//               profile: true,
+//     const message = await this.prismaService.community_messages.create({
+//       data: dataToSend,
+//       include: {
+//         users: {
+//           select: {
+//             username: true,
+//             profile: true,
+//           },
+//         },
+//         message_reactions: {
+//           select: {
+//             id: true,
+//             emoji_type: true,
+//             user_id: true,
+//             created_at: true,
+//             users: {
+//               select: {
+//                 username: true,
+//               },
 //             },
 //           },
 //         },
-//       });
+//       },
+//     });
 
-//       const profilePicture = message.users?.profile
-//         ? await this.getSignedImageUrl(message.users.profile)
-//         : null;
+//     const profilePicture = message.users?.profile
+//       ? await this.getSignedImageUrl(message.users.profile)
+//       : null;
 
-//       return {
-//         message: 'Community message created successfully',
-//         data: {
-//           id: message.id,
-//           content: message.content,
-//           is_admin: message.is_admin,
-//           sender_id: message.sender_id,
-//           admin_id: message.admin_id,
-//           created_at: message.created_at.toISOString(),
-//           users: {
-//             username: message.users?.username || 'Unknown',
-//             profile_picture: profilePicture,
-//           },
+//     return {
+//       message: 'Community message created successfully',
+//       data: {
+//         id: message.id,
+//         content: message.content,
+//         is_admin: message.is_admin,
+//         sender_id: message.sender_id,
+//         admin_id: message.admin_id,
+//         created_at: message.created_at.toISOString(),
+//         users: {
+//           username: message.users?.username || 'Unknown',
+//           profile_picture: profilePicture,
 //         },
-//       };
-//     } catch (error) {
-//       console.error('Create community message error:', error);
-//       throw new BadRequestException('Failed to create community message: ' + error.message);
-//     }
+//         reactions: message.message_reactions.map((reaction) => ({
+//           id: reaction.id,
+//           emoji_type: reaction.emoji_type,
+//           user_id: reaction.user_id,
+//           username: reaction.users.username,
+//           created_at: reaction.created_at.toISOString(),
+//         })),
+//       },
+//     };
+//   } catch (error) {
+//     console.error('Create community message error:', error);
+//     throw new BadRequestException('Failed to create community message: ' + error.message);
 //   }
+// }
 
 //   async getCommunityMessages({ beforeId }: { beforeId?: number }) {
 //     try {
@@ -334,6 +354,19 @@
 //             select: {
 //               username: true,
 //               profile: true,
+//             },
+//           },
+//           message_reactions: {
+//             select: {
+//               id: true,
+//               emoji_type: true,
+//               user_id: true,
+//               created_at: true,
+//               users: {
+//                 select: {
+//                   username: true,
+//                 },
+//               },
 //             },
 //           },
 //         },
@@ -355,6 +388,13 @@
 //               username: msg.users?.username || 'Unknown',
 //               profile_picture: profilePicture,
 //             },
+//             reactions: msg.message_reactions.map((reaction) => ({
+//               id: reaction.id,
+//               emoji_type: reaction.emoji_type,
+//               user_id: reaction.user_id,
+//               username: reaction.users.username,
+//               created_at: reaction.created_at.toISOString(),
+//             })),
 //           };
 //         })
 //       );
@@ -365,7 +405,93 @@
 //       throw new BadRequestException('Failed to get community messages: ' + error.message);
 //     }
 //   }
+
+//   async toggleMessageReaction(data: { messageId: number; userId: number; emoji: string }) {
+//     try {
+//       const { messageId, userId, emoji } = data;
+
+//       // Validate inputs
+//       if (!messageId || !userId || !emoji) {
+//         throw new BadRequestException('Missing required fields: messageId, userId, or emoji');
+//       }
+
+//       // Check if message exists
+//       const message = await this.prismaService.community_messages.findUnique({
+//         where: { id: messageId },
+//       });
+//       if (!message) {
+//         throw new BadRequestException('Message not found');
+//       }
+
+//       // Check if user exists
+//       const user = await this.prismaService.users.findUnique({
+//         where: { id: userId },
+//       });
+//       if (!user) {
+//         throw new BadRequestException('User not found');
+//       }
+
+//       // Check if reaction exists
+//       const existingReaction = await this.prismaService.message_reactions.findFirst({
+//         where: {
+//           message_id: messageId,
+//           user_id: userId,
+//           emoji_type: emoji,
+//         },
+//       });
+
+//       let reactions;
+
+//       if (existingReaction) {
+//         // Delete the existing reaction
+//         await this.prismaService.message_reactions.delete({
+//           where: { id: existingReaction.id },
+//         });
+//       } else {
+//         // Create a new reaction
+//         await this.prismaService.message_reactions.create({
+//           data: {
+//             message_id: messageId,
+//             user_id: userId,
+//             emoji_type: emoji,
+//             created_at: new Date(),
+//           },
+//         });
+//       }
+
+//       // Fetch updated reactions for the message
+//       reactions = await this.prismaService.message_reactions.findMany({
+//         where: { message_id: messageId },
+//         select: {
+//           id: true,
+//           emoji_type: true,
+//           user_id: true,
+//           created_at: true,
+//           users: {
+//             select: {
+//               username: true,
+//             },
+//           },
+//         },
+//       });
+
+//       return {
+//         messageId,
+//         reactions: reactions.map((reaction) => ({
+//           id: reaction.id,
+//           emoji_type: reaction.emoji_type,
+//           user_id: reaction.user_id,
+//           username: reaction.users.username,
+//           created_at: reaction.created_at.toISOString(),
+//         })),
+//       };
+//     } catch (error) {
+//       console.error('Toggle message reaction error:', error);
+//       throw new BadRequestException('Failed to toggle reaction: ' + error.message);
+//     }
+//   }
 // }
+
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
@@ -646,69 +772,76 @@ export class ChatService {
   }
 
   async createCommunityMessage(data: { content: string; is_admin: boolean; sender_id: number }) {
-  try {
-    const dataToSend = {
-      content: data.content,
-      is_admin: Boolean(data.is_admin),
-      ...(data.is_admin ? { admin_id: data.sender_id } : { sender_id: data.sender_id }),
-    };
+    try {
+      const dataToSend = {
+        content: data.content,
+        is_admin: Boolean(data.is_admin),
+        ...(data.is_admin ? { admin_id: data.sender_id } : { sender_id: data.sender_id }),
+      };
 
-    const message = await this.prismaService.community_messages.create({
-      data: dataToSend,
-      include: {
-        users: {
-          select: {
-            username: true,
-            profile: true,
+      const message = await this.prismaService.community_messages.create({
+        data: dataToSend,
+        include: {
+          users: {
+            select: {
+              username: true,
+              profile: true,
+            },
           },
-        },
-        message_reactions: {
-          select: {
-            id: true,
-            emoji_type: true,
-            user_id: true,
-            created_at: true,
-            users: {
-              select: {
-                username: true,
+          message_reactions: {
+            select: {
+              id: true,
+              emoji_type: true,
+              user_id: true,
+              created_at: true,
+              users: {
+                select: {
+                  username: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    const profilePicture = message.users?.profile
-      ? await this.getSignedImageUrl(message.users.profile)
-      : null;
+      const profilePicture = message.users?.profile
+        ? await this.getSignedImageUrl(message.users.profile)
+        : null;
 
-    return {
-      message: 'Community message created successfully',
-      data: {
-        id: message.id,
-        content: message.content,
-        is_admin: message.is_admin,
-        sender_id: message.sender_id,
-        admin_id: message.admin_id,
-        created_at: message.created_at.toISOString(),
-        users: {
-          username: message.users?.username || 'Unknown',
-          profile_picture: profilePicture,
+      // Calculate reaction counts
+      const reactionCounts = message.message_reactions.reduce((acc, reaction) => {
+        acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+        return acc;
+      }, {});
+
+      return {
+        message: 'Community message created successfully',
+        data: {
+          id: message.id,
+          content: message.content,
+          is_admin: message.is_admin,
+          sender_id: message.sender_id,
+          admin_id: message.admin_id,
+          created_at: message.created_at.toISOString(),
+          users: {
+            username: message.users?.username || 'Unknown',
+            profile_picture: profilePicture,
+          },
+          reactions: message.message_reactions.map((reaction) => ({
+            id: reaction.id,
+            emoji_type: reaction.emoji_type,
+            user_id: reaction.user_id,
+            username: reaction.users.username,
+            created_at: reaction.created_at.toISOString(),
+          })),
+          reaction_counts: reactionCounts,
         },
-        reactions: message.message_reactions.map((reaction) => ({
-          id: reaction.id,
-          emoji_type: reaction.emoji_type,
-          user_id: reaction.user_id,
-          username: reaction.users.username,
-          created_at: reaction.created_at.toISOString(),
-        })),
-      },
-    };
-  } catch (error) {
-    console.error('Create community message error:', error);
-    throw new BadRequestException('Failed to create community message: ' + error.message);
+      };
+    } catch (error) {
+      console.error('Create community message error:', error);
+      throw new BadRequestException('Failed to create community message: ' + error.message);
+    }
   }
-}
 
   async getCommunityMessages({ beforeId }: { beforeId?: number }) {
     try {
@@ -744,6 +877,13 @@ export class ChatService {
           const profilePicture = msg.users?.profile
             ? await this.getSignedImageUrl(msg.users.profile)
             : null;
+          
+          // Calculate reaction counts
+          const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
+            acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+            return acc;
+          }, {});
+
           return {
             id: msg.id,
             content: msg.content,
@@ -762,6 +902,7 @@ export class ChatService {
               username: reaction.users.username,
               created_at: reaction.created_at.toISOString(),
             })),
+            reaction_counts: reactionCounts,
           };
         })
       );
@@ -770,6 +911,89 @@ export class ChatService {
     } catch (error) {
       console.error('Get community messages error:', error);
       throw new BadRequestException('Failed to get community messages: ' + error.message);
+    }
+  }
+
+  async getTopReactedMessages() {
+    try {
+      const messages = await this.prismaService.community_messages.findMany({
+        include: {
+          users: {
+            select: {
+              username: true,
+              profile: true,
+            },
+          },
+          message_reactions: {
+            select: {
+              id: true,
+              emoji_type: true,
+              user_id: true,
+              created_at: true,
+              users: {
+                select: {
+                  username: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              message_reactions: true,
+            },
+          },
+        },
+        orderBy: {
+          message_reactions: {
+            _count: 'desc',
+          },
+        },
+        take: 4,
+      });
+
+      const mappedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          const profilePicture = msg.users?.profile
+            ? await this.getSignedImageUrl(msg.users.profile)
+            : null;
+          
+          // Calculate reaction counts
+          const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
+            acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+            return acc;
+          }, {});
+
+          return {
+            id: msg.id,
+            content: msg.content,
+            is_admin: msg.is_admin,
+            sender_id: msg.sender_id,
+            admin_id: msg.admin_id,
+            created_at: msg.created_at.toISOString(),
+            users: {
+              username: msg.users?.username || 'Unknown',
+              profile_picture: profilePicture,
+            },
+            reactions: msg.message_reactions.map((reaction) => ({
+              id: reaction.id,
+              emoji_type: reaction.emoji_type,
+              user_id: reaction.user_id,
+              username: reaction.users.username,
+              created_at: reaction.created_at.toISOString(),
+            })),
+            reaction_counts: reactionCounts,
+            total_reactions: msg._count.message_reactions,
+          };
+        })
+      );
+
+      return {
+        message: 'Top reacted messages retrieved successfully',
+        data: mappedMessages,
+      };
+    } catch (error) {
+      console.error('Get top reacted messages error:', error);
+      throw new BadRequestException('Failed to get top reacted messages: ' + error.message);
     }
   }
 
@@ -842,6 +1066,12 @@ export class ChatService {
         },
       });
 
+      // Calculate reaction counts
+      const reactionCounts = reactions.reduce((acc, reaction) => {
+        acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+        return acc;
+      }, {});
+
       return {
         messageId,
         reactions: reactions.map((reaction) => ({
@@ -851,10 +1081,151 @@ export class ChatService {
           username: reaction.users.username,
           created_at: reaction.created_at.toISOString(),
         })),
+        reaction_counts: reactionCounts,
       };
     } catch (error) {
       console.error('Toggle message reaction error:', error);
       throw new BadRequestException('Failed to toggle reaction: ' + error.message);
+    }
+  }
+
+  async deleteMessageReaction(data: { reactionId: number; userId: number }) {
+    try {
+      const { reactionId, userId } = data;
+
+      // Validate inputs
+      if (!reactionId || !userId) {
+        throw new BadRequestException('Missing required fields: reactionId or userId');
+      }
+
+      // Check if reaction exists and belongs to the user
+      const reaction = await this.prismaService.message_reactions.findFirst({
+        where: {
+          id: reactionId,
+          user_id: userId,
+        },
+        select: {
+          message_id: true,
+        },
+      });
+
+      if (!reaction) {
+        throw new BadRequestException('Reaction not found or not authorized');
+      }
+
+      // Delete the reaction
+      await this.prismaService.message_reactions.delete({
+        where: { id: reactionId },
+      });
+
+      // Fetch updated reactions for the message
+      const reactions = await this.prismaService.message_reactions.findMany({
+        where: { message_id: reaction.message_id },
+        select: {
+          id: true,
+          emoji_type: true,
+          user_id: true,
+          created_at: true,
+          users: {
+            select: {
+              username: true,
+            },
+          },
+        },
+      });
+
+      // Calculate reaction counts
+      const reactionCounts = reactions.reduce((acc, reaction) => {
+        acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+        return acc;
+      }, {});
+
+      return {
+        messageId: reaction.message_id,
+        reactions: reactions.map((reaction) => ({
+          id: reaction.id,
+          emoji_type: reaction.emoji_type,
+          user_id: reaction.user_id,
+          username: reaction.users.username,
+          created_at: reaction.created_at.toISOString(),
+        })),
+        reaction_counts: reactionCounts,
+      };
+    } catch (error) {
+      console.error('Delete message reaction error:', error);
+      throw new BadRequestException('Failed to delete reaction: ' + error.message);
+    }
+  }
+
+  async updateMessageReaction(data: { reactionId: number; userId: number; newEmoji: string }) {
+    try {
+      const { reactionId, userId, newEmoji } = data;
+
+      // Validate inputs
+      if (!reactionId || !userId || !newEmoji) {
+        throw new BadRequestException('Missing required fields: reactionId, userId, or newEmoji');
+      }
+
+      // Check if reaction exists and belongs to the user
+      const reaction = await this.prismaService.message_reactions.findFirst({
+        where: {
+          id: reactionId,
+          user_id: userId,
+        },
+        select: {
+          message_id: true,
+        },
+      });
+
+      if (!reaction) {
+        throw new BadRequestException('Reaction not found or not authorized');
+      }
+
+      // Update the reaction
+      await this.prismaService.message_reactions.update({
+        where: { id: reactionId },
+        data: {
+          emoji_type: newEmoji,
+          created_at: new Date(), // Update timestamp
+        },
+      });
+
+      // Fetch updated reactions for the message
+      const reactions = await this.prismaService.message_reactions.findMany({
+        where: { message_id: reaction.message_id },
+        select: {
+          id: true,
+          emoji_type: true,
+          user_id: true,
+          created_at: true,
+          users: {
+            select: {
+              username: true,
+            },
+          },
+        },
+      });
+
+      // Calculate reaction counts
+      const reactionCounts = reactions.reduce((acc, reaction) => {
+        acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+        return acc;
+      }, {});
+
+      return {
+        messageId: reaction.message_id,
+        reactions: reactions.map((reaction) => ({
+          id: reaction.id,
+          emoji_type: reaction.emoji_type,
+          user_id: reaction.user_id,
+          username: reaction.users.username,
+          created_at: reaction.created_at.toISOString(),
+        })),
+        reaction_counts: reactionCounts,
+      };
+    } catch (error) {
+      console.error('Update message reaction error:', error);
+      throw new BadRequestException('Failed to update reaction: ' + error.message);
     }
   }
 }
