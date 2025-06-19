@@ -54,6 +54,7 @@ model blog_posts {
   verified_by                         Int?
   is_published                        Boolean?      @default(false)
   tags                                String?
+  views       Int?      @default(0)
   blog_images                         blog_images[]
   admin_blog_posts_admin_idToadmin    admin         @relation("blog_posts_admin_idToadmin", fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "blog_posts_user_id_fkey")
   admin_blog_posts_verified_byToadmin admin?        @relation("blog_posts_verified_byToadmin", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
