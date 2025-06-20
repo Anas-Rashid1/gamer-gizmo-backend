@@ -742,15 +742,15 @@ export class UserService {
         },
       });
 
-      // // 3. community_chat_members (delete memberships)
-      // await tx.community_chat_members.deleteMany({
-      //   where: { user_id: userId },
-      // });
+      // 3. community_chat_members (delete memberships)
+      await tx.community_chat_members.deleteMany({
+        where: { user_id: userId },
+      });
 
       // 4. community_chat_messages (delete messages)
-      // await tx.community_chat_messages.deleteMany({
-      //   where: { user_id: userId },
-      // });
+      await tx.community_chat_messages.deleteMany({
+        where: { user_id: userId },
+      });
 
       // 5. user_reviews (delete reviews given or received)
       await tx.user_reviews.deleteMany({
@@ -896,4 +896,3 @@ export class UserService {
   }
 
 }
-
