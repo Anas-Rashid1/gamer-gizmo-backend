@@ -111,33 +111,15 @@ model chats {
 }
 
 model community_chat {
-  id                      Int                       @id @default(autoincrement())
-  name                    String                    @db.VarChar
-  description             String?
-  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
-  community_chat_members  community_chat_members[]
-  community_chat_messages community_chat_messages[]
+  id                  Int                   @id @default(autoincrement())
+  name                String                @db.VarChar
+  description         String?
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  creator_id          Int?
+  community_messages  community_messages[]  @relation("community_chat_messages")
+  users               users?                @relation("community_chat_creator", fields: [creator_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 }
 
-model community_chat_members {
-  id                Int            @id @default(autoincrement())
-  community_chat_id Int
-  user_id           Int
-  joined_at         DateTime?      @default(now()) @db.Timestamp(6)
-  community_chat    community_chat @relation(fields: [community_chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users             users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model community_chat_messages {
-  id                Int            @id @default(autoincrement())
-  community_chat_id Int
-  user_id           Int
-  message_text      String
-  sent_at           DateTime?      @default(now()) @db.Timestamp(6)
-  is_read           Boolean?       @default(false)
-  community_chat    community_chat @relation(fields: [community_chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users             users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
 
 model component_type {
   id                                                   Int          @id @default(autoincrement())
@@ -423,43 +405,44 @@ model user_reviews {
 }
 
 model users {
-  id                                           Int                       @id @default(autoincrement())
-  username                                     String                    @unique(map: "unique_username") @db.VarChar
-  email                                        String                    @unique(map: "unique_email") @db.VarChar
-  password                                     String?                   @db.VarChar
-  first_name                                   String?                   @db.VarChar
-  last_name                                    String?                   @db.VarChar
-  is_seller                                    Boolean?                  @default(false)
-  is_email_verified                            Boolean?                  @default(false)
-  created_at                                   DateTime?                 @default(now()) @db.Timestamp(6)
-  phone                                        String?                   @db.VarChar(15)
-  is_admin_verified                            Boolean?                  @default(false)
-  dob                                          DateTime                  @db.Date
-  gender                                       String                    @db.VarChar
-  nic_front_image                              String?
-  nic_back_image                               String?
-  address                                      String?
-  profile                                      String?
-  applied_for_verification                     Boolean?                  @default(false)
-  is_active                                    Boolean?                  @default(true)
-  googleId                                     String?                   @unique @db.VarChar
-  facebookId                                   String?                   @unique @db.VarChar
-  cart                                         cart[]
-  chats_chats_user1_idTousers                  chats[]                   @relation("chats_user1_idTousers")
-  chats_chats_user2_idTousers                  chats[]                   @relation("chats_user2_idTousers")
-  community_chat_members                       community_chat_members[]
-  community_chat_messages                      community_chat_messages[]
-  community_messages                           community_messages[]
-  favourite_products                           favourite_products[]
-  messages                                     messages[]
-  orders                                       orders[]
-  product                                      product[]
-  product_reviews                              product_reviews[]
-  tokens                                       tokens[]
-  user_reviews_user_reviews_reviewee_idTousers user_reviews[]            @relation("user_reviews_reviewee_idTousers")
-  user_reviews_user_reviews_reviewer_idTousers user_reviews[]            @relation("user_reviews_reviewer_idTousers")
-  message_reactions                            message_reactions[]
+  id                         Int                    @id @default(autoincrement())
+  username                   String                 @unique(map: "unique_username") @db.VarChar
+  email                      String                 @unique(map: "unique_email") @db.VarChar
+  password                   String?                @db.VarChar
+  first_name                 String?                @db.VarChar
+  last_name                  String?                @db.VarChar
+  is_seller                  Boolean?               @default(false)
+  is_email_verified          Boolean?               @default(false)
+  created_at                 DateTime?              @default(now()) @db.Timestamp(6)
+  phone                      String?                @db.VarChar(15)
+  is_admin_verified          Boolean?               @default(false)
+  dob                        DateTime               @db.Date
+  gender                     String                 @db.VarChar
+  nic_front_image            String?
+  nic_back_image             String?
+  address                    String?
+  profile                    String?
+  applied_for_verification   Boolean?               @default(false)
+  is_active                  Boolean?               @default(true)
+  googleId                   String?                @unique @db.VarChar
+  facebookId                 String?                @unique @db.VarChar
+  cart                       cart[]
+  chats_chats_user1_idTousers chats[]               @relation("chats_user1_idTousers")
+  chats_chats_user2_idTousers chats[]               @relation("chats_user2_idTousers")
+  community_messages         community_messages[]   @relation("community_messages_sender")
+  favourite_products         favourite_products[]
+  messages                   messages[]
+  orders                     orders[]
+  product                    product[]
+  product_reviews            product_reviews[]
+  tokens                     tokens[]
+  user_reviews_user_reviews_reviewee_idTousers user_reviews[] @relation("user_reviews_reviewee_idTousers")
+  user_reviews_user_reviews_reviewer_idTousers user_reviews[] @relation("user_reviews_reviewer_idTousers")
+  message_reactions          message_reactions[]
+  created_community_chats    community_chat[]       @relation("community_chat_creator")
 }
+
+
 
 model product_reviews {
   id                          Int                           @id(map: "review_pkey") @default(autoincrement())
@@ -474,17 +457,18 @@ model product_reviews {
 }
 
 model community_messages {
-  sender_id       Int?
-  content         String
-  created_at      DateTime?           @default(now()) @db.Timestamp(6)
-  is_admin        Boolean?            @default(false)
-  admin_id        Int?
-  id              Int                 @id @default(autoincrement())
-  admin           admin?              @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
-  users           users?              @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
+  id                Int                 @id @default(autoincrement())
+  community_chat_id Int
+  sender_id         Int?
+  content           String
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  is_admin          Boolean?            @default(false)
+  admin_id          Int?
+  admin             admin?              @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
+  users             users?              @relation("community_messages_sender", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
+  community_chat    community_chat      @relation("community_chat_messages", fields: [community_chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   message_reactions message_reactions[]
 }
-
 
 model ThirdPartyAd {
   id        Int      @id @default(autoincrement())
