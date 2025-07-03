@@ -3,28 +3,21 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Service } from 'src/utils/s3.service';
+
 
 @Injectable()
 export class ChatService {
   private s3Client: S3Client;
 
-  constructor(private readonly prismaService: PrismaService) {
-    this.s3Client = new S3Client({
-      region: 'eu-north-1',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
-  }
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
-  public async getSignedImageUrl(key: string): Promise<string | null> {
+  async getSignedImageUrl(key: string): Promise<string | null> {
     try {
-      const command = new GetObjectCommand({
-        Bucket: 'gamergizmobucket',
-        Key: key,
-      });
-      return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      return await this.s3Service.get_image_url(key);
     } catch (error) {
       console.error('Error generating signed URL:', error);
       return null;
@@ -278,107 +271,107 @@ export class ChatService {
     }
   }
 
-  async createCommunityChat(name: string, description: string | undefined, wallpaper: string | undefined, creatorId: number) {
-    try {
-      if (!name || name.trim().length === 0) {
-        throw new BadRequestException('Name cannot be empty');
-      }
+  // async createCommunityChat(name: string, description: string | undefined, wallpaper: string | undefined, creatorId: number) {
+  //   try {
+  //     if (!name || name.trim().length === 0) {
+  //       throw new BadRequestException('Name cannot be empty');
+  //     }
 
-      const validCreatorId = Number(creatorId);
-      if (isNaN(validCreatorId) || validCreatorId <= 0) {
-        throw new BadRequestException('Invalid creator ID');
-      }
+  //     const validCreatorId = Number(creatorId);
+  //     if (isNaN(validCreatorId) || validCreatorId <= 0) {
+  //       throw new BadRequestException('Invalid creator ID');
+  //     }
 
-      const userExists = await this.prismaService.users.findUnique({
-        where: { id: validCreatorId },
-      });
+  //     const userExists = await this.prismaService.users.findUnique({
+  //       where: { id: validCreatorId },
+  //     });
 
-      if (!userExists) {
-        throw new BadRequestException('Creator user does not exist');
-      }
+  //     if (!userExists) {
+  //       throw new BadRequestException('Creator user does not exist');
+  //     }
 
-      const communityChat = await this.prismaService.community_chat.create({
-        data: {
-          name: name.trim(),
-          description: description?.trim(),
-          wallpaper: wallpaper?.trim(),
-          creator_id: validCreatorId,
-          created_at: new Date(),
-          admins: {
-            connect: [{ id: validCreatorId }],
-          },
-        },
-      });
+  //     const communityChat = await this.prismaService.community_chat.create({
+  //       data: {
+  //         name: name.trim(),
+  //         description: description?.trim(),
+  //         wallpaper: wallpaper?.trim(),
+  //         creator_id: validCreatorId,
+  //         created_at: new Date(),
+  //         admins: {
+  //           connect: [{ id: validCreatorId }],
+  //         },
+  //       },
+  //     });
 
-      return {
-        message: 'Community chat created successfully',
-        data: {
-          id: communityChat.id,
-          name: communityChat.name,
-          description: communityChat.description,
-          wallpaper: communityChat.wallpaper
-            ? await this.getSignedImageUrl(communityChat.wallpaper)
-            : null,
-          creator_id: communityChat.creator_id,
-          created_at: communityChat.created_at.toISOString(),
-        },
-      };
-    } catch (error) {
-      console.error('Create community chat error:', error);
-      throw new BadRequestException('Failed to create community chat: ' + error.message);
-    }
-  }
+  //     return {
+  //       message: 'Community chat created successfully',
+  //       data: {
+  //         id: communityChat.id,
+  //         name: communityChat.name,
+  //         description: communityChat.description,
+  //         wallpaper: communityChat.wallpaper
+  //           ? await this.getSignedImageUrl(communityChat.wallpaper)
+  //           : null,
+  //         creator_id: communityChat.creator_id,
+  //         created_at: communityChat.created_at.toISOString(),
+  //       },
+  //     };
+  //   } catch (error) {
+  //     console.error('Create community chat error:', error);
+  //     throw new BadRequestException('Failed to create community chat: ' + error.message);
+  //   }
+  // }
 
-  async updateCommunityChatWallpaper(communityChatId: number, wallpaper: string, userId: number) {
-    try {
-      const validChatId = Number(communityChatId);
-      if (isNaN(validChatId) || validChatId <= 0) {
-        throw new BadRequestException('Invalid community chat ID');
-      }
+  // async updateCommunityChatWallpaper(communityChatId: number, wallpaper: string, userId: number) {
+  //   try {
+  //     const validChatId = Number(communityChatId);
+  //     if (isNaN(validChatId) || validChatId <= 0) {
+  //       throw new BadRequestException('Invalid community chat ID');
+  //     }
 
-      const validUserId = Number(userId);
-      if (isNaN(validUserId) || validUserId <= 0) {
-        throw new BadRequestException('Invalid user ID');
-      }
+  //     const validUserId = Number(userId);
+  //     if (isNaN(validUserId) || validUserId <= 0) {
+  //       throw new BadRequestException('Invalid user ID');
+  //     }
 
-      const chat = await this.prismaService.community_chat.findUnique({
-        where: { id: validChatId },
-        include: { admins: true },
-      });
+  //     const chat = await this.prismaService.community_chat.findUnique({
+  //       where: { id: validChatId },
+  //       include: { admins: true },
+  //     });
 
-      if (!chat) {
-        throw new BadRequestException('Community chat not found');
-      }
+  //     if (!chat) {
+  //       throw new BadRequestException('Community chat not found');
+  //     }
 
-      if (chat.creator_id !== validUserId && !chat.admins.some((admin) => admin.id === validUserId)) {
-        throw new BadRequestException('User is not authorized to update this community chat');
-      }
+  //     if (chat.creator_id !== validUserId && !chat.admins.some((admin) => admin.id === validUserId)) {
+  //       throw new BadRequestException('User is not authorized to update this community chat');
+  //     }
 
-      const updatedChat = await this.prismaService.community_chat.update({
-        where: { id: validChatId },
-        data: {
-          wallpaper: wallpaper.trim(),
-        },
-      });
+  //     const updatedChat = await this.prismaService.community_chat.update({
+  //       where: { id: validChatId },
+  //       data: {
+  //         wallpaper: wallpaper.trim(),
+  //       },
+  //     });
 
-      return {
-        message: 'Community chat wallpaper updated successfully',
-        data: {
-          id: updatedChat.id,
-          name: updatedChat.name,
-          description: updatedChat.description,
-          wallpaper: updatedChat.wallpaper
-            ? await this.getSignedImageUrl(updatedChat.wallpaper)
-            : null,
-          creator_id: updatedChat.creator_id,
-          created_at: updatedChat.created_at.toISOString(),
-        },
-      };
-    } catch (error) {
-      console.error('Update community chat wallpaper error:', error);
-      throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
-    }
-  }
+  //     return {
+  //       message: 'Community chat wallpaper updated successfully',
+  //       data: {
+  //         id: updatedChat.id,
+  //         name: updatedChat.name,
+  //         description: updatedChat.description,
+  //         wallpaper: updatedChat.wallpaper
+  //           ? await this.getSignedImageUrl(updatedChat.wallpaper)
+  //           : null,
+  //         creator_id: updatedChat.creator_id,
+  //         created_at: updatedChat.created_at.toISOString(),
+  //       },
+  //     };
+  //   } catch (error) {
+  //     console.error('Update community chat wallpaper error:', error);
+  //     throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
+  //   }
+  // }
 
   async banUserFromCommunityChat(communityChatId: number, userId: number, requesterId: number) {
     try {
@@ -1502,6 +1495,124 @@ export class ChatService {
     } catch (error) {
       console.error('Update message reaction error:', error);
       throw new BadRequestException('Failed to update reaction: ' + error.message);
+    }
+  }
+
+   
+
+  async createCommunityChat(name: string, description: string | undefined, file: Express.Multer.File | undefined, creatorId: number) {
+    try {
+      if (!name || name.trim().length === 0) {
+        throw new BadRequestException('Name cannot be empty');
+      }
+
+      const validCreatorId = Number(creatorId);
+      if (isNaN(validCreatorId) || validCreatorId <= 0) {
+        throw new BadRequestException('Invalid creator ID');
+      }
+
+      const userExists = await this.prismaService.users.findUnique({
+        where: { id: validCreatorId },
+      });
+
+      if (!userExists) {
+        throw new BadRequestException('Creator user does not exist');
+      }
+
+      let wallpaperKey: string | null = null;
+      if (file) {
+        const uploadResult = await this.s3Service.upload_file(file);
+        wallpaperKey = uploadResult.Key;
+      }
+
+      const communityChat = await this.prismaService.community_chat.create({
+        data: {
+          name: name.trim(),
+          description: description?.trim(),
+          wallpaper: wallpaperKey,
+          creator_id: validCreatorId,
+          created_at: new Date(),
+          admins: {
+            connect: [{ id: validCreatorId }],
+          },
+        },
+      });
+
+      return {
+        message: 'Community chat created successfully',
+        data: {
+          id: communityChat.id,
+          name: communityChat.name,
+          description: communityChat.description,
+          wallpaper: wallpaperKey ? await this.getSignedImageUrl(wallpaperKey) : null,
+          creator_id: communityChat.creator_id,
+          created_at: communityChat.created_at.toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error('Create community chat error:', error);
+      throw new BadRequestException('Failed to create community chat: ' + error.message);
+    }
+  }
+
+  async updateCommunityChatWallpaper(communityChatId: number, file: Express.Multer.File | undefined, userId: number) {
+    try {
+      const validChatId = Number(communityChatId);
+      if (isNaN(validChatId) || validChatId <= 0) {
+        throw new BadRequestException('Invalid community chat ID');
+      }
+
+      const validUserId = Number(userId);
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new BadRequestException('Invalid user ID');
+      }
+
+      const chat = await this.prismaService.community_chat.findUnique({
+        where: { id: validChatId },
+        include: { admins: true },
+      });
+
+      if (!chat) {
+        throw new BadRequestException('Community chat not found');
+      }
+
+      if (chat.creator_id !== validUserId && !chat.admins.some((admin) => admin.id === validUserId)) {
+        throw new BadRequestException('User is not authorized to update this community chat');
+      }
+
+      let wallpaperKey: string | null = chat.wallpaper;
+      if (file) {
+        if (chat.wallpaper) {
+          await this.s3Service.deleteFileByKey(chat.wallpaper);
+        }
+        const uploadResult = await this.s3Service.upload_file(file);
+        wallpaperKey = uploadResult.Key;
+      } else if (chat.wallpaper) {
+        await this.s3Service.deleteFileByKey(chat.wallpaper);
+        wallpaperKey = null;
+      }
+
+      const updatedChat = await this.prismaService.community_chat.update({
+        where: { id: validChatId },
+        data: {
+          wallpaper: wallpaperKey,
+        },
+      });
+
+      return {
+        message: 'Community chat wallpaper updated successfully',
+        data: {
+          id: updatedChat.id,
+          name: updatedChat.name,
+          description: updatedChat.description,
+          wallpaper: wallpaperKey ? await this.getSignedImageUrl(wallpaperKey) : null,
+          creator_id: updatedChat.creator_id,
+          created_at: updatedChat.created_at.toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error('Update community chat wallpaper error:', error);
+      throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
     }
   }
 }
