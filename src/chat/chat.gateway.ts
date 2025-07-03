@@ -1,5 +1,4 @@
 
-
 import {
   SubscribeMessage,
   WebSocketGateway,
@@ -138,199 +137,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // @SubscribeMessage('communitySendMessage')
-  // @ApiOperation({
-  //   summary: 'Send a message in a community chat (WebSocket)',
-  //   description: 'Sends a message to the community chat and broadcasts a `communityReceiveMessage` event to all connected clients.',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Community message sent successfully, emitted as `communityReceiveMessage` event',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       id: { type: 'number', example: 1 },
-  //       content: { type: 'string', example: 'Hello community!' },
-  //       is_admin: { type: 'boolean', example: false },
-  //       sender_id: { type: 'number', example: 1, nullable: true },
-  //       admin_id: { type: 'number', example: null, nullable: true },
-  //       created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
-  //       users: {
-  //         type: 'object',
-  //         properties: {
-  //           username: { type: 'string', example: 'john_doe' },
-  //           profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
-  //         },
-  //       },
-  //       reactions: {
-  //         type: 'array',
-  //         items: {
-  //           type: 'object',
-  //           properties: {
-  //             id: { type: 'number', example: 1 },
-  //             emoji_type: { type: 'string', example: '👍' },
-  //             user_id: { type: 'number', example: 1 },
-  //             username: { type: 'string', example: 'john_doe' },
-  //             created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
-  //           },
-  //         },
-  //       },
-  //       reaction_counts: {
-  //         type: 'object',
-  //         additionalProperties: { type: 'number' },
-  //         example: { '👍': 2, '❤️': 1 },
-  //       },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID or message data' })
-  // async handleCommunitySendMessage(
-  //   @ConnectedSocket() client: Socket,
-  //   @MessageBody() payload: { content: string; is_admin: boolean },
-  // ) {
-  //   const senderId = parseInt(client.handshake.query.userId as string);
-  //   if (isNaN(senderId)) {
-  //     throw new BadRequestException('Invalid sender ID');
-  //   }
-
-  //   try {
-  //     const result = await this.chatService.createCommunityMessage({
-  //       content: payload.content,
-  //       is_admin: payload.is_admin,
-  //       sender_id: senderId,
-  //     });
-
-  //     this.server.emit('communityReceiveMessage', result.data);
-  //     return result;
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message || 'Failed to send community message');
-  //   }
-  // }
-
-  // @SubscribeMessage('communityFetchMessages')
-  // @ApiOperation({
-  //   summary: 'Fetch latest messages for community chat (WebSocket)',
-  //   description: 'Fetches the latest 10 messages for the community chat and emits a `communityLoadMessages` event to the client.',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Community messages retrieved successfully, emitted as `communityLoadMessages` event',
-  //   schema: {
-  //     type: 'array',
-  //     items: {
-  //       type: 'object',
-  //       properties: {
-  //         id: { type: 'number', example: 1 },
-  //         content: { type: 'string', example: 'Hello community!' },
-  //         is_admin: { type: 'boolean', example: false },
-  //         sender_id: { type: 'number', example: 1, nullable: true },
-  //         admin_id: { type: 'number', example: null, nullable: true },
-  //         created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
-  //         users: {
-  //           type: 'object',
-  //           properties: {
-  //             username: { type: 'string', example: 'john_doe' },
-  //             profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
-  //           },
-  //         },
-  //         reactions: {
-  //           type: 'array',
-  //           items: {
-  //             type: 'object',
-  //             properties: {
-  //               id: { type: 'number', example: 1 },
-  //               emoji_type: { type: 'string', example: '👍' },
-  //               user_id: { type: 'number', example: 1 },
-  //               username: { type: 'string', example: 'john_doe' },
-  //               created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
-  //             },
-  //           },
-  //         },
-  //         reaction_counts: {
-  //           type: 'object',
-  //           additionalProperties: { type: 'number' },
-  //           example: { '👍': 2, '❤️': 1 },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // async handleCommunityFetchMessages(@ConnectedSocket() client: Socket) {
-  //   try {
-  //     const messages = await this.chatService.getCommunityMessages({});
-  //     client.emit('communityLoadMessages', messages);
-  //     return { message: 'Community messages fetched successfully', data: messages };
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message || 'Failed to fetch community messages');
-  //   }
-  // }
-
-  // @SubscribeMessage('communityFetchMoreMessages')
-  // @ApiOperation({
-  //   summary: 'Fetch older messages for community chat (WebSocket)',
-  //   description: 'Fetches up to 10 older messages before a specified message ID and emits a `communityLoadMoreMessages` event.',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Older community messages retrieved successfully, emitted as `communityLoadMoreMessages` event',
-  //   schema: {
-  //     type: 'array',
-  //     items: {
-  //       type: 'object',
-  //       properties: {
-  //         id: { type: 'number', example: 1 },
-  //         content: { type: 'string', example: 'Hello community!' },
-  //         is_admin: { type: 'boolean', example: false },
-  //         sender_id: { type: 'number', example: 1, nullable: true },
-  //         admin_id: { type: 'number', example: null, nullable: true },
-  //         created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
-  //         users: {
-  //           type: 'object',
-  //           properties: {
-  //             username: { type: 'string', example: 'john_doe' },
-  //             profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
-  //           },
-  //         },
-  //         reactions: {
-  //           type: 'array',
-  //           items: {
-  //             type: 'object',
-  //             properties: {
-  //               id: { type: 'number', example: 1 },
-  //               emoji_type: { type: 'string', example: '👍' },
-  //               user_id: { type: 'number', example: 1 },
-  //               username: { type: 'string', example: 'john_doe' },
-  //               created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
-  //             },
-  //           },
-  //         },
-  //         reaction_counts: {
-  //           type: 'object',
-  //           additionalProperties: { type: 'number' },
-  //           example: { '👍': 2, '❤️': 1 },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID' })
-  // async handleCommunityFetchMoreMessages(
-  //   @ConnectedSocket() client: Socket,
-  //   @MessageBody() payload: { lastMessageId: number },
-  // ) {
-  //   try {
-  //     const messages = await this.chatService.getCommunityMessages({ beforeId: payload.lastMessageId });
-  //     client.emit('communityLoadMoreMessages', messages);
-  //     return { message: 'More community messages fetched successfully', data: messages };
-  //   } catch (error) {
-  //     console.error('Error fetching more community messages:', error);
-  //     throw new BadRequestException(error.message || 'Failed to fetch more community messages');
-  //   }
-  // }
   @SubscribeMessage('communitySendMessage')
   @ApiOperation({
     summary: 'Send a message in a specific community chat (WebSocket)',
-    description: 'Sends a message to a specific community chat and broadcasts a `communityReceiveMessage` event to all connected clients.',
+    description: 'Sends a message to a specific community chat and broadcasts a `communityReceiveMessage` event to all connected clients. Users banned from the chat cannot send messages.',
   })
   @ApiResponse({
     status: 200,
@@ -343,6 +153,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         is_admin: { type: 'boolean', example: false },
         sender_id: { type: 'number', example: 1, nullable: true },
         admin_id: { type: 'number', example: null, nullable: true },
+        user_admin_id: { type: 'number', example: null, nullable: true },
         community_chat_id: { type: 'number', example: 1 },
         created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
         users: {
@@ -373,7 +184,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, community chat ID, or message data' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, community chat ID, or user is banned' })
   async handleCommunitySendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { content: string; is_admin: boolean; community_chat_id: number },
@@ -401,7 +212,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('communityFetchMessages')
   @ApiOperation({
     summary: 'Fetch latest messages for a specific community chat (WebSocket)',
-    description: 'Fetches the latest 10 messages for a specific community chat and emits a `communityLoadMessages` event to the client.',
+    description: 'Fetches the latest 10 messages for a specific community chat and emits a `communityLoadMessages` event to the client. Excludes messages from banned users.',
   })
   @ApiResponse({
     status: 200,
@@ -416,6 +227,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           is_admin: { type: 'boolean', example: false },
           sender_id: { type: 'number', example: 1, nullable: true },
           admin_id: { type: 'number', example: null, nullable: true },
+          user_admin_id: { type: 'number', example: null, nullable: true },
           community_chat_id: { type: 'number', example: 1 },
           created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
           users: {
@@ -451,8 +263,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { communityChatId: number },
   ) {
+    const userId = parseInt(client.handshake.query.userId as string);
+    if (isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
     try {
-      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId);
+      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId, userId);
       client.emit('communityLoadMessages', messages);
       return { message: 'Community messages fetched successfully', data: messages };
     } catch (error) {
@@ -463,7 +280,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('communityFetchMoreMessages')
   @ApiOperation({
     summary: 'Fetch older messages for a specific community chat (WebSocket)',
-    description: 'Fetches up to 10 older messages before a specified message ID for a specific community chat and emits a `communityLoadMoreMessages` event.',
+    description: 'Fetches up to 10 older messages before a specified message ID for a specific community chat and emits a `communityLoadMoreMessages` event. Excludes messages from banned users.',
   })
   @ApiResponse({
     status: 200,
@@ -478,6 +295,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           is_admin: { type: 'boolean', example: false },
           sender_id: { type: 'number', example: 1, nullable: true },
           admin_id: { type: 'number', example: null, nullable: true },
+          user_admin_id: { type: 'number', example: null, nullable: true },
           community_chat_id: { type: 'number', example: 1 },
           created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
           users: {
@@ -513,8 +331,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { communityChatId: number; lastMessageId: number },
   ) {
+    const userId = parseInt(client.handshake.query.userId as string);
+    if (isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
     try {
-      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId, { beforeId: payload.lastMessageId });
+      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId, userId, { beforeId: payload.lastMessageId });
       client.emit('communityLoadMoreMessages', messages);
       return { message: 'More community messages fetched successfully', data: messages };
     } catch (error) {
@@ -807,6 +630,47 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to update reaction');
+    }
+  }
+
+  @SubscribeMessage('deleteCommunityMessage')
+  @ApiOperation({
+    summary: 'Delete a message in a community chat (WebSocket)',
+    description: 'Deletes a message in a community chat by the creator or an admin and emits a `communityMessageDeleted` event to all connected clients.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Message deleted successfully, emitted as `communityMessageDeleted` event',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Message deleted successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            messageId: { type: 'number', example: 1 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID or user not authorized' })
+  @ApiResponse({ status: 404, description: 'Not Found - Message not found' })
+  async handleDeleteCommunityMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { messageId: number },
+  ) {
+    const userId = parseInt(client.handshake.query.userId as string);
+    if (isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    try {
+      await this.chatService.deleteCommunityMessage(payload.messageId, userId);
+      this.server.emit('communityMessageDeleted', { messageId: payload.messageId });
+      return { message: 'Message deleted successfully', data: { messageId: payload.messageId } };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to delete community message');
     }
   }
 

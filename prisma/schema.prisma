@@ -16,7 +16,7 @@ model admin {
   type                                     String?              @default("child") @db.VarChar
   blog_posts_blog_posts_admin_idToadmin    blog_posts[]         @relation("blog_posts_admin_idToadmin")
   blog_posts_blog_posts_verified_byToadmin blog_posts[]         @relation("blog_posts_verified_byToadmin")
-  community_messages                       community_messages[]
+  community_messages                        community_messages[]  @relation("community_messages_admin")
   product_product_admin_idToadmin          product[]            @relation("product_admin_idToadmin")
   product                                  product[]
 }
@@ -110,14 +110,18 @@ model chats {
   messages                    messages[]
 }
 
+
 model community_chat {
-  id                  Int                   @id @default(autoincrement())
-  name                String                @db.VarChar
-  description         String?
-  created_at          DateTime?             @default(now()) @db.Timestamp(6)
-  creator_id          Int?
-  community_messages  community_messages[]  @relation("community_chat_messages")
-  users               users?                @relation("community_chat_creator", fields: [creator_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  id              Int               @id @default(autoincrement())
+  name            String
+  description     String?
+  creator_id      Int?
+  wallpaper       String?           
+  created_at      DateTime          @default(now())
+  users           users?            @relation("community_chat_creator", fields: [creator_id], references: [id])
+  community_messages community_messages[]
+  banned_users    users[]           @relation("banned_users") 
+  admins          users[]           @relation("community_chat_admins")
 }
 
 
@@ -430,6 +434,7 @@ model users {
   chats_chats_user1_idTousers chats[]               @relation("chats_user1_idTousers")
   chats_chats_user2_idTousers chats[]               @relation("chats_user2_idTousers")
   community_messages         community_messages[]   @relation("community_messages_sender")
+  community_messages_admin   community_messages[]   @relation("community_messages_user_admin")
   favourite_products         favourite_products[]
   messages                   messages[]
   orders                     orders[]
@@ -440,6 +445,8 @@ model users {
   user_reviews_user_reviews_reviewer_idTousers user_reviews[] @relation("user_reviews_reviewer_idTousers")
   message_reactions          message_reactions[]
   created_community_chats    community_chat[]       @relation("community_chat_creator")
+  banned_from_chats         community_chat[]       @relation("banned_users")
+  community_chat_admins     community_chat[]       @relation("community_chat_admins")
 }
 
 
@@ -457,18 +464,22 @@ model product_reviews {
 }
 
 model community_messages {
-  id                Int                 @id @default(autoincrement())
-  community_chat_id Int
-  sender_id         Int?
+  id                Int               @id @default(autoincrement())
   content           String
-  created_at        DateTime?           @default(now()) @db.Timestamp(6)
-  is_admin          Boolean?            @default(false)
+  created_at        DateTime          @default(now())
+  sender_id         Int?
   admin_id          Int?
-  admin             admin?              @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_fk")
-  users             users?              @relation("community_messages_sender", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_fk")
-  community_chat    community_chat      @relation("community_chat_messages", fields: [community_chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_admin_id     Int?
+  is_admin          Boolean           @default(false)
+  is_banned         Boolean           @default(false)
+  community_chat_id Int
+  community_chat    community_chat    @relation(fields: [community_chat_id], references: [id])
+  users             users?            @relation("community_messages_sender", fields: [sender_id], references: [id])
+  admin             admin?            @relation("community_messages_admin", fields: [admin_id], references: [id], map: "community_messages_admin_fk")
+  user_admin        users?            @relation("community_messages_user_admin", fields: [user_admin_id], references: [id], map: "community_messages_user_admin_fk")
   message_reactions message_reactions[]
 }
+
 
 model ThirdPartyAd {
   id        Int      @id @default(autoincrement())
