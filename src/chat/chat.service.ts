@@ -271,108 +271,7 @@ export class ChatService {
     }
   }
 
-  // async createCommunityChat(name: string, description: string | undefined, wallpaper: string | undefined, creatorId: number) {
-  //   try {
-  //     if (!name || name.trim().length === 0) {
-  //       throw new BadRequestException('Name cannot be empty');
-  //     }
-
-  //     const validCreatorId = Number(creatorId);
-  //     if (isNaN(validCreatorId) || validCreatorId <= 0) {
-  //       throw new BadRequestException('Invalid creator ID');
-  //     }
-
-  //     const userExists = await this.prismaService.users.findUnique({
-  //       where: { id: validCreatorId },
-  //     });
-
-  //     if (!userExists) {
-  //       throw new BadRequestException('Creator user does not exist');
-  //     }
-
-  //     const communityChat = await this.prismaService.community_chat.create({
-  //       data: {
-  //         name: name.trim(),
-  //         description: description?.trim(),
-  //         wallpaper: wallpaper?.trim(),
-  //         creator_id: validCreatorId,
-  //         created_at: new Date(),
-  //         admins: {
-  //           connect: [{ id: validCreatorId }],
-  //         },
-  //       },
-  //     });
-
-  //     return {
-  //       message: 'Community chat created successfully',
-  //       data: {
-  //         id: communityChat.id,
-  //         name: communityChat.name,
-  //         description: communityChat.description,
-  //         wallpaper: communityChat.wallpaper
-  //           ? await this.getSignedImageUrl(communityChat.wallpaper)
-  //           : null,
-  //         creator_id: communityChat.creator_id,
-  //         created_at: communityChat.created_at.toISOString(),
-  //       },
-  //     };
-  //   } catch (error) {
-  //     console.error('Create community chat error:', error);
-  //     throw new BadRequestException('Failed to create community chat: ' + error.message);
-  //   }
-  // }
-
-  // async updateCommunityChatWallpaper(communityChatId: number, wallpaper: string, userId: number) {
-  //   try {
-  //     const validChatId = Number(communityChatId);
-  //     if (isNaN(validChatId) || validChatId <= 0) {
-  //       throw new BadRequestException('Invalid community chat ID');
-  //     }
-
-  //     const validUserId = Number(userId);
-  //     if (isNaN(validUserId) || validUserId <= 0) {
-  //       throw new BadRequestException('Invalid user ID');
-  //     }
-
-  //     const chat = await this.prismaService.community_chat.findUnique({
-  //       where: { id: validChatId },
-  //       include: { admins: true },
-  //     });
-
-  //     if (!chat) {
-  //       throw new BadRequestException('Community chat not found');
-  //     }
-
-  //     if (chat.creator_id !== validUserId && !chat.admins.some((admin) => admin.id === validUserId)) {
-  //       throw new BadRequestException('User is not authorized to update this community chat');
-  //     }
-
-  //     const updatedChat = await this.prismaService.community_chat.update({
-  //       where: { id: validChatId },
-  //       data: {
-  //         wallpaper: wallpaper.trim(),
-  //       },
-  //     });
-
-  //     return {
-  //       message: 'Community chat wallpaper updated successfully',
-  //       data: {
-  //         id: updatedChat.id,
-  //         name: updatedChat.name,
-  //         description: updatedChat.description,
-  //         wallpaper: updatedChat.wallpaper
-  //           ? await this.getSignedImageUrl(updatedChat.wallpaper)
-  //           : null,
-  //         creator_id: updatedChat.creator_id,
-  //         created_at: updatedChat.created_at.toISOString(),
-  //       },
-  //     };
-  //   } catch (error) {
-  //     console.error('Update community chat wallpaper error:', error);
-  //     throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
-  //   }
-  // }
-
+  
   async banUserFromCommunityChat(communityChatId: number, userId: number, requesterId: number) {
     try {
       const validChatId = Number(communityChatId);
@@ -837,121 +736,7 @@ export class ChatService {
   }
 }
 
-  // async getTopReactedMessages(communityChatId: number, userId: number) {
-  //   try {
-  //     const validChatId = Number(communityChatId);
-  //     const validUserId = Number(userId);
-
-  //     if (isNaN(validChatId) || validChatId <= 0) {
-  //       throw new BadRequestException('Invalid community chat ID');
-  //     }
-  //     if (isNaN(validUserId) || validUserId <= 0) {
-  //       throw new BadRequestException('Invalid user ID');
-  //     }
-
-  //     const chat = await this.prismaService.community_chat.findUnique({
-  //       where: { id: validChatId },
-  //       include: { banned_users: true },
-  //     });
-
-  //     if (!chat) {
-  //       throw new BadRequestException('Community chat not found');
-  //     }
-
-  //     if (chat.banned_users.some((user) => user.id === validUserId)) {
-  //       throw new BadRequestException('User is banned from this community chat');
-  //     }
-
-  //     const messages = await this.prismaService.community_messages.findMany({
-  //       where: {
-  //         community_chat_id: validChatId,
-  //         is_banned: false,
-  //       },
-  //       include: {
-  //         users: {
-  //           select: {
-  //             username: true,
-  //             profile: true,
-  //           },
-  //         },
-  //         admin: {
-  //           select: {
-  //             name: true,
-  //           },
-  //         },
-  //         message_reactions: {
-  //           select: {
-  //             id: true,
-  //             emoji_type: true,
-  //             user_id: true,
-  //             created_at: true,
-  //             users: {
-  //               select: {
-  //                 username: true,
-  //               },
-  //             },
-  //           },
-  //         },
-  //         _count: {
-  //           select: {
-  //             message_reactions: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         message_reactions: {
-  //           _count: 'desc',
-  //         },
-  //       },
-  //       take: 4,
-  //     });
-
-  //     const mappedMessages = await Promise.all(
-  //       messages.map(async (msg) => {
-  //         const profilePicture = msg.users?.profile
-  //           ? await this.getSignedImageUrl(msg.users.profile)
-  //           : null;
-
-  //         const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
-  //           acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
-  //           return acc;
-  //         }, {});
-
-  //         return {
-  //           id: msg.id,
-  //           content: msg.content,
-  //           is_admin: msg.is_admin,
-  //           sender_id: msg.sender_id,
-  //           admin_id: msg.admin_id,
-  //           user_admin_id: msg.user_admin_id,
-  //           community_chat_id: msg.community_chat_id,
-  //           created_at: msg.created_at.toISOString(),
-  //           users: {
-  //             username: msg.users?.username || msg.admin?.name || 'Unknown',
-  //             profile_picture: profilePicture,
-  //           },
-  //           reactions: msg.message_reactions.map((reaction) => ({
-  //             id: reaction.id,
-  //             emoji_type: reaction.emoji_type,
-  //             user_id: reaction.user_id,
-  //             username: reaction.users?.username || 'Unknown',
-  //             created_at: reaction.created_at.toISOString(),
-  //           })),
-  //           reaction_counts: reactionCounts,
-  //           total_reactions: msg._count.message_reactions,
-  //         };
-  //       }),
-  //     );
-
-  //     return {
-  //       message: 'Top reacted messages retrieved successfully',
-  //       data: mappedMessages,
-  //     };
-  //   } catch (error) {
-  //     console.error('Get top reacted messages error:', error);
-  //     throw new BadRequestException('Failed to get top reacted messages: ' + error.message);
-  //   }
-  // }
+  
   async getTopReactedMessages() {
     try {
       const messages = await this.prismaService.community_messages.findMany({
@@ -1615,4 +1400,70 @@ export class ChatService {
       throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
     }
   }
+
+  async deleteCommunityChat(communityChatId: number, requesterId: number) {
+  try {
+    const validChatId = Number(communityChatId);
+    const validRequesterId = Number(requesterId);
+
+    if (isNaN(validChatId) || validChatId <= 0) {
+      throw new BadRequestException('Invalid community chat ID');
+    }
+    if (isNaN(validRequesterId) || validRequesterId <= 0) {
+      throw new BadRequestException('Invalid requester ID');
+    }
+
+    const chat = await this.prismaService.community_chat.findUnique({
+      where: { id: validChatId },
+      include: { admins: true },
+    });
+
+    if (!chat) {
+      throw new BadRequestException('Community chat not found');
+    }
+
+    const isAdmin = await this.prismaService.admin.findUnique({
+      where: { id: validRequesterId },
+    });
+
+    if (
+      !isAdmin &&
+      chat.creator_id !== validRequesterId &&
+      !chat.admins.some((admin) => admin.id === validRequesterId)
+    ) {
+      throw new BadRequestException('User is not authorized to delete this community chat');
+    }
+
+    await this.prismaService.$transaction([
+      this.prismaService.message_reactions.deleteMany({
+        where: {
+          community_messages: { community_chat_id: validChatId },
+        },
+      }),
+      this.prismaService.community_messages.deleteMany({
+        where: { community_chat_id: validChatId },
+      }),
+      this.prismaService.community_chat.update({
+        where: { id: validChatId },
+        data: {
+          admins: { set: [] },
+          banned_users: { set: [] },
+        },
+      }),
+      this.prismaService.community_chat.delete({
+        where: { id: validChatId },
+      }),
+    ]);
+
+    if (chat.wallpaper) {
+      await this.s3Service.deleteFileByKey(chat.wallpaper);
+    }
+
+    return { message: 'Community chat deleted successfully' };
+  } catch (error) {
+    console.error('Delete community chat error:', error);
+    throw new BadRequestException('Failed to delete community chat: ' + error.message);
+  }
+}
+
 }

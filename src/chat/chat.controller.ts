@@ -5,6 +5,8 @@ import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth, ApiParam,ApiConsumes } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { AuthGuard } from '../auth/auth.gurad';
+import { AdminAuthGuard } from 'src/auth/admin.auth.gurad';
+import { AuthOrAdminGuard } from 'src/auth/authoradmin.guard';
 import { Request } from 'express';
 
 interface JwtPayload {
@@ -15,7 +17,7 @@ interface JwtPayload {
 @ApiTags('Chats')
 @ApiBearerAuth()
 @Controller('/chats')
-@UseGuards(AuthGuard)
+@UseGuards(AuthOrAdminGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
@@ -480,108 +482,7 @@ async getCommunityMessages(
     }
   }
 
-  // @Post('/community/create')
-  // @ApiOperation({ summary: 'Create a new community chat with a name, optional description, and optional wallpaper' })
-  // @ApiBody({
-  //   description: 'Details for the new community chat',
-  //   schema: {
-  //     type: 'object',
-  //     required: ['name'],
-  //     properties: {
-  //       name: { type: 'string', description: 'Name of the community chat', example: 'Gaming News' },
-  //       description: { type: 'string', description: 'Description of the community chat', example: 'A place to discuss the latest gaming updates', nullable: true },
-  //       wallpaper: { type: 'string', description: 'URL or key for the community chat wallpaper', example: 'wallpaper.jpg', nullable: true },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({
-  //   status: 201,
-  //   description: 'Community chat created successfully',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       message: { type: 'string', example: 'Community chat created successfully' },
-  //       data: {
-  //         type: 'object',
-  //         properties: {
-  //           id: { type: 'number', example: 1 },
-  //           name: { type: 'string', example: 'Gaming News' },
-  //           description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
-  //           wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/wallpaper.jpg?signed', nullable: true },
-  //           creator_id: { type: 'number', example: 1, nullable: true },
-  //           created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({ status: 400, description: 'Bad Request - Invalid name or user ID' })
-  // @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  // async createCommunityChat(@Body() body: { name: string; description?: string; wallpaper?: string }, @Req() request: Request & { user: { id: number } }) {
-  //   try {
-  //     return await this.chatService.createCommunityChat(body.name, body.description, body.wallpaper, request.user.id);
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message || 'Failed to create community chat');
-  //   }
-  // }
-
-  // @Put('/community/update-wallpaper/:communityChatId')
-  // @ApiOperation({ summary: 'Update the wallpaper of a specific community chat' })
-  // @ApiParam({
-  //   name: 'communityChatId',
-  //   required: true,
-  //   type: String,
-  //   description: 'ID of the community chat to update the wallpaper for',
-  //   example: '1',
-  // })
-  // @ApiBody({
-  //   description: 'New wallpaper for the community chat',
-  //   schema: {
-  //     type: 'object',
-  //     required: ['wallpaper'],
-  //     properties: {
-  //       wallpaper: { type: 'string', description: 'URL or key for the new community chat wallpaper', example: 'new_wallpaper.jpg' },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Community chat wallpaper updated successfully',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       message: { type: 'string', example: 'Community chat wallpaper updated successfully' },
-  //       data: {
-  //         type: 'object',
-  //         properties: {
-  //           id: { type: 'number', example: 1 },
-  //           name: { type: 'string', example: 'Gaming News' },
-  //           description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
-  //           wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/new_wallpaper.jpg?signed', nullable: true },
-  //           creator_id: { type: 'number', example: 1, nullable: true },
-  //           created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user not authorized' })
-  // @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  // async updateCommunityChatWallpaper(
-  //   @Param('communityChatId') communityChatId: string,
-  //   @Body() body: { wallpaper: string },
-  //   @Req() request: Request & { user: { id: number } }
-  // ) {
-  //   try {
-  //     const parsedChatId = parseInt(communityChatId);
-  //     if (isNaN(parsedChatId)) {
-  //       throw new BadRequestException('Invalid community chat ID');
-  //     }
-  //     return await this.chatService.updateCommunityChatWallpaper(parsedChatId, body.wallpaper, request.user.id);
-  //   } catch (error) {
-  //     throw new BadRequestException(error.message || 'Failed to update community chat wallpaper');
-  //   }
-  // }
+  
   @Post('/community/create')
 @UseInterceptors(
   FileInterceptor('file', {
@@ -872,4 +773,46 @@ async updateCommunityChatWallpaper(
       throw new BadRequestException(error.message || 'Failed to delete message');
     }
   }
+
+@Delete('/community/delete/:communityChatId')
+@ApiOperation({ summary: 'Delete a specific community chat' })
+@ApiParam({
+  name: 'communityChatId',
+  required: true,
+  type: String,
+  description: 'ID of the community chat to delete',
+  example: '1',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Community chat deleted successfully',
+  schema: {
+    type: 'object',
+    properties: {
+      message: { type: 'string', example: 'Community chat deleted successfully' },
+    },
+  },
+})
+@ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user not authorized' })
+@ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+@ApiBearerAuth()
+async deleteCommunityChat(
+  @Param('communityChatId') communityChatId: string,
+  @Req() request: Request & { user?: JwtPayload; admin?: JwtPayload },
+) {
+  try {
+    const parsedChatId = parseInt(communityChatId);
+    if (isNaN(parsedChatId)) {
+      throw new BadRequestException('Invalid community chat ID');
+    }
+    // Use user.id or admin.id, whichever is available
+    const requesterId = request.user?.id || request.admin?.id;
+    if (!requesterId) {
+      throw new BadRequestException('No valid user or admin ID found');
+    }
+    return await this.chatService.deleteCommunityChat(parsedChatId, requesterId);
+  } catch (error) {
+    throw new BadRequestException(error.message || 'Failed to delete community chat');
+  }
+}
 }
