@@ -1465,5 +1465,77 @@ export class ChatService {
     throw new BadRequestException('Failed to delete community chat: ' + error.message);
   }
 }
+  async getCommunityChat(communityChatId: number, userId: number) {
+  try {
+    const validChatId = Number(communityChatId);
+    const validUserId = Number(userId);
 
+    if (isNaN(validChatId) || validChatId <= 0) {
+      throw new BadRequestException('Invalid community chat ID');
+    }
+    if (isNaN(validUserId) || validUserId <= 0) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const chat = await this.prismaService.community_chat.findUnique({
+      where: { id: validChatId },
+      include: {
+        users: {
+          select: { id: true, username: true, profile: true },
+        },
+        admins: {
+          select: { id: true, username: true, profile: true },
+        },
+        banned_users: {
+          select: { id: true, username: true, profile: true },
+        },
+      },
+    });
+
+    if (!chat) {
+      throw new BadRequestException('Community chat not found');
+    }
+
+    if (chat.banned_users.some((user) => user.id === validUserId)) {
+      throw new BadRequestException('User is banned from this community chat');
+    }
+
+    const wallpaperUrl = chat.wallpaper
+      ? await this.getSignedImageUrl(chat.wallpaper)
+      : null;
+
+    const admins = await Promise.all(
+      chat.admins.map(async (admin) => ({
+        id: admin.id,
+        username: admin.username,
+        profile_picture: admin.profile ? await this.getSignedImageUrl(admin.profile) : null,
+      })),
+    );
+
+    const bannedUsers = await Promise.all(
+      chat.banned_users.map(async (user) => ({
+        id: user.id,
+        username: user.username,
+        profile_picture: user.profile ? await this.getSignedImageUrl(user.profile) : null,
+      })),
+    );
+
+    return {
+      message: 'Community chat retrieved successfully',
+      data: {
+        id: chat.id,
+        name: chat.name,
+        description: chat.description,
+        wallpaper: wallpaperUrl,
+        creator_id: chat.creator_id,
+        created_at: chat.created_at.toISOString(),
+        admins,
+        banned_users: bannedUsers,
+      },
+    };
+  } catch (error) {
+    console.error('Get community chat error:', error);
+    throw new BadRequestException('Failed to retrieve community chat: ' + error.message);
+  }
+}
 }
