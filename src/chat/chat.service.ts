@@ -1538,4 +1538,100 @@ export class ChatService {
     throw new BadRequestException('Failed to retrieve community chat: ' + error.message);
   }
 }
+ async getTopCommunityChatsByMessages(limit: number, userId: number) {
+    try {
+            console.log('abc')
+
+      const validUserId = Number(userId);
+      const validLimit = Number(limit);
+
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new BadRequestException('Invalid user ID');
+      }
+      if (isNaN(validLimit) || validLimit <= 0) {
+        throw new BadRequestException('Invalid limit parameter');
+      }
+      const chats = await this.prismaService.community_chat.findMany({
+        where: {
+          banned_users: {
+            none: { id: validUserId },
+          },
+        },
+        include: {
+          users: {
+            select: { id: true, username: true, profile: true },
+          },
+          community_messages: {
+            where: { is_banned: false },
+            take: 1,
+            orderBy: { created_at: 'desc' },
+            include: {
+              users: {
+                select: { username: true, profile: true },
+              },
+              admin: {
+                select: { name: true },
+              },
+            },
+          },
+          _count: {
+            select: { community_messages: { where: { is_banned: false } } },
+          },
+        },
+        orderBy: {
+          community_messages: {
+            _count: 'desc',
+          },
+        },
+        take: validLimit,
+      });
+
+      const chatsWithDetails = await Promise.all(
+        chats.map(async (chat) => {
+          const wallpaperUrl = chat.wallpaper
+            ? await this.getSignedImageUrl(chat.wallpaper)
+            : null;
+
+          const latestMessage = chat.community_messages[0];
+          const senderProfilePicture = latestMessage?.users?.profile
+            ? await this.getSignedImageUrl(latestMessage.users.profile)
+            : null;
+
+          return {
+            id: chat.id,
+            name: chat.name,
+            description: chat.description,
+            wallpaper: wallpaperUrl,
+            creator_id: chat.creator_id,
+            created_at: chat.created_at.toISOString(),
+            message_count: chat._count.community_messages,
+            latest_message: latestMessage
+              ? {
+                  id: latestMessage.id,
+                  content: latestMessage.content,
+                  created_at: latestMessage.created_at.toISOString(),
+                  is_admin: latestMessage.is_admin,
+                  sender_id: latestMessage.sender_id,
+                  admin_id: latestMessage.admin_id,
+                  user_admin_id: latestMessage.user_admin_id,
+                  users: {
+                    username: latestMessage.users?.username || latestMessage.admin?.name || 'Unknown',
+                    profile_picture: senderProfilePicture,
+                  },
+                }
+              : null,
+          };
+        }),
+      );
+
+      return {
+        message: 'Top community chats retrieved successfully',
+        data: chatsWithDetails,
+      };
+    } catch (error) {
+      console.error('Get top community chats by messages error:', error);
+      throw new BadRequestException('Failed to retrieve top community chats: ' + error.message);
+    }
+  }
+
 }

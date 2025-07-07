@@ -815,72 +815,213 @@ async deleteCommunityChat(
     throw new BadRequestException(error.message || 'Failed to delete community chat');
   }
 }
-@Get('/community/:communityChatId')
-@ApiOperation({ summary: 'Retrieve a specific community chat with its details' })
-@ApiParam({
-  name: 'communityChatId',
-  required: true,
-  type: String,
-  description: 'ID of the community chat to retrieve',
-  example: '1',
-})
-@ApiResponse({
-  status: 200,
-  description: 'Community chat retrieved successfully',
-  schema: {
-    type: 'object',
-    properties: {
-      message: { type: 'string', example: 'Community chat retrieved successfully' },
-      data: {
-        type: 'object',
-        properties: {
-          id: { type: 'number', example: 1 },
-          name: { type: 'string', example: 'Gaming News' },
-          description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
-          wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/wallpaper.jpg?signed', nullable: true },
-          creator_id: { type: 'number', example: 1, nullable: true },
-          created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
-          admins: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'number', example: 2 },
-                username: { type: 'string', example: 'jane_doe' },
-                profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
-              },
-            },
-          },
-          banned_users: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'number', example: 3 },
-                username: { type: 'string', example: 'bob_smith' },
-                profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+// @Get('/community/:communityChatId')
+// @ApiOperation({ summary: 'Retrieve a specific community chat with its details' })
+// @ApiParam({
+//   name: 'communityChatId',
+//   required: true,
+//   type: String,
+//   description: 'ID of the community chat to retrieve',
+//   example: '1',
+// })
+// @ApiResponse({
+//   status: 200,
+//   description: 'Community chat retrieved successfully',
+//   schema: {
+//     type: 'object',
+//     properties: {
+//       message: { type: 'string', example: 'Community chat retrieved successfully' },
+//       data: {
+//         type: 'object',
+//         properties: {
+//           id: { type: 'number', example: 1 },
+//           name: { type: 'string', example: 'Gaming News' },
+//           description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
+//           wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/wallpaper.jpg?signed', nullable: true },
+//           creator_id: { type: 'number', example: 1, nullable: true },
+//           created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
+//           admins: {
+//             type: 'array',
+//             items: {
+//               type: 'object',
+//               properties: {
+//                 id: { type: 'number', example: 2 },
+//                 username: { type: 'string', example: 'jane_doe' },
+//                 profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+//               },
+//             },
+//           },
+//           banned_users: {
+//             type: 'array',
+//             items: {
+//               type: 'object',
+//               properties: {
+//                 id: { type: 'number', example: 3 },
+//                 username: { type: 'string', example: 'bob_smith' },
+//                 profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     },
+//   },
+// })
+// @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user banned' })
+// @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+// async getCommunityChat(
+//   @Param('communityChatId') communityChatId: string,
+//   @Req() request: Request & { user: JwtPayload },
+// ) {
+//   try {
+//     const parsedChatId = parseInt(communityChatId);
+//     if (isNaN(parsedChatId)) {
+//       throw new BadRequestException('Invalid community chat ID');
+//     }
+//     return await this.chatService.getCommunityChat(parsedChatId, request.user.id);
+//   } catch (error) {
+//     throw new BadRequestException(error.message || 'Failed to retrieve community chat');
+//   }
+// }
+@Get('/community/top-chats')
+  @ApiOperation({ summary: 'Retrieve the top X community chats with the most messages' })
+  @ApiQuery({
+    name: 'limit',
+    required: true,
+    type: Number,
+    description: 'Number of community chats to retrieve',
+    example: 5,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top community chats with most messages retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Top community chats retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Gaming News' },
+              description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
+              wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/wallpaper.jpg?signed', nullable: true },
+              creator_id: { type: 'number', example: 1, nullable: true },
+              created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
+              message_count: { type: 'number', example: 100 },
+              latest_message: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  content: { type: 'string', example: 'Hello community!' },
+                  created_at: { type: 'string', format: 'date-time', example: '2025-06-20T12:21:00.000Z' },
+                  is_admin: { type: 'boolean', example: false },
+                  sender_id: { type: 'number', example: 1, nullable: true },
+                  admin_id: { type: 'number', example: null, nullable: true },
+                  user_admin_id: { type: 'number', example: null, nullable: true },
+                  users: {
+                    type: 'object',
+                    properties: {
+                      username: { type: 'string', example: 'john_doe' },
+                      profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+                    },
+                  },
+                },
               },
             },
           },
         },
       },
     },
-  },
-})
-@ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user banned' })
-@ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-async getCommunityChat(
-  @Param('communityChatId') communityChatId: string,
-  @Req() request: Request & { user: JwtPayload },
-) {
-  try {
-    const parsedChatId = parseInt(communityChatId);
-    if (isNaN(parsedChatId)) {
-      throw new BadRequestException('Invalid community chat ID');
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid limit parameter or user banned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  async getTopCommunityChatsByMessages(
+    @Query('limit') limit: string,
+    @Req() request: Request & { user: JwtPayload },
+  ) {
+    try {
+      console.log('getTopCommunityChatsByMessages called with limit:', limit, 'userId:', request.user.id);
+      const parsedLimit = parseInt(limit);
+      if (isNaN(parsedLimit) || parsedLimit <= 0) {
+        throw new BadRequestException('Invalid limit parameter');
+      }
+      return await this.chatService.getTopCommunityChatsByMessages(parsedLimit, request.user.id);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to retrieve top community chats');
     }
-    return await this.chatService.getCommunityChat(parsedChatId, request.user.id);
-  } catch (error) {
-    throw new BadRequestException(error.message || 'Failed to retrieve community chat');
   }
-}
+
+  @Get('/community/:communityChatId')
+  @ApiOperation({ summary: 'Retrieve a specific community chat with its details' })
+  @ApiParam({
+    name: 'communityChatId',
+    required: true,
+    type: String,
+    description: 'ID of the community chat to retrieve',
+    example: '1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Community chat retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Community chat retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Gaming News' },
+            description: { type: 'string', example: 'A place to discuss the latest gaming updates', nullable: true },
+            wallpaper: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/wallpaper.jpg?signed', nullable: true },
+            creator_id: { type: 'number', example: 1, nullable: true },
+            created_at: { type: 'string', format: 'date-time', example: '2025-06-20T11:59:00.000Z' },
+            admins: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 2 },
+                  username: { type: 'string', example: 'jane_doe' },
+                  profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+                },
+              },
+            },
+            banned_users: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 3 },
+                  username: { type: 'string', example: 'bob_smith' },
+                  profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user banned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  async getCommunityChat(
+    @Param('communityChatId') communityChatId: string,
+    @Req() request: Request & { user: JwtPayload },
+  ) {
+    try {
+      console.log('getCommunityChat called with communityChatId:', communityChatId);
+      const parsedChatId = parseInt(communityChatId);
+      if (isNaN(parsedChatId)) {
+        throw new BadRequestException('Invalid community chat ID');
+      }
+      return await this.chatService.getCommunityChat(parsedChatId, request.user.id);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to retrieve community chat');
+    }
+  }
 }
