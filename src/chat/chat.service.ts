@@ -1633,5 +1633,61 @@ export class ChatService {
       throw new BadRequestException('Failed to retrieve top community chats: ' + error.message);
     }
   }
+  
+   async getBannedUsers(communityChatId: number, userId: number) {
+    try {
+      console.log('getBannedUsers called with:', { communityChatId, userId });
+
+      const validChatId = Number(communityChatId);
+      const validUserId = Number(userId);
+
+      if (isNaN(validChatId) || validChatId <= 0) {
+        throw new BadRequestException('Invalid community chat ID');
+      }
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new BadRequestException('Invalid user ID');
+      }
+
+      // Check if the user is the creator or an admin of the chat
+      const chat = await this.prismaService.community_chat.findFirst({
+        where: {
+          id: validChatId,
+          OR: [
+            { creator_id: validUserId },
+            { admins: { some: { id: validUserId } } },
+          ],
+        },
+        include: {
+          banned_users: {
+            select: {
+              id: true,
+              username: true,
+              profile: true,
+            },
+          },
+        },
+      });
+
+      if (!chat) {
+        throw new BadRequestException('Community chat not found or user is not authorized');
+      }
+
+      const bannedUsersWithDetails = await Promise.all(
+        chat.banned_users.map(async (user) => ({
+          id: user.id,
+          username: user.username,
+          profile_picture: user.profile ? await this.getSignedImageUrl(user.profile) : null,
+        })),
+      );
+
+      return {
+        message: 'Banned users retrieved successfully',
+        data: bannedUsersWithDetails,
+      };
+    } catch (error) {
+      console.error('Get banned users error:', error);
+      throw new BadRequestException('Failed to retrieve banned users: ' + error.message);
+    }
+  }
 
 }

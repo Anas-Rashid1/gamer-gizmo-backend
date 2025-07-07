@@ -954,7 +954,53 @@ async deleteCommunityChat(
       throw new BadRequestException(error.message || 'Failed to retrieve top community chats');
     }
   }
-
+    @Get('/community/:communityChatId/banned-users')
+  @ApiOperation({ summary: 'Retrieve all banned users for a specific community chat' })
+  @ApiParam({
+    name: 'communityChatId',
+    required: true,
+    type: String,
+    description: 'ID of the community chat to retrieve banned users for',
+    example: '1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Banned users retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Banned users retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 3 },
+              username: { type: 'string', example: 'bob_smith' },
+              profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user banned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+  async getBannedUsers(
+    @Param('communityChatId') communityChatId: string,
+    @Req() request: Request & { user: JwtPayload },
+  ) {
+    try {
+      console.log('getBannedUsers called with communityChatId:', communityChatId, 'userId:', request.user.id);
+      const parsedChatId = parseInt(communityChatId);
+      if (isNaN(parsedChatId)) {
+        throw new BadRequestException('Invalid community chat ID');
+      }
+      return await this.chatService.getBannedUsers(parsedChatId, request.user.id);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to retrieve banned users');
+    }
+  }
   @Get('/community/:communityChatId')
   @ApiOperation({ summary: 'Retrieve a specific community chat with its details' })
   @ApiParam({
