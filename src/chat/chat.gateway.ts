@@ -1,4 +1,3 @@
-
 import {
   SubscribeMessage,
   WebSocketGateway,
@@ -50,11 +49,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('sendMessage')
   @ApiOperation({
     summary: 'Send a message in a normal chat (WebSocket)',
-    description: 'Sends a message to a normal chat and emits a `receiveMessage` event to both sender and receiver (if connected). The receiverId must be one of the chat’s users (user1_id or user2_id).',
+    description:
+      'Sends a message to a normal chat and emits a `receiveMessage` event to both sender and receiver (if connected). The receiverId must be one of the chat’s users (user1_id or user2_id).',
   })
   @ApiResponse({
     status: 200,
-    description: 'Message sent successfully, emitted as `receiveMessage` event to sender and receiver',
+    description:
+      'Message sent successfully, emitted as `receiveMessage` event to sender and receiver',
     schema: {
       type: 'object',
       properties: {
@@ -66,18 +67,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             chatId: { type: 'number', example: 1 },
             senderId: { type: 'number', example: 1 },
             messageText: { type: 'string', example: 'Hello!' },
-            sentAt: { type: 'string', format: 'date-time', example: '2025-05-27T01:38:00.000Z' },
+            sentAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-05-27T01:38:00.000Z',
+            },
             isRead: { type: 'boolean', example: false },
           },
         },
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, chat ID, receiver ID, or message data' })
-  @ApiResponse({ status: 404, description: 'Not Found - Chat or users not found' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid sender ID, chat ID, receiver ID, or message data',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Chat or users not found',
+  })
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: number; receiverId: number; messageText: string },
+    @MessageBody()
+    payload: { chatId: number; receiverId: number; messageText: string },
   ) {
     const senderId = parseInt(client.handshake.query.userId as string);
     if (isNaN(senderId)) {
@@ -85,6 +98,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
+      //@ts-ignore
       const chat = await this.prismaService.chats.findUnique({
         where: { id: payload.chatId },
         select: { id: true, user1_id: true, user2_id: true },
@@ -94,11 +108,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       if (![chat.user1_id, chat.user2_id].includes(senderId)) {
-        throw new BadRequestException('Sender is not a participant in this chat');
+        throw new BadRequestException(
+          'Sender is not a participant in this chat',
+        );
       }
       if (![chat.user1_id, chat.user2_id].includes(payload.receiverId)) {
-        throw new BadRequestException('Receiver is not a participant in this chat');
+        throw new BadRequestException(
+          'Receiver is not a participant in this chat',
+        );
       }
+      //@ts-ignore
 
       const message = await this.prismaService.messages.create({
         data: {
@@ -128,7 +147,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       if (receiverSocket) {
         receiverSocket.emit('receiveMessage', messageData);
-        await this.emitBuyersAndSellersUpdate(payload.receiverId, receiverSocket);
+        await this.emitBuyersAndSellersUpdate(
+          payload.receiverId,
+          receiverSocket,
+        );
       }
 
       return { message: 'Message sent successfully', data: messageData };
@@ -140,11 +162,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('communitySendMessage')
   @ApiOperation({
     summary: 'Send a message in a specific community chat (WebSocket)',
-    description: 'Sends a message to a specific community chat and broadcasts a `communityReceiveMessage` event to all connected clients. Users banned from the chat cannot send messages.',
+    description:
+      'Sends a message to a specific community chat and broadcasts a `communityReceiveMessage` event to all connected clients. Users banned from the chat cannot send messages.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Community message sent successfully, emitted as `communityReceiveMessage` event',
+    description:
+      'Community message sent successfully, emitted as `communityReceiveMessage` event',
     schema: {
       type: 'object',
       properties: {
@@ -155,12 +179,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         admin_id: { type: 'number', example: null, nullable: true },
         user_admin_id: { type: 'number', example: null, nullable: true },
         community_chat_id: { type: 'number', example: 1 },
-        created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
+        created_at: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-06-10T12:21:00.000Z',
+        },
         users: {
           type: 'object',
           properties: {
             username: { type: 'string', example: 'john_doe' },
-            profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+            profile_picture: {
+              type: 'string',
+              example:
+                'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed',
+              nullable: true,
+            },
           },
         },
         reactions: {
@@ -172,7 +205,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
               emoji_type: { type: 'string', example: '👍' },
               user_id: { type: 'number', example: 1 },
               username: { type: 'string', example: 'john_doe' },
-              created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+              created_at: {
+                type: 'string',
+                format: 'date-time',
+                example: '2025-06-10T12:22:00.000Z',
+              },
             },
           },
         },
@@ -184,10 +221,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid sender ID, community chat ID, or user is banned' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid sender ID, community chat ID, or user is banned',
+  })
   async handleCommunitySendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { content: string; is_admin: boolean; community_chat_id: number },
+    @MessageBody()
+    payload: { content: string; is_admin: boolean; community_chat_id: number },
   ) {
     const senderId = parseInt(client.handshake.query.userId as string);
     if (isNaN(senderId)) {
@@ -205,18 +247,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.emit('communityReceiveMessage', result.data);
       return result;
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to send community message');
+      throw new BadRequestException(
+        error.message || 'Failed to send community message',
+      );
     }
   }
 
   @SubscribeMessage('communityFetchMessages')
   @ApiOperation({
     summary: 'Fetch latest messages for a specific community chat (WebSocket)',
-    description: 'Fetches the latest 10 messages for a specific community chat and emits a `communityLoadMessages` event to the client. Excludes messages from banned users.',
+    description:
+      'Fetches the latest 10 messages for a specific community chat and emits a `communityLoadMessages` event to the client. Excludes messages from banned users.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Community messages retrieved successfully, emitted as `communityLoadMessages` event',
+    description:
+      'Community messages retrieved successfully, emitted as `communityLoadMessages` event',
     schema: {
       type: 'array',
       items: {
@@ -229,12 +275,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           admin_id: { type: 'number', example: null, nullable: true },
           user_admin_id: { type: 'number', example: null, nullable: true },
           community_chat_id: { type: 'number', example: 1 },
-          created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-06-10T12:21:00.000Z',
+          },
           users: {
             type: 'object',
             properties: {
               username: { type: 'string', example: 'john_doe' },
-              profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+              profile_picture: {
+                type: 'string',
+                example:
+                  'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed',
+                nullable: true,
+              },
             },
           },
           reactions: {
@@ -246,7 +301,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 emoji_type: { type: 'string', example: '👍' },
                 user_id: { type: 'number', example: 1 },
                 username: { type: 'string', example: 'john_doe' },
-                created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+                created_at: {
+                  type: 'string',
+                  format: 'date-time',
+                  example: '2025-06-10T12:22:00.000Z',
+                },
               },
             },
           },
@@ -269,22 +328,32 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId, userId);
+      const messages = await this.chatService.getCommunityChatMessages(
+        payload.communityChatId,
+        userId,
+      );
       client.emit('communityLoadMessages', messages);
-      return { message: 'Community messages fetched successfully', data: messages };
+      return {
+        message: 'Community messages fetched successfully',
+        data: messages,
+      };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to fetch community messages');
+      throw new BadRequestException(
+        error.message || 'Failed to fetch community messages',
+      );
     }
   }
 
   @SubscribeMessage('communityFetchMoreMessages')
   @ApiOperation({
     summary: 'Fetch older messages for a specific community chat (WebSocket)',
-    description: 'Fetches up to 10 older messages before a specified message ID for a specific community chat and emits a `communityLoadMoreMessages` event. Excludes messages from banned users.',
+    description:
+      'Fetches up to 10 older messages before a specified message ID for a specific community chat and emits a `communityLoadMoreMessages` event. Excludes messages from banned users.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Older community messages retrieved successfully, emitted as `communityLoadMoreMessages` event',
+    description:
+      'Older community messages retrieved successfully, emitted as `communityLoadMoreMessages` event',
     schema: {
       type: 'array',
       items: {
@@ -297,12 +366,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           admin_id: { type: 'number', example: null, nullable: true },
           user_admin_id: { type: 'number', example: null, nullable: true },
           community_chat_id: { type: 'number', example: 1 },
-          created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-06-10T12:21:00.000Z',
+          },
           users: {
             type: 'object',
             properties: {
               username: { type: 'string', example: 'john_doe' },
-              profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+              profile_picture: {
+                type: 'string',
+                example:
+                  'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed',
+                nullable: true,
+              },
             },
           },
           reactions: {
@@ -314,7 +392,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 emoji_type: { type: 'string', example: '👍' },
                 user_id: { type: 'number', example: 1 },
                 username: { type: 'string', example: 'john_doe' },
-                created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+                created_at: {
+                  type: 'string',
+                  format: 'date-time',
+                  example: '2025-06-10T12:22:00.000Z',
+                },
               },
             },
           },
@@ -337,19 +419,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const messages = await this.chatService.getCommunityChatMessages(payload.communityChatId, userId, { beforeId: payload.lastMessageId });
+      const messages = await this.chatService.getCommunityChatMessages(
+        payload.communityChatId,
+        userId,
+        { beforeId: payload.lastMessageId },
+      );
       client.emit('communityLoadMoreMessages', messages);
-      return { message: 'More community messages fetched successfully', data: messages };
+      return {
+        message: 'More community messages fetched successfully',
+        data: messages,
+      };
     } catch (error) {
       console.error('Error fetching more community messages:', error);
-      throw new BadRequestException(error.message || 'Failed to fetch more community messages');
+      throw new BadRequestException(
+        error.message || 'Failed to fetch more community messages',
+      );
     }
   }
 
   @SubscribeMessage('markMessageAsRead')
   @ApiOperation({
     summary: 'Mark a message as read in a normal chat (WebSocket)',
-    description: 'Marks a message as read and emits a `messageRead` event to both sender and receiver (if connected).',
+    description:
+      'Marks a message as read and emits a `messageRead` event to both sender and receiver (if connected).',
   })
   @ApiResponse({
     status: 200,
@@ -368,6 +460,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() payload: { messageId: number },
   ) {
     try {
+      //@ts-ignore
       const message = await this.prismaService.messages.findUnique({
         where: { id: payload.messageId },
         include: { chats: true },
@@ -376,7 +469,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!message) {
         throw new BadRequestException('Message not found');
       }
-
+      //@ts-ignore
       const updatedMessage = await this.prismaService.messages.update({
         where: { id: payload.messageId },
         data: { is_read: true },
@@ -414,18 +507,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { message: 'Message marked as read' };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to mark message as read');
+      throw new BadRequestException(
+        error.message || 'Failed to mark message as read',
+      );
     }
   }
 
   @SubscribeMessage('toggleMessageReaction')
   @ApiOperation({
     summary: 'Toggle a reaction on a community message (WebSocket)',
-    description: 'Toggles a reaction (add or remove) for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
+    description:
+      'Toggles a reaction (add or remove) for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Reaction toggled successfully, emitted as `messageReactionUpdated` event',
+    description:
+      'Reaction toggled successfully, emitted as `messageReactionUpdated` event',
     schema: {
       type: 'object',
       properties: {
@@ -443,7 +540,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                   emoji_type: { type: 'string', example: '👍' },
                   user_id: { type: 'number', example: 1 },
                   username: { type: 'string', example: 'john_doe' },
-                  created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+                  created_at: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-06-10T12:22:00.000Z',
+                  },
                 },
               },
             },
@@ -457,8 +558,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID, user ID, or emoji' })
-  @ApiResponse({ status: 404, description: 'Not Found - Message or user not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid message ID, user ID, or emoji',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Message or user not found',
+  })
   async handleToggleMessageReaction(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { messageId: number; emoji: string },
@@ -486,18 +593,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: reactionData,
       };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to toggle reaction');
+      throw new BadRequestException(
+        error.message || 'Failed to toggle reaction',
+      );
     }
   }
 
   @SubscribeMessage('deleteMessageReaction')
   @ApiOperation({
     summary: 'Delete a specific reaction on a community message (WebSocket)',
-    description: 'Deletes a specific reaction by ID for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
+    description:
+      'Deletes a specific reaction by ID for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Reaction deleted successfully, emitted as `messageReactionUpdated` event',
+    description:
+      'Reaction deleted successfully, emitted as `messageReactionUpdated` event',
     schema: {
       type: 'object',
       properties: {
@@ -515,7 +626,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                   emoji_type: { type: 'string', example: '👍' },
                   user_id: { type: 'number', example: 1 },
                   username: { type: 'string', example: 'john_doe' },
-                  created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+                  created_at: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-06-10T12:22:00.000Z',
+                  },
                 },
               },
             },
@@ -529,8 +644,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid reaction ID or user ID' })
-  @ApiResponse({ status: 404, description: 'Not Found - Reaction not found or not authorized' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid reaction ID or user ID',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Reaction not found or not authorized',
+  })
   async handleDeleteMessageReaction(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { reactionId: number },
@@ -557,18 +678,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: reactionData,
       };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to delete reaction');
+      throw new BadRequestException(
+        error.message || 'Failed to delete reaction',
+      );
     }
   }
 
   @SubscribeMessage('updateMessageReaction')
   @ApiOperation({
     summary: 'Update a reaction emoji on a community message (WebSocket)',
-    description: 'Updates the emoji of a specific reaction by ID for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
+    description:
+      'Updates the emoji of a specific reaction by ID for a community message and emits a `messageReactionUpdated` event to all connected clients with the updated reactions.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Reaction updated successfully, emitted as `messageReactionUpdated` event',
+    description:
+      'Reaction updated successfully, emitted as `messageReactionUpdated` event',
     schema: {
       type: 'object',
       properties: {
@@ -586,7 +711,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                   emoji_type: { type: 'string', example: '👍' },
                   user_id: { type: 'number', example: 1 },
                   username: { type: 'string', example: 'john_doe' },
-                  created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
+                  created_at: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-06-10T12:22:00.000Z',
+                  },
                 },
               },
             },
@@ -600,8 +729,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid reaction ID, user ID, or emoji' })
-  @ApiResponse({ status: 404, description: 'Not Found - Reaction not found or not authorized' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid reaction ID, user ID, or emoji',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Reaction not found or not authorized',
+  })
   async handleUpdateMessageReaction(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { reactionId: number; newEmoji: string },
@@ -629,18 +764,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: reactionData,
       };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to update reaction');
+      throw new BadRequestException(
+        error.message || 'Failed to update reaction',
+      );
     }
   }
 
   @SubscribeMessage('deleteCommunityMessage')
   @ApiOperation({
     summary: 'Delete a message in a community chat (WebSocket)',
-    description: 'Deletes a message in a community chat by the creator or an admin and emits a `communityMessageDeleted` event to all connected clients.',
+    description:
+      'Deletes a message in a community chat by the creator or an admin and emits a `communityMessageDeleted` event to all connected clients.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Message deleted successfully, emitted as `communityMessageDeleted` event',
+    description:
+      'Message deleted successfully, emitted as `communityMessageDeleted` event',
     schema: {
       type: 'object',
       properties: {
@@ -654,7 +793,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid message ID or user not authorized' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid message ID or user not authorized',
+  })
   @ApiResponse({ status: 404, description: 'Not Found - Message not found' })
   async handleDeleteCommunityMessage(
     @ConnectedSocket() client: Socket,
@@ -667,16 +809,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       await this.chatService.deleteCommunityMessage(payload.messageId, userId);
-      this.server.emit('communityMessageDeleted', { messageId: payload.messageId });
-      return { message: 'Message deleted successfully', data: { messageId: payload.messageId } };
+      this.server.emit('communityMessageDeleted', {
+        messageId: payload.messageId,
+      });
+      return {
+        message: 'Message deleted successfully',
+        data: { messageId: payload.messageId },
+      };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to delete community message');
+      throw new BadRequestException(
+        error.message || 'Failed to delete community message',
+      );
     }
   }
 
   private async emitBuyersAndSellersUpdate(userId: number, client: Socket) {
     try {
-      const buyersAndSellers = await this.chatService.getBuyersAndSellers(userId);
+      const buyersAndSellers =
+        await this.chatService.getBuyersAndSellers(userId);
       client.emit('buyersAndSellersUpdate', buyersAndSellers.data);
     } catch (error) {
       console.error('Error emitting buyers and sellers update:', error);

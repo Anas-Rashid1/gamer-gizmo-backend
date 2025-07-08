@@ -1,4 +1,3 @@
-
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
@@ -61,6 +60,8 @@ export class ChatService {
     }
 
     try {
+      //@ts-ignore
+
       const existingChat = await this.prismaService.chats.findFirst({
         where: {
           OR: [
@@ -76,13 +77,17 @@ export class ChatService {
       }
 
       const [user1Exists, user2Exists] = await Promise.all([
+        //@ts-ignore
         this.prismaService.users.findUnique({ where: { id: id1 } }),
+        //@ts-ignore
+
         this.prismaService.users.findUnique({ where: { id: id2 } }),
       ]);
 
       if (!user1Exists || !user2Exists) {
         throw new BadRequestException('One or both users do not exist');
       }
+      //@ts-ignore
 
       const chat = await this.prismaService.chats.create({
         data: {
@@ -110,6 +115,7 @@ export class ChatService {
       if (isNaN(validChatId) || validChatId <= 0) {
         throw new BadRequestException('Invalid chat ID');
       }
+      //@ts-ignore
 
       const chatExists = await this.prismaService.chats.findUnique({
         where: { id: validChatId },
@@ -118,6 +124,7 @@ export class ChatService {
       if (!chatExists) {
         throw new BadRequestException('Chat not found');
       }
+      //@ts-ignore
 
       const messages = await this.prismaService.messages.findMany({
         where: { chat_id: validChatId },
@@ -158,6 +165,7 @@ export class ChatService {
       if (isNaN(validUserId) || validUserId <= 0) {
         throw new BadRequestException('Invalid user ID');
       }
+      //@ts-ignore
 
       const buyerChats = await this.prismaService.chats.findMany({
         where: { user2_id: validUserId },
@@ -180,6 +188,7 @@ export class ChatService {
           },
         },
       });
+      //@ts-ignore
 
       const sellerChats = await this.prismaService.chats.findMany({
         where: { user1_id: validUserId },
@@ -202,6 +211,7 @@ export class ChatService {
           },
         },
       });
+      //@ts-ignore
 
       const unreadCounts = await this.prismaService.messages.groupBy({
         by: ['chat_id'],
@@ -232,7 +242,9 @@ export class ChatService {
           last_name: chat.users_chats_user1_idTousers.last_name,
           is_seller: chat.users_chats_user1_idTousers.is_seller,
           profile_picture: chat.users_chats_user1_idTousers.profile
-            ? await this.getSignedImageUrl(chat.users_chats_user1_idTousers.profile)
+            ? await this.getSignedImageUrl(
+                chat.users_chats_user1_idTousers.profile,
+              )
             : null,
           last_message: chat.messages[0]
             ? {
@@ -254,7 +266,9 @@ export class ChatService {
           last_name: chat.users_chats_user2_idTousers.last_name,
           is_seller: chat.users_chats_user2_idTousers.is_seller,
           profile_picture: chat.users_chats_user2_idTousers.profile
-            ? await this.getSignedImageUrl(chat.users_chats_user2_idTousers.profile)
+            ? await this.getSignedImageUrl(
+                chat.users_chats_user2_idTousers.profile,
+              )
             : null,
           last_message: chat.messages[0]
             ? {
@@ -274,11 +288,18 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Get buyers and sellers error:', error);
-      throw new BadRequestException('Failed to retrieve buyers and sellers: ' + error.message);
+      throw new BadRequestException(
+        'Failed to retrieve buyers and sellers: ' + error.message,
+      );
     }
   }
 
-  async createCommunityChat(name: string, description: string | undefined, wallpaper: string | undefined, creatorId: number) {
+  async createCommunityChat(
+    name: string,
+    description: string | undefined,
+    wallpaper: string | undefined,
+    creatorId: number,
+  ) {
     try {
       if (!name || name.trim().length === 0) {
         throw new BadRequestException('Name cannot be empty');
@@ -288,6 +309,7 @@ export class ChatService {
       if (isNaN(validCreatorId) || validCreatorId <= 0) {
         throw new BadRequestException('Invalid creator ID');
       }
+      //@ts-ignore
 
       const userExists = await this.prismaService.users.findUnique({
         where: { id: validCreatorId },
@@ -296,6 +318,7 @@ export class ChatService {
       if (!userExists) {
         throw new BadRequestException('Creator user does not exist');
       }
+      //@ts-ignore
 
       const communityChat = await this.prismaService.community_chat.create({
         data: {
@@ -325,11 +348,17 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Create community chat error:', error);
-      throw new BadRequestException('Failed to create community chat: ' + error.message);
+      throw new BadRequestException(
+        'Failed to create community chat: ' + error.message,
+      );
     }
   }
 
-  async updateCommunityChatWallpaper(communityChatId: number, wallpaper: string, userId: number) {
+  async updateCommunityChatWallpaper(
+    communityChatId: number,
+    wallpaper: string,
+    userId: number,
+  ) {
     try {
       const validChatId = Number(communityChatId);
       if (isNaN(validChatId) || validChatId <= 0) {
@@ -340,6 +369,7 @@ export class ChatService {
       if (isNaN(validUserId) || validUserId <= 0) {
         throw new BadRequestException('Invalid user ID');
       }
+      //@ts-ignore
 
       const chat = await this.prismaService.community_chat.findUnique({
         where: { id: validChatId },
@@ -350,9 +380,15 @@ export class ChatService {
         throw new BadRequestException('Community chat not found');
       }
 
-      if (chat.creator_id !== validUserId && !chat.admins.some((admin) => admin.id === validUserId)) {
-        throw new BadRequestException('User is not authorized to update this community chat');
+      if (
+        chat.creator_id !== validUserId &&
+        !chat.admins.some((admin) => admin.id === validUserId)
+      ) {
+        throw new BadRequestException(
+          'User is not authorized to update this community chat',
+        );
       }
+      //@ts-ignore
 
       const updatedChat = await this.prismaService.community_chat.update({
         where: { id: validChatId },
@@ -376,11 +412,17 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Update community chat wallpaper error:', error);
-      throw new BadRequestException('Failed to update community chat wallpaper: ' + error.message);
+      throw new BadRequestException(
+        'Failed to update community chat wallpaper: ' + error.message,
+      );
     }
   }
 
-  async banUserFromCommunityChat(communityChatId: number, userId: number, requesterId: number) {
+  async banUserFromCommunityChat(
+    communityChatId: number,
+    userId: number,
+    requesterId: number,
+  ) {
     try {
       const validChatId = Number(communityChatId);
       const validUserId = Number(userId);
@@ -395,6 +437,7 @@ export class ChatService {
       if (isNaN(validRequesterId) || validRequesterId <= 0) {
         throw new BadRequestException('Invalid requester ID');
       }
+      //@ts-ignore
 
       const chat = await this.prismaService.community_chat.findUnique({
         where: { id: validChatId },
@@ -405,9 +448,15 @@ export class ChatService {
         throw new BadRequestException('Community chat not found');
       }
 
-      if (chat.creator_id !== validRequesterId && !chat.admins.some((admin) => admin.id === validRequesterId)) {
-        throw new BadRequestException('User is not authorized to ban users from this community chat');
+      if (
+        chat.creator_id !== validRequesterId &&
+        !chat.admins.some((admin) => admin.id === validRequesterId)
+      ) {
+        throw new BadRequestException(
+          'User is not authorized to ban users from this community chat',
+        );
       }
+      //@ts-ignore
 
       const userExists = await this.prismaService.users.findUnique({
         where: { id: validUserId },
@@ -418,10 +467,14 @@ export class ChatService {
       }
 
       if (chat.creator_id === validUserId) {
-        throw new BadRequestException('Cannot ban the creator of the community chat');
+        throw new BadRequestException(
+          'Cannot ban the creator of the community chat',
+        );
       }
 
       // Mark existing messages from the banned user as is_banned
+      //@ts-ignore
+
       await this.prismaService.community_messages.updateMany({
         where: {
           community_chat_id: validChatId,
@@ -434,6 +487,8 @@ export class ChatService {
       });
 
       // Add user to banned_users relation
+      //@ts-ignore
+
       await this.prismaService.community_chat.update({
         where: { id: validChatId },
         data: {
@@ -450,7 +505,11 @@ export class ChatService {
     }
   }
 
-  async unbanUserFromCommunityChat(communityChatId: number, userId: number, requesterId: number) {
+  async unbanUserFromCommunityChat(
+    communityChatId: number,
+    userId: number,
+    requesterId: number,
+  ) {
     try {
       const validChatId = Number(communityChatId);
       const validUserId = Number(userId);
@@ -475,8 +534,13 @@ export class ChatService {
         throw new BadRequestException('Community chat not found');
       }
 
-      if (chat.creator_id !== validRequesterId && !chat.admins.some((admin) => admin.id === validRequesterId)) {
-        throw new BadRequestException('User is not authorized to unban users from this community chat');
+      if (
+        chat.creator_id !== validRequesterId &&
+        !chat.admins.some((admin) => admin.id === validRequesterId)
+      ) {
+        throw new BadRequestException(
+          'User is not authorized to unban users from this community chat',
+        );
       }
 
       const userExists = await this.prismaService.users.findUnique({
@@ -516,7 +580,11 @@ export class ChatService {
     }
   }
 
-  async assignCommunityChatAdmin(communityChatId: number, userId: number, requesterId: number) {
+  async assignCommunityChatAdmin(
+    communityChatId: number,
+    userId: number,
+    requesterId: number,
+  ) {
     try {
       const validChatId = Number(communityChatId);
       const validUserId = Number(userId);
@@ -596,9 +664,13 @@ export class ChatService {
 
       if (
         message.community_chat.creator_id !== validRequesterId &&
-        !message.community_chat.admins.some((admin) => admin.id === validRequesterId)
+        !message.community_chat.admins.some(
+          (admin) => admin.id === validRequesterId,
+        )
       ) {
-        throw new BadRequestException('User is not authorized to delete messages in this community chat');
+        throw new BadRequestException(
+          'User is not authorized to delete messages in this community chat',
+        );
       }
 
       await this.prismaService.community_messages.delete({
@@ -608,11 +680,18 @@ export class ChatService {
       return { message: 'Message deleted successfully' };
     } catch (error) {
       console.error('Delete community message error:', error);
-      throw new BadRequestException('Failed to delete message: ' + error.message);
+      throw new BadRequestException(
+        'Failed to delete message: ' + error.message,
+      );
     }
   }
 
-  async createCommunityMessage(data: { content: string; is_admin: boolean; sender_id: number; community_chat_id: number }) {
+  async createCommunityMessage(data: {
+    content: string;
+    is_admin: boolean;
+    sender_id: number;
+    community_chat_id: number;
+  }) {
     try {
       const validSenderId = Number(data.sender_id);
       const validChatId = Number(data.community_chat_id);
@@ -634,7 +713,9 @@ export class ChatService {
       }
 
       if (chat.banned_users.some((user) => user.id === validSenderId)) {
-        throw new BadRequestException('User is banned from this community chat');
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
       }
 
       const userExists = await this.prismaService.users.findUnique({
@@ -660,7 +741,9 @@ export class ChatService {
         is_admin: Boolean(data.is_admin),
         community_chat_id: validChatId,
         is_banned: false,
-        ...(data.is_admin ? { admin_id: validSenderId } : { sender_id: validSenderId }),
+        ...(data.is_admin
+          ? { admin_id: validSenderId }
+          : { sender_id: validSenderId }),
       };
 
       const message = await this.prismaService.community_messages.create({
@@ -703,10 +786,13 @@ export class ChatService {
         ? await this.getSignedImageUrl(message.users.profile)
         : null;
 
-      const reactionCounts = message.message_reactions.reduce((acc, reaction) => {
-        acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
-        return acc;
-      }, {});
+      const reactionCounts = message.message_reactions.reduce(
+        (acc, reaction) => {
+          acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
 
       return {
         message: 'Community message created successfully',
@@ -721,7 +807,8 @@ export class ChatService {
           community_chat_name: message.community_chat.name,
           created_at: message.created_at.toISOString(),
           users: {
-            username: message.users?.username || message.admin?.name || 'Unknown',
+            username:
+              message.users?.username || message.admin?.name || 'Unknown',
             profile_picture: profilePicture,
           },
           reactions: message.message_reactions.map((reaction) => ({
@@ -736,113 +823,126 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Create community message error:', error);
-      throw new BadRequestException('Failed to create community message: ' + error.message);
+      throw new BadRequestException(
+        'Failed to create community message: ' + error.message,
+      );
     }
   }
 
-  async getCommunityMessages(communityChatId: number, userId: number, options: { beforeId?: number } = {}) {
-  try {
-    const validChatId = Number(communityChatId);
-    const validUserId = Number(userId);
+  async getCommunityMessages(
+    communityChatId: number,
+    userId: number,
+    options: { beforeId?: number } = {},
+  ) {
+    try {
+      const validChatId = Number(communityChatId);
+      const validUserId = Number(userId);
 
-    if (isNaN(validChatId) || validChatId <= 0) {
-      throw new BadRequestException('Invalid community chat ID');
-    }
-    if (isNaN(validUserId) || validUserId <= 0) {
-      throw new BadRequestException('Invalid user ID');
-    }
+      if (isNaN(validChatId) || validChatId <= 0) {
+        throw new BadRequestException('Invalid community chat ID');
+      }
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new BadRequestException('Invalid user ID');
+      }
 
-    const chat = await this.prismaService.community_chat.findUnique({
-      where: { id: validChatId },
-      include: { banned_users: true },
-    });
+      const chat = await this.prismaService.community_chat.findUnique({
+        where: { id: validChatId },
+        include: { banned_users: true },
+      });
 
-    if (!chat) {
-      throw new BadRequestException('Community chat not found');
-    }
+      if (!chat) {
+        throw new BadRequestException('Community chat not found');
+      }
 
-    if (chat.banned_users.some((user) => user.id === validUserId)) {
-      throw new BadRequestException('User is banned from this community chat');
-    }
+      if (chat.banned_users.some((user) => user.id === validUserId)) {
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
+      }
 
-    const messages = await this.prismaService.community_messages.findMany({
-      where: {
-        community_chat_id: validChatId,
-        is_banned: false,
-        ...(options.beforeId ? { id: { lt: options.beforeId } } : {}),
-      },
-      orderBy: { created_at: 'desc' },
-      take: 10,
-      include: {
-        users: {
-          select: {
-            username: true,
-            profile: true,
-          },
+      const messages = await this.prismaService.community_messages.findMany({
+        where: {
+          community_chat_id: validChatId,
+          is_banned: false,
+          ...(options.beforeId ? { id: { lt: options.beforeId } } : {}),
         },
-        admin: {
-          select: {
-            name: true,
+        orderBy: { created_at: 'desc' },
+        take: 10,
+        include: {
+          users: {
+            select: {
+              username: true,
+              profile: true,
+            },
           },
-        },
-        message_reactions: {
-          select: {
-            id: true,
-            emoji_type: true,
-            user_id: true,
-            created_at: true,
-            users: {
-              select: {
-                username: true,
+          admin: {
+            select: {
+              name: true,
+            },
+          },
+          message_reactions: {
+            select: {
+              id: true,
+              emoji_type: true,
+              user_id: true,
+              created_at: true,
+              users: {
+                select: {
+                  username: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    const mappedMessages = await Promise.all(
-      messages.map(async (msg) => {
-        const profilePicture = msg.users?.profile
-          ? await this.getSignedImageUrl(msg.users.profile)
-          : null;
+      const mappedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          const profilePicture = msg.users?.profile
+            ? await this.getSignedImageUrl(msg.users.profile)
+            : null;
 
-        const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
-          acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
-          return acc;
-        }, {});
+          const reactionCounts = msg.message_reactions.reduce(
+            (acc, reaction) => {
+              acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+              return acc;
+            },
+            {},
+          );
 
-        return {
-          id: msg.id,
-          content: msg.content,
-          is_admin: msg.is_admin,
-          sender_id: msg.sender_id,
-          admin_id: msg.admin_id,
-          user_admin_id: msg.user_admin_id,
-          community_chat_id: msg.community_chat_id,
-          created_at: msg.created_at.toISOString(),
-          users: {
-            username: msg.users?.username || msg.admin?.name || 'Unknown',
-            profile_picture: profilePicture,
-          },
-          reactions: msg.message_reactions.map((reaction) => ({
-            id: reaction.id,
-            emoji_type: reaction.emoji_type,
-            user_id: reaction.user_id,
-            username: reaction.users?.username || 'Unknown',
-            created_at: reaction.created_at.toISOString(),
-          })),
-          reaction_counts: reactionCounts,
-        };
-      }),
-    );
+          return {
+            id: msg.id,
+            content: msg.content,
+            is_admin: msg.is_admin,
+            sender_id: msg.sender_id,
+            admin_id: msg.admin_id,
+            user_admin_id: msg.user_admin_id,
+            community_chat_id: msg.community_chat_id,
+            created_at: msg.created_at.toISOString(),
+            users: {
+              username: msg.users?.username || msg.admin?.name || 'Unknown',
+              profile_picture: profilePicture,
+            },
+            reactions: msg.message_reactions.map((reaction) => ({
+              id: reaction.id,
+              emoji_type: reaction.emoji_type,
+              user_id: reaction.user_id,
+              username: reaction.users?.username || 'Unknown',
+              created_at: reaction.created_at.toISOString(),
+            })),
+            reaction_counts: reactionCounts,
+          };
+        }),
+      );
 
-    return mappedMessages.reverse();
-  } catch (error) {
-    console.error('Get community messages error:', error);
-    throw new BadRequestException('Failed to get community messages: ' + error.message);
+      return mappedMessages.reverse();
+    } catch (error) {
+      console.error('Get community messages error:', error);
+      throw new BadRequestException(
+        'Failed to get community messages: ' + error.message,
+      );
+    }
   }
-}
 
   // async getTopReactedMessages(communityChatId: number, userId: number) {
   //   try {
@@ -1001,12 +1101,15 @@ export class ChatService {
           const profilePicture = msg.users?.profile
             ? await this.getSignedImageUrl(msg.users.profile)
             : null;
-          
+
           // Calculate reaction counts
-          const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
-            acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
-            return acc;
-          }, {});
+          const reactionCounts = msg.message_reactions.reduce(
+            (acc, reaction) => {
+              acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+              return acc;
+            },
+            {},
+          );
 
           return {
             id: msg.id,
@@ -1029,7 +1132,7 @@ export class ChatService {
             reaction_counts: reactionCounts,
             total_reactions: msg._count.message_reactions,
           };
-        })
+        }),
       );
 
       return {
@@ -1038,11 +1141,17 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Get top reacted messages error:', error);
-      throw new BadRequestException('Failed to get top reacted messages: ' + error.message);
+      throw new BadRequestException(
+        'Failed to get top reacted messages: ' + error.message,
+      );
     }
   }
 
-  async getCommunityChatMessages(communityChatId: number, userId: number, options: { beforeId?: number } = {}) {
+  async getCommunityChatMessages(
+    communityChatId: number,
+    userId: number,
+    options: { beforeId?: number } = {},
+  ) {
     try {
       const validChatId = Number(communityChatId);
       const validUserId = Number(userId);
@@ -1064,7 +1173,9 @@ export class ChatService {
       }
 
       if (chat.banned_users.some((user) => user.id === validUserId)) {
-        throw new BadRequestException('User is banned from this community chat');
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
       }
 
       const messages = await this.prismaService.community_messages.findMany({
@@ -1109,10 +1220,13 @@ export class ChatService {
             ? await this.getSignedImageUrl(msg.users.profile)
             : null;
 
-          const reactionCounts = msg.message_reactions.reduce((acc, reaction) => {
-            acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
-            return acc;
-          }, {});
+          const reactionCounts = msg.message_reactions.reduce(
+            (acc, reaction) => {
+              acc[reaction.emoji_type] = (acc[reaction.emoji_type] || 0) + 1;
+              return acc;
+            },
+            {},
+          );
 
           return {
             id: msg.id,
@@ -1142,11 +1256,17 @@ export class ChatService {
       return mappedMessages.reverse();
     } catch (error) {
       console.error('Get community chat messages error:', error);
-      throw new BadRequestException('Failed to get community chat messages: ' + error.message);
+      throw new BadRequestException(
+        'Failed to get community chat messages: ' + error.message,
+      );
     }
   }
 
-  async getCommunityChats(limit: number = 4, userId: number, includeLastMessage: boolean = true) {
+  async getCommunityChats(
+    limit: number = 4,
+    userId: number,
+    includeLastMessage: boolean = true,
+  ) {
     try {
       const validUserId = Number(userId);
       if (isNaN(validUserId) || validUserId <= 0) {
@@ -1196,7 +1316,9 @@ export class ChatService {
             chat.admins.map(async (admin) => ({
               id: admin.id,
               username: admin.username,
-              profile_picture: admin.profile ? await this.getSignedImageUrl(admin.profile) : null,
+              profile_picture: admin.profile
+                ? await this.getSignedImageUrl(admin.profile)
+                : null,
             })),
           );
 
@@ -1208,10 +1330,14 @@ export class ChatService {
             admin?: { name: string };
           };
 
-          const lastMessage = chat.community_messages?.[0] as CommunityMessageWithUsers | undefined;
+          const lastMessage = chat.community_messages?.[0] as
+            | CommunityMessageWithUsers
+            | undefined;
 
           if (lastMessage && !lastMessage.users && !lastMessage.admin) {
-            console.warn(`Missing users or admin for message ID ${lastMessage.id} in chat ID ${chat.id}`);
+            console.warn(
+              `Missing users or admin for message ID ${lastMessage.id} in chat ID ${chat.id}`,
+            );
           }
 
           const messageProfilePicture = lastMessage?.users?.profile
@@ -1222,7 +1348,9 @@ export class ChatService {
             id: chat.id,
             name: chat.name,
             description: chat.description,
-            wallpaper: chat.wallpaper ? await this.getSignedImageUrl(chat.wallpaper) : null,
+            wallpaper: chat.wallpaper
+              ? await this.getSignedImageUrl(chat.wallpaper)
+              : null,
             creator: chat.users
               ? {
                   id: chat.users.id,
@@ -1238,10 +1366,16 @@ export class ChatService {
                   created_at: lastMessage.created_at.toISOString(),
                   users: lastMessage.users
                     ? {
-                        username: lastMessage.users.username || lastMessage.admin?.name || 'Unknown User',
+                        username:
+                          lastMessage.users.username ||
+                          lastMessage.admin?.name ||
+                          'Unknown User',
                         profile_picture: messageProfilePicture,
                       }
-                    : { username: lastMessage.admin?.name || 'Unknown User', profile_picture: null },
+                    : {
+                        username: lastMessage.admin?.name || 'Unknown User',
+                        profile_picture: null,
+                      },
                 }
               : null,
           };
@@ -1254,16 +1388,24 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Fetch community chats error:', error);
-      throw new BadRequestException('Failed to fetch community chats: ' + error.message);
+      throw new BadRequestException(
+        'Failed to fetch community chats: ' + error.message,
+      );
     }
   }
 
-  async toggleMessageReaction(data: { messageId: number; userId: number; emoji: string }) {
+  async toggleMessageReaction(data: {
+    messageId: number;
+    userId: number;
+    emoji: string;
+  }) {
     try {
       const { messageId, userId, emoji } = data;
 
       if (!messageId || !userId || !emoji) {
-        throw new BadRequestException('Missing required fields: messageId, userId, or emoji');
+        throw new BadRequestException(
+          'Missing required fields: messageId, userId, or emoji',
+        );
       }
 
       const message = await this.prismaService.community_messages.findUnique({
@@ -1279,8 +1421,12 @@ export class ChatService {
         throw new BadRequestException('Cannot react to a banned message');
       }
 
-      if (message.community_chat.banned_users.some((user) => user.id === userId)) {
-        throw new BadRequestException('User is banned from this community chat');
+      if (
+        message.community_chat.banned_users.some((user) => user.id === userId)
+      ) {
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
       }
 
       const user = await this.prismaService.users.findUnique({
@@ -1291,13 +1437,14 @@ export class ChatService {
         throw new BadRequestException('User not found');
       }
 
-      const existingReaction = await this.prismaService.message_reactions.findFirst({
-        where: {
-          message_id: messageId,
-          user_id: userId,
-          emoji_type: emoji,
-        },
-      });
+      const existingReaction =
+        await this.prismaService.message_reactions.findFirst({
+          where: {
+            message_id: messageId,
+            user_id: userId,
+            emoji_type: emoji,
+          },
+        });
 
       let reactions;
 
@@ -1349,7 +1496,9 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Toggle message reaction error:', error);
-      throw new BadRequestException('Failed to toggle reaction: ' + error.message);
+      throw new BadRequestException(
+        'Failed to toggle reaction: ' + error.message,
+      );
     }
   }
 
@@ -1358,7 +1507,9 @@ export class ChatService {
       const { reactionId, userId } = data;
 
       if (!reactionId || !userId) {
-        throw new BadRequestException('Missing required fields: reactionId or userId');
+        throw new BadRequestException(
+          'Missing required fields: reactionId or userId',
+        );
       }
 
       const reaction = await this.prismaService.message_reactions.findFirst({
@@ -1379,11 +1530,19 @@ export class ChatService {
       }
 
       if (reaction.community_messages.is_banned) {
-        throw new BadRequestException('Cannot modify reactions on a banned message');
+        throw new BadRequestException(
+          'Cannot modify reactions on a banned message',
+        );
       }
 
-      if (reaction.community_messages.community_chat.banned_users.some((user) => user.id === userId)) {
-        throw new BadRequestException('User is banned from this community chat');
+      if (
+        reaction.community_messages.community_chat.banned_users.some(
+          (user) => user.id === userId,
+        )
+      ) {
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
       }
 
       await this.prismaService.message_reactions.delete({
@@ -1423,16 +1582,24 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Delete message reaction error:', error);
-      throw new BadRequestException('Failed to delete reaction: ' + error.message);
+      throw new BadRequestException(
+        'Failed to delete reaction: ' + error.message,
+      );
     }
   }
 
-  async updateMessageReaction(data: { reactionId: number; userId: number; newEmoji: string }) {
+  async updateMessageReaction(data: {
+    reactionId: number;
+    userId: number;
+    newEmoji: string;
+  }) {
     try {
       const { reactionId, userId, newEmoji } = data;
 
       if (!reactionId || !userId || !newEmoji) {
-        throw new BadRequestException('Missing required fields: reactionId, userId, or newEmoji');
+        throw new BadRequestException(
+          'Missing required fields: reactionId, userId, or newEmoji',
+        );
       }
 
       const reaction = await this.prismaService.message_reactions.findFirst({
@@ -1453,11 +1620,19 @@ export class ChatService {
       }
 
       if (reaction.community_messages.is_banned) {
-        throw new BadRequestException('Cannot modify reactions on a banned message');
+        throw new BadRequestException(
+          'Cannot modify reactions on a banned message',
+        );
       }
 
-      if (reaction.community_messages.community_chat.banned_users.some((user) => user.id === userId)) {
-        throw new BadRequestException('User is banned from this community chat');
+      if (
+        reaction.community_messages.community_chat.banned_users.some(
+          (user) => user.id === userId,
+        )
+      ) {
+        throw new BadRequestException(
+          'User is banned from this community chat',
+        );
       }
 
       await this.prismaService.message_reactions.update({
@@ -1501,7 +1676,9 @@ export class ChatService {
       };
     } catch (error) {
       console.error('Update message reaction error:', error);
-      throw new BadRequestException('Failed to update reaction: ' + error.message);
+      throw new BadRequestException(
+        'Failed to update reaction: ' + error.message,
+      );
     }
   }
 }
