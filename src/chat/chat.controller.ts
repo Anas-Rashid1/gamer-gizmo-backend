@@ -334,73 +334,80 @@ async getCommunityMessages(
     }
   }
 
-  @Get('/community/messages/:communityChatId')
-  @ApiOperation({ summary: 'Retrieve messages for a specific community chat' })
-  @ApiParam({
-    name: 'communityChatId',
-    required: true,
-    type: String,
-    description: 'ID of the community chat to retrieve messages for',
-    example: '1',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Community messages retrieved successfully',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'number', example: 1 },
-          content: { type: 'string', example: 'Hello community!' },
-          is_admin: { type: 'boolean', example: false },
-          sender_id: { type: 'number', example: 1, nullable: true },
-          admin_id: { type: 'number', example: null, nullable: true },
-          user_admin_id: { type: 'number', example: null, nullable: true },
-          community_chat_id: { type: 'number', example: 1 },
-          created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
-          users: {
+ @Get('/community/messages/:communityChatId')
+@ApiOperation({ summary: 'Retrieve messages for a specific community chat' })
+@ApiParam({
+  name: 'communityChatId',
+  required: true,
+  type: String,
+  description: 'ID of the community chat to retrieve messages for',
+  example: '1',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Community messages retrieved successfully',
+  schema: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        content: { type: 'string', example: 'Hello community!' },
+        is_admin: { type: 'boolean', example: false },
+        sender_id: { type: 'number', example: 1, nullable: true },
+        admin_id: { type: 'number', example: null, nullable: true },
+        user_admin_id: { type: 'number', example: null, nullable: true },
+        community_chat_id: { type: 'number', example: 1 },
+        created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:21:00.000Z' },
+        users: {
+          type: 'object',
+          properties: {
+            username: { type: 'string', example: 'john_doe' },
+            profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+          },
+        },
+        reactions: {
+          type: 'array',
+          items: {
             type: 'object',
             properties: {
+              id: { type: 'number', example: 1 },
+              emoji_type: { type: 'string', example: '👍' },
+              user_id: { type: 'number', example: 1 },
               username: { type: 'string', example: 'john_doe' },
-              profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+              created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
             },
           },
-          reactions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'number', example: 1 },
-                emoji_type: { type: 'string', example: '👍' },
-                user_id: { type: 'number', example: 1 },
-                username: { type: 'string', example: 'john_doe' },
-                created_at: { type: 'string', format: 'date-time', example: '2025-06-10T12:22:00.000Z' },
-              },
-            },
-          },
-          reaction_counts: {
-            type: 'object',
-            additionalProperties: { type: 'number' },
-            example: { '👍': 2, '❤️': 1 },
-          },
+        },
+        reaction_counts: {
+          type: 'object',
+          additionalProperties: { type: 'number' },
+          example: { '👍': 2, '❤️': 1 },
         },
       },
     },
-  })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async getCommunityChatMessages(@Param('communityChatId') communityChatId: string, @Req() request: Request & { user: JwtPayload }) {
-    try {
-      const parsedChatId = parseInt(communityChatId);
-      if (isNaN(parsedChatId)) {
-        throw new BadRequestException('Invalid community chat ID');
-      }
-      return await this.chatService.getCommunityChatMessages(parsedChatId, request.user.id);
-    } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to retrieve community chat messages');
+  },
+})
+@ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user not authorized' })
+@ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+async getCommunityChatMessages(
+  @Param('communityChatId') communityChatId: string,
+  @Req() request: Request & { user?: JwtPayload; admin?: JwtPayload },
+) {
+  try {
+    const parsedChatId = parseInt(communityChatId);
+    if (isNaN(parsedChatId)) {
+      throw new BadRequestException('Invalid community chat ID');
     }
+    const userId = request.user?.id || request.admin?.id;
+    if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+      throw new BadRequestException('Invalid or missing user/admin ID in token');
+    }
+    return await this.chatService.getCommunityChatMessages(parsedChatId, Number(userId));
+  } catch (error) {
+    throw new BadRequestException(error.message || 'Failed to retrieve community chat messages');
   }
+}
 
   @Get('/community/list')
   @ApiOperation({ summary: 'Retrieve a limited number of community chats with their details' })
@@ -955,53 +962,57 @@ async deleteCommunityChat(
       throw new BadRequestException(error.message || 'Failed to retrieve top community chats');
     }
   }
-    @Get('/community/:communityChatId/banned-users')
-  @ApiOperation({ summary: 'Retrieve all banned users for a specific community chat' })
-  @ApiParam({
-    name: 'communityChatId',
-    required: true,
-    type: String,
-    description: 'ID of the community chat to retrieve banned users for',
-    example: '1',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Banned users retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Banned users retrieved successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 3 },
-              username: { type: 'string', example: 'bob_smith' },
-              profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
-            },
+  @Get('/community/:communityChatId/banned-users')
+@ApiOperation({ summary: 'Retrieve all banned users for a specific community chat' })
+@ApiParam({
+  name: 'communityChatId',
+  required: true,
+  type: String,
+  description: 'ID of the community chat to retrieve banned users for',
+  example: '1',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Banned users retrieved successfully',
+  schema: {
+    type: 'object',
+    properties: {
+      message: { type: 'string', example: 'Banned users retrieved successfully' },
+      data: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 3 },
+            username: { type: 'string', example: 'bob_smith' },
+            profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
           },
         },
       },
     },
-  })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user banned' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async getBannedUsers(
-    @Param('communityChatId') communityChatId: string,
-    @Req() request: Request & { user: JwtPayload },
-  ) {
-    try {
-      console.log('getBannedUsers called with communityChatId:', communityChatId, 'userId:', request.user.id);
-      const parsedChatId = parseInt(communityChatId);
-      if (isNaN(parsedChatId)) {
-        throw new BadRequestException('Invalid community chat ID');
-      }
-      return await this.chatService.getBannedUsers(parsedChatId, request.user.id);
-    } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to retrieve banned users');
+  },
+})
+@ApiResponse({ status: 400, description: 'Bad Request - Invalid community chat ID or user not authorized' })
+@ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+async getBannedUsers(
+  @Param('communityChatId') communityChatId: string,
+  @Req() request: Request & { user?: JwtPayload; admin?: JwtPayload },
+) {
+  try {
+    console.log('getBannedUsers called with communityChatId:', communityChatId, 'userId:', request.user?.id || request.admin?.id);
+    const parsedChatId = parseInt(communityChatId);
+    if (isNaN(parsedChatId)) {
+      throw new BadRequestException('Invalid community chat ID');
     }
+    const userId = request.user?.id || request.admin?.id;
+    if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+      throw new BadRequestException('Invalid or missing user/admin ID in token');
+    }
+    return await this.chatService.getBannedUsers(parsedChatId, Number(userId));
+  } catch (error) {
+    throw new BadRequestException(error.message || 'Failed to retrieve banned users');
   }
+}
 
 
    @Get('community/banned-users')
