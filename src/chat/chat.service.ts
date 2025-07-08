@@ -1884,4 +1884,70 @@ export class ChatService {
       );
     }
   }
+  async getCommunityChatsWithBannedUsers(userId: number) {
+  try {
+    console.log('getCommunityChatsWithBannedUsers called with:', { userId });
+
+    const validUserId = Number(userId);
+    if (isNaN(validUserId) || validUserId <= 0) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    // Check if the user is a super admin
+    const isSuperAdmin = await this.prismaService.admin.findUnique({
+      where: { id: validUserId },
+    });
+
+    // Fetch community chats where the user is creator, admin, or super admin
+    const chats = await this.prismaService.community_chat.findMany({
+      where: isSuperAdmin
+        ? {} // Super admins can access all chats
+        : {
+            OR: [
+              { creator_id: validUserId },
+              { admins: { some: { id: validUserId } } },
+            ],
+          },
+      include: {
+        banned_users: {
+          select: {
+            id: true,
+            username: true,
+            profile: true,
+          },
+        },
+      },
+    });
+
+    // Map chats to include signed URLs for banned users' profile pictures
+    const chatsWithDetails = await Promise.all(
+      chats.map(async (chat) => {
+        const bannedUsersWithDetails = await Promise.all(
+          chat.banned_users.map(async (user) => ({
+            id: user.id,
+            username: user.username,
+            profile_picture: user.profile ? await this.getSignedImageUrl(user.profile) : null,
+          })),
+        );
+
+        return {
+          id: chat.id,
+          name: chat.name,
+          description: chat.description,
+          creator_id: chat.creator_id,
+          created_at: chat.created_at.toISOString(),
+          banned_users: bannedUsersWithDetails,
+        };
+      }),
+    );
+
+    return {
+      message: 'Community chats with banned users retrieved successfully',
+      data: chatsWithDetails,
+    };
+  } catch (error) {
+    console.error('Get community chats with banned users error:', error);
+    throw new BadRequestException('Failed to retrieve community chats with banned users: ' + error.message);
+  }
+}
 }

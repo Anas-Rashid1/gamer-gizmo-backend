@@ -470,13 +470,14 @@ async getCommunityMessages(
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid limit parameter' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async getCommunityChats(@Query('limit') limit: string, @Req() request: Request & { user: JwtPayload }) {
+  async getCommunityChats(@Query('limit') limit: string, @Req() request: Request & { user?: JwtPayload; admin?: JwtPayload }) {
     try {
+      const userId = request.user?.id || request.admin?.id;
       const parsedLimit = parseInt(limit);
       if (isNaN(parsedLimit) || parsedLimit <= 0) {
         throw new BadRequestException('Invalid limit parameter');
       }
-      return await this.chatService.getCommunityChats(parsedLimit, request.user.id);
+      return await this.chatService.getCommunityChats(parsedLimit, userId);
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to retrieve community chats');
     }
@@ -1001,6 +1002,59 @@ async deleteCommunityChat(
       throw new BadRequestException(error.message || 'Failed to retrieve banned users');
     }
   }
+
+
+   @Get('community/banned-users')
+@ApiOperation({ summary: 'Get all community chats with banned users for the authenticated user or admin' })
+@ApiResponse({
+  status: 200,
+  description: 'Community chats with banned users retrieved successfully',
+  schema: {
+    type: 'object',
+    properties: {
+      message: { type: 'string', example: 'Community chats with banned users retrieved successfully' },
+      data: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Gaming Hub' },
+            description: { type: 'string', example: 'A community for gamers', nullable: true },
+            creator_id: { type: 'number', example: 213, nullable: true },
+            created_at: { type: 'string', format: 'date-time', example: '2025-07-01T10:00:00.000Z' },
+            banned_users: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 3 },
+                  username: { type: 'string', example: 'bob_smith' },
+                  profile_picture: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/profile.jpg?signed', nullable: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+})
+@ApiResponse({
+  status: 400,
+  description: 'Bad Request - Invalid or missing user/admin ID in token',
+})
+@ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
+async getCommunityChatsWithBannedUsers(@Req() request: Request & { user?: JwtPayload; admin?: JwtPayload }) {
+  const userId = request.user?.id || request.admin?.id;
+  console.log('getCommunityChatsWithBannedUsers called with userId:', userId);
+  if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+    throw new BadRequestException('Invalid or missing user ID in token');
+  }
+  return this.chatService.getCommunityChatsWithBannedUsers(Number(userId));
+}
+
+
   @Get('/community/:communityChatId')
   @ApiOperation({ summary: 'Retrieve a specific community chat with its details' })
   @ApiParam({
@@ -1070,4 +1124,5 @@ async deleteCommunityChat(
       throw new BadRequestException(error.message || 'Failed to retrieve community chat');
     }
   }
+ 
 }
