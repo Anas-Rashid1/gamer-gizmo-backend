@@ -437,7 +437,7 @@ export class ProductService {
   //     );
   //   }
   // }
-  async GetAllProducts(queryData: any, user: any) {
+   async GetAllProducts(queryData: any, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
       let payload = null;
@@ -451,7 +451,8 @@ export class ProductService {
           payload = null;
         }
       }
-      const limit = 10;
+
+      const limit = queryData.limit ? parseInt(queryData.limit, 10) : 5;
 
       // Build the `where` parameters dynamically
       const WhereParameters: Record<string, any> = {};
@@ -564,9 +565,15 @@ export class ProductService {
       const queryOptions: any = {
         include: selectFilters,
         where: WhereParameters,
+        orderBy: [
+          { is_featured: 'desc' },
+          { created_at: 'desc' },
+        ],
       };
       if (queryData.pageNo) {
         queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
+        queryOptions.take = limit;
+      } else {
         queryOptions.take = limit;
       }
 

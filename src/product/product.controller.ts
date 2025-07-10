@@ -42,7 +42,7 @@ export class ProductsContoller {
   @ApiQuery({ name: 'processor', required: false, type: String })
   @ApiQuery({ name: 'ram', required: false, type: String })
   @ApiQuery({ name: 'title', required: false, type: String })
-  @ApiQuery({ name: 'stoarge', required: false, type: String })
+  @ApiQuery({ name: 'storage', required: false, type: String })
   @ApiQuery({ name: 'gpu', required: false, type: String })
   @ApiQuery({ name: 'location', required: false, type: String })
   @ApiQuery({ name: 'price', required: false, type: String })
@@ -52,6 +52,7 @@ export class ProductsContoller {
   @ApiQuery({ name: 'show_on_home', required: false, type: String })
   @ApiQuery({ name: 'pageNo', required: false, type: String })
   @ApiQuery({ name: 'is_store_product', required: false, type: String })
+  @ApiQuery({ name: 'limit', required: false, type: String })
   @Get('/getAll')
   async getAllProducts(@Query() query: any, @Req() user: any) {
     return this.productService.GetAllProducts(query, user);
