@@ -509,50 +509,100 @@ export class ChatService {
     }
   }
 
+  // async deleteCommunityMessage(messageId: number, requesterId: number) {
+  //   try {
+  //     const validMessageId = Number(messageId);
+  //     const validRequesterId = Number(requesterId);
+
+  //     if (isNaN(validMessageId) || validMessageId <= 0) {
+  //       throw new BadRequestException('Invalid message ID');
+  //     }
+  //     if (isNaN(validRequesterId) || validRequesterId <= 0) {
+  //       throw new BadRequestException('Invalid requester ID');
+  //     }
+
+  //     const message = await this.prismaService.community_messages.findUnique({
+  //       where: { id: validMessageId },
+  //       include: { community_chat: { include: { admins: true } } },
+  //     });
+
+  //     if (!message) {
+  //       throw new BadRequestException('Message not found');
+  //     }
+
+  //     if (
+  //       message.community_chat.creator_id !== validRequesterId &&
+  //       !message.community_chat.admins.some(
+  //         (admin) => admin.id === validRequesterId,
+  //       )
+  //     ) {
+  //       throw new BadRequestException(
+  //         'User is not authorized to delete messages in this community chat',
+  //       );
+  //     }
+
+  //     await this.prismaService.community_messages.delete({
+  //       where: { id: validMessageId },
+  //     });
+
+  //     return { message: 'Message deleted successfully' };
+  //   } catch (error) {
+  //     console.error('Delete community message error:', error);
+  //     throw new BadRequestException(
+  //       'Failed to delete message: ' + error.message,
+  //     );
+  //   }
+  // }
   async deleteCommunityMessage(messageId: number, requesterId: number) {
-    try {
-      const validMessageId = Number(messageId);
-      const validRequesterId = Number(requesterId);
+  try {
+    const validMessageId = Number(messageId);
+    const validRequesterId = Number(requesterId);
 
-      if (isNaN(validMessageId) || validMessageId <= 0) {
-        throw new BadRequestException('Invalid message ID');
-      }
-      if (isNaN(validRequesterId) || validRequesterId <= 0) {
-        throw new BadRequestException('Invalid requester ID');
-      }
+    if (isNaN(validMessageId) || validMessageId <= 0) {
+      throw new BadRequestException('Invalid message ID');
+    }
+    if (isNaN(validRequesterId) || validRequesterId <= 0) {
+      throw new BadRequestException('Invalid requester ID');
+    }
 
-      const message = await this.prismaService.community_messages.findUnique({
-        where: { id: validMessageId },
-        include: { community_chat: { include: { admins: true } } },
-      });
+    const message = await this.prismaService.community_messages.findUnique({
+      where: { id: validMessageId },
+      include: { community_chat: { include: { admins: true } } },
+    });
 
-      if (!message) {
-        throw new BadRequestException('Message not found');
-      }
+    if (!message) {
+      throw new BadRequestException('Message not found');
+    }
 
-      if (
-        message.community_chat.creator_id !== validRequesterId &&
-        !message.community_chat.admins.some(
-          (admin) => admin.id === validRequesterId,
-        )
-      ) {
-        throw new BadRequestException(
-          'User is not authorized to delete messages in this community chat',
-        );
-      }
+    // Check if the requester is a super admin from the admin table
+    const isSuperAdmin = await this.prismaService.admin.findUnique({
+      where: { id: validRequesterId },
+    });
 
-      await this.prismaService.community_messages.delete({
-        where: { id: validMessageId },
-      });
-
-      return { message: 'Message deleted successfully' };
-    } catch (error) {
-      console.error('Delete community message error:', error);
+    if (
+      !isSuperAdmin &&
+      message.community_chat.creator_id !== validRequesterId &&
+      !message.community_chat.admins.some(
+        (admin) => admin.id === validRequesterId,
+      )
+    ) {
       throw new BadRequestException(
-        'Failed to delete message: ' + error.message,
+        'User is not authorized to delete messages in this community chat',
       );
     }
+
+    await this.prismaService.community_messages.delete({
+      where: { id: validMessageId },
+    });
+
+    return { message: 'Message deleted successfully' };
+  } catch (error) {
+    console.error('Delete community message error:', error);
+    throw new BadRequestException(
+      'Failed to delete message: ' + error.message,
+    );
   }
+}
 
   async createCommunityMessage(data: {
     content: string;
