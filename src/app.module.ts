@@ -34,6 +34,7 @@ import { OrderModule } from './order/order.module';
 import { WebhookController } from './webhook/webhook.controller';
 import { WebhookService } from './webhook/webhook.service';
 import { WebhookModule } from './webhook/webhook.module';
+import { AiChatbotModule } from './ai-chatbot/ai-chatbot.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { WebhookModule } from './webhook/webhook.module';
     AnalyticsModule,
     OrderModule,
     WebhookModule,
+    AiChatbotModule,
   ],
   controllers: [AppController],
   providers: [AppService ],
