@@ -12,6 +12,19 @@
 //   }
 // }
 // src/ai/ai.controller.ts
+// import { Controller, Get, Query } from '@nestjs/common';
+// import { AiChatbotService } from './ai-chatbot.service';
+
+// @Controller('ai')
+// export class AiChatbotController {
+//   constructor(private readonly aiService: AiChatbotService) {}
+
+//   @Get('ask')
+//   async askQuestion(@Query('q') question: string) {
+//     const answer = await this.aiService.generateReply(question);
+//     return { answer };
+//   }
+// }
 import { Controller, Get, Query } from '@nestjs/common';
 import { AiChatbotService } from './ai-chatbot.service';
 
@@ -21,7 +34,8 @@ export class AiChatbotController {
 
   @Get('ask')
   async askQuestion(@Query('q') question: string) {
-    const answer = await this.aiService.generateReply(question);
-    return { answer };
+    //@ts-ignore
+    const { reply, productLink } = await this.aiService.generateReply(question);
+    return { reply, productLink };
   }
 }

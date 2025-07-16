@@ -1,9 +1,8 @@
-
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -437,7 +436,7 @@ export class ProductService {
   //     );
   //   }
   // }
-   async GetAllProducts(queryData: any, user: any) {
+  async GetAllProducts(queryData: any, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
       let payload = null;
@@ -565,10 +564,7 @@ export class ProductService {
       const queryOptions: any = {
         include: selectFilters,
         where: WhereParameters,
-        orderBy: [
-          { is_featured: 'desc' },
-          { created_at: 'desc' },
-        ],
+        orderBy: [{ is_featured: 'desc' }, { created_at: 'desc' }],
       };
       if (queryData.pageNo) {
         queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
@@ -1788,79 +1784,79 @@ export class ProductService {
       );
     }
   }
-async searchProductsByName(query: string) {
-  try {
-    const searchTerm = query?.trim();
-    if (!searchTerm) {
-      return { products: [], total: 0, message: 'No search term provided' };
-    }
+  async searchProductsByName(query: string) {
+    try {
+      const searchTerm = query?.trim();
+      if (!searchTerm) {
+        return { products: [], total: 0, message: 'No search term provided' };
+      }
 
-    const whereParameters: Prisma.productWhereInput = {
-      AND: [
-        { is_published: true },
-        {
-          name: {
-            contains: searchTerm,
-            mode: 'insensitive' as Prisma.QueryMode,
+      const whereParameters: Prisma.productWhereInput = {
+        AND: [
+          { is_published: true },
+          {
+            name: {
+              contains: searchTerm,
+              mode: 'insensitive' as Prisma.QueryMode,
+            },
           },
-        },
-      ],
-    };
+        ],
+      };
 
-    const [products, total] = await Promise.all([
-      this.prismaService.product.findMany({
-        where: whereParameters,
-        include: {
-          categories: { select: { id: true, name: true } },
-          product_images: { select: { id: true, image_url: true } },
-          brands: { select: { id: true, name: true } },
-          models: { select: { id: true, name: true } },
-        },
-        orderBy: { name: 'asc' },
-      }),
-      this.prismaService.product.count({ where: whereParameters }),
-    ]);
+      const [products, total] = await Promise.all([
+        this.prismaService.product.findMany({
+          where: whereParameters,
+          include: {
+            categories: { select: { id: true, name: true } },
+            product_images: { select: { id: true, image_url: true } },
+            brands: { select: { id: true, name: true } },
+            models: { select: { id: true, name: true } },
+          },
+          orderBy: { name: 'asc' },
+        }),
+        this.prismaService.product.count({ where: whereParameters }),
+      ]);
 
-    const productsWithImageUrls = await Promise.all(
-      products.map(async (product) => {
-        const imageUrls = product.product_images.length
-          ? await this.s3Service.get_image_urls(
-              product.product_images.map((img) => img.image_url),
-            )
-          : [];
-        const imagesWithUrls = product.product_images.map((img, index) => ({
-          ...img,
-          image_url: imageUrls[index] || img.image_url,
-        }));
+      const productsWithImageUrls = await Promise.all(
+        products.map(async (product) => {
+          const imageUrls = product.product_images.length
+            ? await this.s3Service.get_image_urls(
+                product.product_images.map((img) => img.image_url),
+              )
+            : [];
+          const imagesWithUrls = product.product_images.map((img, index) => ({
+            ...img,
+            image_url: imageUrls[index] || img.image_url,
+          }));
 
-        return {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          category: product.categories?.name,
-          category_id: product.categories?.id,
-          brand: product.brands?.name,
-          brand_id: product.brands?.id,
-          model: product.models?.name,
-          model_id: product.models?.id,
-          images: imagesWithUrls,
-        };
-      }),
-    );
+          return {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.categories?.name,
+            category_id: product.categories?.id,
+            brand: product.brands?.name,
+            brand_id: product.brands?.id,
+            model: product.models?.name,
+            model_id: product.models?.id,
+            images: imagesWithUrls,
+          };
+        }),
+      );
 
-    return {
-      products: productsWithImageUrls,
-      total,
-      message: 'success',
-    };
-  } catch (error) {
-    throw new InternalServerErrorException(
-      'Failed to search products',
-      error.message,
-    );
+      return {
+        products: productsWithImageUrls,
+        total,
+        message: 'success',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to search products',
+        error.message,
+      );
+    }
   }
-}
-  
+
   async DeleteProductImage(imageIds: string | string[]) {
     try {
       // Normalize input to always be an array
@@ -1998,9 +1994,6 @@ async searchProductsByName(query: string) {
 
   async searchMyProducts(query: string, userId: number) {
     try {
-      
-      
-
       const searchTerm = query?.trim();
       if (!searchTerm) {
         throw new BadRequestException('No search term provided');
@@ -2009,7 +2002,12 @@ async searchProductsByName(query: string) {
       const whereParameters: Prisma.productWhereInput = {
         AND: [
           { user_id: userId },
-          { name: { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode } },
+          {
+            name: {
+              contains: searchTerm,
+              mode: 'insensitive' as Prisma.QueryMode,
+            },
+          },
         ],
       };
 
@@ -2060,7 +2058,10 @@ async searchProductsByName(query: string) {
         message: 'success',
       };
     } catch (error) {
-      if (error instanceof BadRequestException || error instanceof UnauthorizedException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -2070,6 +2071,17 @@ async searchProductsByName(query: string) {
     }
   }
 
- 
-
+  // For ai bot
+  async findProductByQuery(query: string) {
+    return this.prismaService.product.findFirst({
+      where: {
+        OR: [
+          //@ts-ignore
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true }, // only return ID
+    });
+  }
 }

@@ -6,10 +6,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ProductService } from './product.service';
 import { S3Service } from 'src/utils/s3.service';
 
-
 @Module({
   imports: [],
   controllers: [ProductsContoller],
-  providers: [ProductService, PrismaService, JwtService,S3Service],
+  providers: [ProductService, PrismaService, JwtService, S3Service],
+  exports: [ProductService],
 })
 export class ProductModule {}
