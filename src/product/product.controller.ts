@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -12,7 +11,15 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags, ApiBody,ApiResponse,ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiQuery,
+  ApiTags,
+  ApiBody,
+  ApiResponse,
+  ApiOperation,
+} from '@nestjs/swagger';
 import {
   CreateProductDto,
   InverProductStatusDto,
@@ -279,59 +286,74 @@ export class ProductsContoller {
   @ApiQuery({ name: 'pageNo', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: String })
   @Get('/search')
-  async searchProducts(@Query() query: { query: string; pageNo?: string; limit?: string }) {
+  async searchProducts(
+    @Query() query: { query: string; pageNo?: string; limit?: string },
+  ) {
     return this.productService.searchProducts(query);
   }
 
   @ApiQuery({ name: 'query', required: true, type: String })
-@ApiOperation({ summary: 'Search for products by name only' })
-@ApiResponse({
-  status: 200,
-  description: 'Products retrieved successfully',
-  schema: {
-    type: 'object',
-    properties: {
-      products: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            name: { type: 'string', example: 'Gaming Mouse' },
-            price: { type: 'number', example: 49.99 },
-            category: { type: 'string', example: 'Electronics', nullable: true },
-            category_id: { type: 'number', example: 1, nullable: true },
-            brand: { type: 'string', example: 'Logitech', nullable: true },
-            brand_id: { type: 'number', example: 1, nullable: true },
-            model: { type: 'string', example: 'G502', nullable: true },
-            model_id: { type: 'number', example: 1, nullable: true },
-            images: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number', example: 1 },
-                  image_url: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/images/product1.jpg?signed' },
+  @ApiOperation({ summary: 'Search for products by name only' })
+  @ApiResponse({
+    status: 200,
+    description: 'Products retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        products: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Gaming Mouse' },
+              price: { type: 'number', example: 49.99 },
+              category: {
+                type: 'string',
+                example: 'Electronics',
+                nullable: true,
+              },
+              category_id: { type: 'number', example: 1, nullable: true },
+              brand: { type: 'string', example: 'Logitech', nullable: true },
+              brand_id: { type: 'number', example: 1, nullable: true },
+              model: { type: 'string', example: 'G502', nullable: true },
+              model_id: { type: 'number', example: 1, nullable: true },
+              images: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number', example: 1 },
+                    image_url: {
+                      type: 'string',
+                      example:
+                        'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/images/product1.jpg?signed',
+                    },
+                  },
                 },
               },
             },
           },
         },
+        total: { type: 'number', example: 10 },
+        message: { type: 'string', example: 'success' },
       },
-      total: { type: 'number', example: 10 },
-      message: { type: 'string', example: 'success' },
     },
-  },
-})
-@ApiResponse({ status: 500, description: 'Internal Server Error - Failed to search products' })
-@Get('/search-by-name')
-async searchProductsByName(@Query('query') query: string) {
-  return this.productService.searchProductsByName(query);
-}
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Failed to search products',
+  })
+  @Get('/search-by-name')
+  async searchProductsByName(@Query('query') query: string) {
+    return this.productService.searchProductsByName(query);
+  }
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @ApiQuery({ name: 'query', required: true, type: String })
-  @ApiOperation({ summary: 'Search for products added by the authenticated user by name' })
+  @ApiOperation({
+    summary: 'Search for products added by the authenticated user by name',
+  })
   @ApiResponse({
     status: 200,
     description: 'User products retrieved successfully',
@@ -346,7 +368,11 @@ async searchProductsByName(@Query('query') query: string) {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Gaming Mouse' },
               price: { type: 'number', example: 49.99 },
-              category: { type: 'string', example: 'Electronics', nullable: true },
+              category: {
+                type: 'string',
+                example: 'Electronics',
+                nullable: true,
+              },
               category_id: { type: 'number', example: 1, nullable: true },
               brand: { type: 'string', example: 'Logitech', nullable: true },
               brand_id: { type: 'number', example: 1, nullable: true },
@@ -358,7 +384,11 @@ async searchProductsByName(@Query('query') query: string) {
                   type: 'object',
                   properties: {
                     id: { type: 'number', example: 1 },
-                    image_url: { type: 'string', example: 'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/images/product1.jpg?signed' },
+                    image_url: {
+                      type: 'string',
+                      example:
+                        'https://gamergizmobucket.s3.eu-north-1.amazonaws.com/images/product1.jpg?signed',
+                    },
                   },
                 },
               },
@@ -370,23 +400,32 @@ async searchProductsByName(@Query('query') query: string) {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  @ApiResponse({ status: 500, description: 'Internal Server Error - Failed to search user products' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Failed to search user products',
+  })
   @Get('/search-my-products')
-  async searchMyProducts(@Query('query') query: string, @Req() request: Request & { user: JwtPayload }) {
+  async searchMyProducts(
+    @Query('query') query: string,
+    @Req() request: Request & { user: JwtPayload },
+  ) {
     return this.productService.searchMyProducts(query, request.user.id);
   }
 
   @Delete('/deleteProductImage')
-@ApiQuery({ 
-  name: 'image_ids', 
-  required: true, 
-  type: [String], 
-  description: 'Single image ID or array of image IDs' 
-})
-async DeleteProductImage(@Query('image_ids') imageIds: string | string[]) {
-  return this.productService.DeleteProductImage(imageIds);
-}
+  @ApiQuery({
+    name: 'image_ids',
+    required: true,
+    type: [String],
+    description: 'Single image ID or array of image IDs',
+  })
+  async DeleteProductImage(@Query('image_ids') imageIds: string | string[]) {
+    return this.productService.DeleteProductImage(imageIds);
+  }
 
   @ApiBearerAuth()
   @UseGuards(AdminAuthGuard)

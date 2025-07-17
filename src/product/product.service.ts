@@ -14,6 +14,9 @@ import { CreateReviewDto } from './dto/review.dto';
 import { JwtService } from '@nestjs/jwt';
 import { S3Service } from 'src/utils/s3.service';
 import { Prisma } from '@prisma/client';
+// import Fuse from 'fuse.js';
+const Fuse = require('fuse.js');
+
 
 // Define the type for product with included relations for GetAllProducts and GetUserProducts
 interface ProductWithRelations {
@@ -2072,16 +2075,63 @@ export class ProductService {
   }
 
   // For ai bot
-  async findProductByQuery(query: string) {
-    return this.prismaService.product.findFirst({
-      where: {
-        OR: [
-          //@ts-ignore
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
+  async findProductByQuery(
+    query: string,
+    skip = 0,
+    take = 10,
+  ): Promise<{ id: number; name: string; created_at: Date }[]> {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    // 🔎 Step 1: Get all category names
+    const categories = await this.prismaService.categories.findMany({
+      select: { id: true, name: true },
+    });
+
+    // 🔍 Step 2: Use Fuse.js to find best matching category
+    const fuse = new Fuse(categories, {
+      keys: ['name'],
+      threshold: 0.4, // fuzzy match sensitivity
+    });
+
+    const matchedCategory = fuse.search(normalizedQuery)?.[0]?.item;
+
+    // You can log or use this category match to boost results
+    const whereClause: any = {
+      is_published: true,
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { other_brand_name: { contains: query, mode: 'insensitive' } },
+        { categories: { name: { contains: query, mode: 'insensitive' } } },
+        { brands: { name: { contains: query, mode: 'insensitive' } } },
+        { models: { name: { contains: query, mode: 'insensitive' } } },
+      ],
+    };
+
+    // ✅ Boost category if fuzzy match found
+    if (matchedCategory) {
+      whereClause.OR.push({
+        category_id: matchedCategory.id,
+      });
+    }
+
+    return this.prismaService.product.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        created_at: true,
       },
-      select: { id: true }, // only return ID
+      orderBy: {
+        created_at: 'asc',
+      },
+      skip,
+      take,
+    });
+  }
+  async getAllCategories(): Promise<{ id: number; name: string }[]> {
+    return this.prismaService.categories.findMany({
+      select: { id: true, name: true },
     });
   }
 }
