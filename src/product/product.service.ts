@@ -2043,6 +2043,216 @@ export class ProductService {
   //   });
   // }
 
+  // with updation
+  // async findProductByQuery(
+  //   query: string,
+  //   skip = 0,
+  //   take = 10,
+  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+  //   const originalQuery = query.trim().toLowerCase();
+  //   let normalizedQueryForTextSearch = originalQuery;
+  //   let priceFilterMin: number | undefined;
+  //   let priceFilterMax: number | undefined;
+  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
+
+  //   // 1. Extract Price and Detect Range
+  //   const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
+  //     /,/g,
+  //     '',
+  //   );
+  //   const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
+  //   const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
+  //   const priceRegex = /(\d+)(?:\s*aed)?/;
+
+  //   if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+  //     priceFilterMin = parseInt(rangeMatch[1], 10);
+  //     priceFilterMax = parseInt(rangeMatch[2], 10);
+  //     priceCondition = 'range';
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(rangeRegex, '')
+  //       .replace(/\b(between|and)\b/, '')
+  //       .trim();
+  //   } else {
+  //     const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+  //     if (priceMatch && priceMatch[1]) {
+  //       priceFilterMin = parseInt(priceMatch[1], 10);
+  //       priceCondition =
+  //         originalQuery.includes('under') || originalQuery.includes('below')
+  //           ? 'lte'
+  //           : 'exact';
+  //       normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //         .replace(priceRegex, '')
+  //         .replace(/\b(under|below)\b/, '')
+  //         .trim();
+  //     }
+  //   }
+
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/^(for|with|a|an|the)\s+/, '')
+  //     .trim();
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+(for|with|a|an|the)$/, '')
+  //     .trim();
+
+  //   // 2. Aggressive Cleaning for General Queries
+  //   const generalPhrases = [
+  //     'suggest',
+  //     'show',
+  //     'find',
+  //     'me',
+  //     'some',
+  //     'any',
+  //     'top',
+  //     'best',
+  //     'good',
+  //     'gaming',
+  //   ];
+  //   for (const phrase of generalPhrases) {
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+  //       .trim();
+  //   }
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+/g, ' ')
+  //     .trim();
+  //   console.log(
+  //     normalizedQueryForTextSearch,
+  //     'normalizedQueryForTextSearch after cleaning',
+  //   );
+
+  //   // 3. Explicit Category Keyword Matching
+  //   let categoryId: number | undefined;
+  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
+  //     categoryId = 1; // Laptops
+  //   } else if (
+  //     originalQuery.includes('desktop') ||
+  //     originalQuery.includes('desktops') ||
+  //     originalQuery.includes('pc') ||
+  //     originalQuery.includes('computer')
+  //   ) {
+  //     categoryId = 2; // Desktops
+  //   } else if (
+  //     originalQuery.includes('component') ||
+  //     originalQuery.includes('components')
+  //   ) {
+  //     categoryId = 3; // Components
+  //   } else if (
+  //     originalQuery.includes('console') ||
+  //     originalQuery.includes('consoles') ||
+  //     originalQuery.includes('gaming console')
+  //   ) {
+  //     categoryId = 4; // Gaming Consoles
+  //   }
+  //   console.log(categoryId, 'categoryId from explicit matching');
+
+  //   // 4. Build the WHERE Clause
+  //   let whereConditions: any[] = [{ is_published: true }];
+
+  //   if (priceFilterMin !== undefined) {
+  //     if (priceCondition === 'lte') {
+  //       whereConditions.push({
+  //         price: {
+  //           lte: priceFilterMin.toString(),
+  //         },
+  //       });
+  //     } else if (priceCondition === 'range') {
+  //       whereConditions.push({
+  //         AND: [
+  //           {
+  //             price: {
+  //               gte: priceFilterMin.toString(),
+  //             },
+  //           },
+  //           {
+  //             price: {
+  //               lte: priceFilterMax!.toString(),
+  //             },
+  //           },
+  //         ],
+  //       });
+  //     } else {
+  //       whereConditions.push({
+  //         price: priceFilterMin.toString(),
+  //       });
+  //     }
+  //   }
+
+  //   if (categoryId !== undefined) {
+  //     whereConditions.push({ category_id: categoryId });
+  //   }
+
+  //   let textSearchOrConditions: any[] = [];
+  //   if (normalizedQueryForTextSearch && categoryId === undefined) {
+  //     textSearchOrConditions.push(
+  //       {
+  //         name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
+  //       },
+  //       {
+  //         description: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         other_brand_name: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         brands: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //       {
+  //         models: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //     );
+  //   }
+
+  //   if (textSearchOrConditions.length > 0) {
+  //     whereConditions.push({ OR: textSearchOrConditions });
+  //   }
+
+  //   const finalWhereClause = { AND: whereConditions };
+  //   console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+
+  //   // Debug: Log total matching products
+  //   const total = await this.prismaService.product.count({
+  //     where: finalWhereClause,
+  //   });
+  //   console.log(total, 'total matching products');
+
+  //   // Debug: Log matched products before returning
+  //   const products = await this.prismaService.product.findMany({
+  //     where: finalWhereClause,
+  //     select: {
+  //       id: true,
+  //       name: true,
+  //       price: true,
+  //       created_at: true,
+  //       category_id: true, // Include for debugging
+  //     },
+  //     orderBy: {
+  //       created_at: 'asc',
+  //     },
+  //     skip,
+  //     take,
+  //   });
+  //   console.log(products, 'returned products');
+
+  //   return products;
+  // }
+
+  // final
   async findProductByQuery(
     query: string,
     skip = 0,
@@ -2224,33 +2434,356 @@ export class ProductService {
     const finalWhereClause = { AND: whereConditions };
     console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
 
+    // 5. Execute Query with Raw SQL for Price Casting
+    let products;
+    if (priceFilterMin !== undefined) {
+      // Build raw SQL query for price casting
+      let priceConditionSql = '';
+      const queryParams: any[] = [];
+
+      if (priceCondition === 'lte') {
+        priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
+        queryParams.push(priceFilterMin);
+      } else if (priceCondition === 'range') {
+        priceConditionSql = `CAST(price AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+        queryParams.push(priceFilterMin, priceFilterMax);
+      } else {
+        priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
+        queryParams.push(priceFilterMin);
+      }
+
+      const baseQuery = `
+      SELECT id, name, price, created_at, category_id
+      FROM product
+      WHERE is_published = true
+      ${categoryId !== undefined ? `AND category_id = $${queryParams.length + 1}` : ''}
+      ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
+      ${
+        textSearchOrConditions.length > 0
+          ? `AND (
+              LOWER(name) LIKE $${queryParams.length + 1}
+              OR LOWER(description) LIKE $${queryParams.length + 1}
+              OR LOWER(other_brand_name) LIKE $${queryParams.length + 1}
+              OR EXISTS (
+                SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${queryParams.length + 1}
+              )
+              OR EXISTS (
+                SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${queryParams.length + 1}
+              )
+            )`
+          : ''
+      }
+      ORDER BY created_at ASC
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+    `;
+      if (categoryId !== undefined) queryParams.push(categoryId);
+      if (textSearchOrConditions.length > 0)
+        queryParams.push(`%${normalizedQueryForTextSearch}%`);
+      queryParams.push(take, skip);
+
+      products = await this.prismaService.$queryRawUnsafe<
+        {
+          id: number;
+          name: string;
+          price: string;
+          created_at: Date;
+          category_id: number;
+        }[]
+      >(baseQuery, ...queryParams);
+    } else {
+      // Fallback to original Prisma query if no price filter
+      products = await this.prismaService.product.findMany({
+        where: finalWhereClause,
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          created_at: true,
+          category_id: true,
+        },
+        orderBy: {
+          created_at: 'asc',
+        },
+        skip,
+        take,
+      });
+    }
+
     // Debug: Log total matching products
     const total = await this.prismaService.product.count({
       where: finalWhereClause,
     });
     console.log(total, 'total matching products');
-
-    // Debug: Log matched products before returning
-    const products = await this.prismaService.product.findMany({
-      where: finalWhereClause,
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        created_at: true,
-        category_id: true, // Include for debugging
-      },
-      orderBy: {
-        created_at: 'asc',
-      },
-      skip,
-      take,
-    });
     console.log(products, 'returned products');
 
     return products;
   }
+  // final searching as an integer
+  // async findProductByQuery(
+  //   query: string,
+  //   skip = 0,
+  //   take = 10,
+  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+  //   const originalQuery = query.trim().toLowerCase();
+  //   let normalizedQueryForTextSearch = originalQuery;
+  //   let priceFilterMin: number | undefined;
+  //   let priceFilterMax: number | undefined;
+  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
 
+  //   // 1. Extract Price and Detect Range
+  //   const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
+  //     /,/g,
+  //     '',
+  //   );
+  //   const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
+  //   const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
+  //   const priceRegex = /(\d+)(?:\s*aed)?/;
+
+  //   if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+  //     priceFilterMin = parseInt(rangeMatch[1], 10);
+  //     priceFilterMax = parseInt(rangeMatch[2], 10);
+  //     priceCondition = 'range';
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(rangeRegex, '')
+  //       .replace(/\b(between|and)\b/, '')
+  //       .trim();
+  //   } else {
+  //     const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+  //     if (priceMatch && priceMatch[1]) {
+  //       priceFilterMin = parseInt(priceMatch[1], 10);
+  //       priceCondition =
+  //         originalQuery.includes('under') || originalQuery.includes('below')
+  //           ? 'lte'
+  //           : 'exact';
+  //       normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //         .replace(priceRegex, '')
+  //         .replace(/\b(under|below)\b/, '')
+  //         .trim();
+  //     }
+  //   }
+
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/^(for|with|a|an|the)\s+/, '')
+  //     .trim();
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+(for|with|a|an|the)$/, '')
+  //     .trim();
+
+  //   // 2. Aggressive Cleaning for General Queries
+  //   const generalPhrases = [
+  //     'suggest',
+  //     'show',
+  //     'find',
+  //     'me',
+  //     'some',
+  //     'any',
+  //     'top',
+  //     'best',
+  //     'good',
+  //     'gaming',
+  //   ];
+  //   for (const phrase of generalPhrases) {
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+  //       .trim();
+  //   }
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+/g, ' ')
+  //     .trim();
+  //   console.log(
+  //     normalizedQueryForTextSearch,
+  //     'normalizedQueryForTextSearch after cleaning',
+  //   );
+
+  //   // 3. Explicit Category Keyword Matching
+  //   let categoryId: number | undefined;
+  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
+  //     categoryId = 1; // Laptops
+  //   } else if (
+  //     originalQuery.includes('desktop') ||
+  //     originalQuery.includes('desktops') ||
+  //     originalQuery.includes('pc') ||
+  //     originalQuery.includes('computer')
+  //   ) {
+  //     categoryId = 2; // Desktops
+  //   } else if (
+  //     originalQuery.includes('component') ||
+  //     originalQuery.includes('components')
+  //   ) {
+  //     categoryId = 3; // Components
+  //   } else if (
+  //     originalQuery.includes('console') ||
+  //     originalQuery.includes('consoles') ||
+  //     originalQuery.includes('gaming console')
+  //   ) {
+  //     categoryId = 4; // Gaming Consoles
+  //   }
+  //   console.log(categoryId, 'categoryId from explicit matching');
+
+  //   // 4. Build the WHERE Clause
+  //   let whereConditions: any[] = [{ is_published: true }];
+
+  //   if (priceFilterMin !== undefined) {
+  //     if (priceCondition === 'lte') {
+  //       whereConditions.push({
+  //         price: {
+  //           lte: priceFilterMin.toString(),
+  //         },
+  //       });
+  //     } else if (priceCondition === 'range') {
+  //       whereConditions.push({
+  //         AND: [
+  //           {
+  //             price: {
+  //               gte: priceFilterMin.toString(),
+  //             },
+  //           },
+  //           {
+  //             price: {
+  //               lte: priceFilterMax!.toString(),
+  //             },
+  //           },
+  //         ],
+  //       });
+  //     } else {
+  //       whereConditions.push({
+  //         price: priceFilterMin.toString(),
+  //       });
+  //     }
+  //   }
+
+  //   if (categoryId !== undefined) {
+  //     whereConditions.push({ category_id: categoryId });
+  //   }
+
+  //   let textSearchOrConditions: any[] = [];
+  //   if (normalizedQueryForTextSearch && categoryId === undefined) {
+  //     textSearchOrConditions.push(
+  //       {
+  //         name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
+  //       },
+  //       {
+  //         description: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         other_brand_name: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         brands: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //       {
+  //         models: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //     );
+  //   }
+
+  //   if (textSearchOrConditions.length > 0) {
+  //     whereConditions.push({ OR: textSearchOrConditions });
+  //   }
+
+  //   const finalWhereClause = { AND: whereConditions };
+  //   console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+
+  //   // 5. Execute Query with Raw SQL for Price Casting
+  //   let products;
+  //   if (priceFilterMin !== undefined) {
+  //     // Build raw SQL query for price casting
+  //     let priceConditionSql = '';
+  //     const queryParams: any[] = [];
+
+  //     if (priceCondition === 'lte') {
+  //       priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
+  //       queryParams.push(priceFilterMin);
+  //     } else if (priceCondition === 'range') {
+  //       priceConditionSql = `CAST(price AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+  //       queryParams.push(priceFilterMin, priceFilterMax);
+  //     } else {
+  //       priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
+  //       queryParams.push(priceFilterMin);
+  //     }
+
+  //     const baseQuery = `
+  //     SELECT id, name, price, created_at, category_id
+  //     FROM product
+  //     WHERE is_published = true
+  //     ${categoryId !== undefined ? `AND category_id = $${queryParams.length + 1}` : ''}
+  //     ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
+  //     ${
+  //       textSearchOrConditions.length > 0
+  //         ? `AND (
+  //             LOWER(name) LIKE $${queryParams.length + 1}
+  //             OR LOWER(description) LIKE $${queryParams.length + 1}
+  //             OR LOWER(other_brand_name) LIKE $${queryParams.length + 1}
+  //             OR EXISTS (
+  //               SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${queryParams.length + 1}
+  //             )
+  //             OR EXISTS (
+  //               SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${queryParams.length + 1}
+  //             )
+  //           )`
+  //         : ''
+  //     }
+  //     ORDER BY created_at ASC
+  //     LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+  //   `;
+  //     if (categoryId !== undefined) queryParams.push(categoryId);
+  //     if (textSearchOrConditions.length > 0)
+  //       queryParams.push(`%${normalizedQueryForTextSearch}%`);
+  //     queryParams.push(take, skip);
+
+  //     products = await this.prismaService.$queryRawUnsafe<
+  //       {
+  //         id: number;
+  //         name: string;
+  //         price: string;
+  //         created_at: Date;
+  //         category_id: number;
+  //       }[]
+  //     >(baseQuery, ...queryParams);
+  //   } else {
+  //     // Fallback to original Prisma query if no price filter
+  //     products = await this.prismaService.product.findMany({
+  //       where: finalWhereClause,
+  //       select: {
+  //         id: true,
+  //         name: true,
+  //         price: true,
+  //         created_at: true,
+  //         category_id: true,
+  //       },
+  //       orderBy: {
+  //         created_at: 'asc',
+  //       },
+  //       skip,
+  //       take,
+  //     });
+  //   }
+
+  //   // Debug: Log total matching products
+  //   const total = await this.prismaService.product.count({
+  //     where: finalWhereClause,
+  //   });
+  //   console.log(total, 'total matching products');
+  //   console.log(products, 'returned products');
+
+  //   return products;
+  // }
   async getAllCategories(): Promise<{ id: number; name: string }[]> {
     return this.fixedCategories; // Return hardcoded categories
   }
