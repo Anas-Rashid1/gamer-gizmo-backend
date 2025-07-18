@@ -1,17 +1,3 @@
-// import { Body, Controller, Post } from '@nestjs/common';
-// import { AiChatbotService } from './ai-chatbot.service';
-// import { AskAiDto } from './dto/ask-ai.dto';
-
-// @Controller('ai-chatbot')
-// export class AiChatbotController {
-//   constructor(private readonly aiChatbotService: AiChatbotService) {}
-
-//   @Post('ask')
-//   async askAi(@Body() askAiDto: AskAiDto) {
-//     return this.aiChatbotService.askAi(askAiDto.prompt);
-//   }
-// }
-// src/ai/ai.controller.ts
 // import { Controller, Get, Query } from '@nestjs/common';
 // import { AiChatbotService } from './ai-chatbot.service';
 
@@ -21,8 +7,9 @@
 
 //   @Get('ask')
 //   async askQuestion(@Query('q') question: string) {
-//     const answer = await this.aiService.generateReply(question);
-//     return { answer };
+//     //@ts-ignore
+//     const { reply, productLink } = await this.aiService.generateReply(question);
+//     return { reply, productLink };
 //   }
 // }
 import { Controller, Get, Query } from '@nestjs/common';
@@ -33,9 +20,18 @@ export class AiChatbotController {
   constructor(private readonly aiService: AiChatbotService) {}
 
   @Get('ask')
-  async askQuestion(@Query('q') question: string) {
-    //@ts-ignore
-    const { reply, productLink } = await this.aiService.generateReply(question);
+  async askQuestion(
+    @Query('q') question: string,
+    @Query('skip') skip: string = '0',
+    @Query('take') take: string = '10',
+  ) {
+    const skipNum = parseInt(skip, 10) || 0;
+    const takeNum = parseInt(take, 10) || 10;
+    const { reply, productLink } = await this.aiService.generateReply(
+      question,
+      skipNum,
+      takeNum,
+    );
     return { reply, productLink };
   }
 }

@@ -1858,52 +1858,181 @@ export class ProductService {
     }
   }
 
-  // For ai bot
+  // with prices old
   // async findProductByQuery(
   //   query: string,
   //   skip = 0,
   //   take = 10,
-  // ): Promise<{ id: number; name: string; created_at: Date }[]> {
-  //   const normalizedQuery = query.trim().toLowerCase();
+  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+  //   const originalQuery = query.trim().toLowerCase();
+  //   let normalizedQueryForTextSearch = originalQuery;
+  //   let priceFilterMin: number | undefined;
+  //   let priceFilterMax: number | undefined;
+  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
 
-  //   // 🔎 Step 1: Get all category names
-  //   const categories = await this.prismaService.categories.findMany({
-  //     select: { id: true, name: true },
-  //   });
+  //   // 1. Extract Price and Detect Range
+  //   const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
+  //     /,/g,
+  //     '',
+  //   );
+  //   // Match "between X and Y" or "X - Y"
+  //   const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
+  //   const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
+  //   const priceRegex = /(\d+)(?:\s*aed)?/;
 
-  //   // 🔍 Step 2: Use Fuse.js to find best matching category
-  //   const fuse = new Fuse(categories, {
-  //     keys: ['name'],
-  //     threshold: 0.4, // fuzzy match sensitivity
-  //   });
-
-  //   const matchedCategory = fuse.search(normalizedQuery)?.[0]?.item;
-
-  //   // You can log or use this category match to boost results
-  //   const whereClause: any = {
-  //     is_published: true,
-  //     OR: [
-  //       { name: { contains: query, mode: 'insensitive' } },
-  //       { description: { contains: query, mode: 'insensitive' } },
-  //       { other_brand_name: { contains: query, mode: 'insensitive' } },
-  //       { categories: { name: { contains: query, mode: 'insensitive' } } },
-  //       { brands: { name: { contains: query, mode: 'insensitive' } } },
-  //       { models: { name: { contains: query, mode: 'insensitive' } } },
-  //     ],
-  //   };
-
-  //   // ✅ Boost category if fuzzy match found
-  //   if (matchedCategory) {
-  //     whereClause.OR.push({
-  //       category_id: matchedCategory.id,
-  //     });
+  //   if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+  //     priceFilterMin = parseInt(rangeMatch[1], 10);
+  //     priceFilterMax = parseInt(rangeMatch[2], 10);
+  //     priceCondition = 'range';
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(rangeRegex, '')
+  //       .replace(/\b(between|and)\b/, '')
+  //       .trim();
+  //   } else {
+  //     const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+  //     if (priceMatch && priceMatch[1]) {
+  //       priceFilterMin = parseInt(priceMatch[1], 10);
+  //       priceCondition =
+  //         originalQuery.includes('under') || originalQuery.includes('below')
+  //           ? 'lte'
+  //           : 'exact';
+  //       normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //         .replace(priceRegex, '')
+  //         .replace(/\b(under|below)\b/, '')
+  //         .trim();
+  //     }
   //   }
 
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/^(for|with|a|an|the)\s+/, '')
+  //     .trim();
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+(for|with|a|an|the)$/, '')
+  //     .trim();
+
+  //   // 2. Aggressive Cleaning for General Queries
+  //   const generalPhrases = [
+  //     'suggest',
+  //     'show',
+  //     'find',
+  //     'me',
+  //     'some',
+  //     'any',
+  //     'top',
+  //     'best',
+  //     'good',
+  //     'gaming',
+  //   ];
+  //   for (const phrase of generalPhrases) {
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+  //       .trim();
+  //   }
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+/g, ' ')
+  //     .trim();
+  //   console.log(
+  //     normalizedQueryForTextSearch,
+  //     'normalizedQueryForTextSearch after cleaning',
+  //   );
+
+  //   // 3. Explicit Category Keyword Matching
+  //   let categoryId: number | undefined;
+  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
+  //     categoryId = 1; // Laptops
+  //   } else if (
+  //     originalQuery.includes('desktop') ||
+  //     originalQuery.includes('desktops') ||
+  //     originalQuery.includes('pc') ||
+  //     originalQuery.includes('computer')
+  //   ) {
+  //     categoryId = 2; // Desktops
+  //   } else if (
+  //     originalQuery.includes('component') ||
+  //     originalQuery.includes('components')
+  //   ) {
+  //     categoryId = 3; // Components
+  //   } else if (
+  //     originalQuery.includes('console') ||
+  //     originalQuery.includes('consoles') ||
+  //     originalQuery.includes('gaming console')
+  //   ) {
+  //     categoryId = 4; // Gaming Consoles
+  //   }
+  //   console.log(categoryId, 'categoryId from explicit matching');
+
+  //   // 4. Build the WHERE Clause
+  //   let whereConditions: any[] = [{ is_published: true }];
+
+  //   if (priceFilterMin !== undefined) {
+  //     if (priceCondition === 'lte') {
+  //       whereConditions.push({ price: { lte: priceFilterMin.toString() } });
+  //     } else if (priceCondition === 'range') {
+  //       whereConditions.push({
+  //         price: {
+  //           gte: priceFilterMin.toString(),
+  //           lte: priceFilterMax!.toString(),
+  //         },
+  //       });
+  //     } else {
+  //       whereConditions.push({ price: priceFilterMin.toString() });
+  //     }
+  //   }
+
+  //   if (categoryId !== undefined) {
+  //     whereConditions.push({ category_id: categoryId });
+  //   }
+
+  //   let textSearchOrConditions: any[] = [];
+  //   if (normalizedQueryForTextSearch && categoryId === undefined) {
+  //     textSearchOrConditions.push(
+  //       {
+  //         name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
+  //       },
+  //       {
+  //         description: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         other_brand_name: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         brands: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //       {
+  //         models: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //     );
+  //   }
+
+  //   if (textSearchOrConditions.length > 0) {
+  //     whereConditions.push({ OR: textSearchOrConditions });
+  //   }
+
+  //   const finalWhereClause = { AND: whereConditions };
+  //   console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+
   //   return this.prismaService.product.findMany({
-  //     where: whereClause,
+  //     where: finalWhereClause,
   //     select: {
   //       id: true,
   //       name: true,
+  //       price: true,
   //       created_at: true,
   //     },
   //     orderBy: {
@@ -1914,7 +2043,6 @@ export class ProductService {
   //   });
   // }
 
-  // For ai bot
   async findProductByQuery(
     query: string,
     skip = 0,
@@ -1922,28 +2050,48 @@ export class ProductService {
   ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
     const originalQuery = query.trim().toLowerCase();
     let normalizedQueryForTextSearch = originalQuery;
-    let priceFilter: number | undefined;
+    let priceFilterMin: number | undefined;
+    let priceFilterMax: number | undefined;
+    let priceCondition: 'exact' | 'lte' | 'range' | undefined;
 
-    // 1. Extract Price and Clean Query for Text Search
+    // 1. Extract Price and Detect Range
     const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
       /,/g,
       '',
     );
+    const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
+    const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
     const priceRegex = /(\d+)(?:\s*aed)?/;
-    const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
 
-    if (priceMatch && priceMatch[1]) {
-      priceFilter = parseInt(priceMatch[1], 10);
+    if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+      priceFilterMin = parseInt(rangeMatch[1], 10);
+      priceFilterMax = parseInt(rangeMatch[2], 10);
+      priceCondition = 'range';
       normalizedQueryForTextSearch = normalizedQueryForTextSearch
-        .replace(priceRegex, '')
+        .replace(rangeRegex, '')
+        .replace(/\b(between|and)\b/, '')
         .trim();
-      normalizedQueryForTextSearch = normalizedQueryForTextSearch
-        .replace(/^(for|with|a|an|the)\s+/, '')
-        .trim();
-      normalizedQueryForTextSearch = normalizedQueryForTextSearch
-        .replace(/\s+(for|with|a|an|the)$/, '')
-        .trim();
+    } else {
+      const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+      if (priceMatch && priceMatch[1]) {
+        priceFilterMin = parseInt(priceMatch[1], 10);
+        priceCondition =
+          originalQuery.includes('under') || originalQuery.includes('below')
+            ? 'lte'
+            : 'exact';
+        normalizedQueryForTextSearch = normalizedQueryForTextSearch
+          .replace(priceRegex, '')
+          .replace(/\b(under|below)\b/, '')
+          .trim();
+      }
     }
+
+    normalizedQueryForTextSearch = normalizedQueryForTextSearch
+      .replace(/^(for|with|a|an|the)\s+/, '')
+      .trim();
+    normalizedQueryForTextSearch = normalizedQueryForTextSearch
+      .replace(/\s+(for|with|a|an|the)$/, '')
+      .trim();
 
     // 2. Aggressive Cleaning for General Queries
     const generalPhrases = [
@@ -1999,8 +2147,33 @@ export class ProductService {
     // 4. Build the WHERE Clause
     let whereConditions: any[] = [{ is_published: true }];
 
-    if (priceFilter !== undefined) {
-      whereConditions.push({ price: priceFilter.toString() });
+    if (priceFilterMin !== undefined) {
+      if (priceCondition === 'lte') {
+        whereConditions.push({
+          price: {
+            lte: priceFilterMin.toString(),
+          },
+        });
+      } else if (priceCondition === 'range') {
+        whereConditions.push({
+          AND: [
+            {
+              price: {
+                gte: priceFilterMin.toString(),
+              },
+            },
+            {
+              price: {
+                lte: priceFilterMax!.toString(),
+              },
+            },
+          ],
+        });
+      } else {
+        whereConditions.push({
+          price: priceFilterMin.toString(),
+        });
+      }
     }
 
     if (categoryId !== undefined) {
@@ -2008,7 +2181,6 @@ export class ProductService {
     }
 
     let textSearchOrConditions: any[] = [];
-    // Only add text search if there's a meaningful query left and no category was explicitly matched
     if (normalizedQueryForTextSearch && categoryId === undefined) {
       textSearchOrConditions.push(
         {
@@ -2052,13 +2224,21 @@ export class ProductService {
     const finalWhereClause = { AND: whereConditions };
     console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
 
-    return this.prismaService.product.findMany({
+    // Debug: Log total matching products
+    const total = await this.prismaService.product.count({
+      where: finalWhereClause,
+    });
+    console.log(total, 'total matching products');
+
+    // Debug: Log matched products before returning
+    const products = await this.prismaService.product.findMany({
       where: finalWhereClause,
       select: {
         id: true,
         name: true,
         price: true,
         created_at: true,
+        category_id: true, // Include for debugging
       },
       orderBy: {
         created_at: 'asc',
@@ -2066,6 +2246,9 @@ export class ProductService {
       skip,
       take,
     });
+    console.log(products, 'returned products');
+
+    return products;
   }
 
   async getAllCategories(): Promise<{ id: number; name: string }[]> {
