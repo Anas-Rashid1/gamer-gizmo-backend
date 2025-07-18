@@ -17,7 +17,6 @@ import { Prisma } from '@prisma/client';
 // import Fuse from 'fuse.js';
 const Fuse = require('fuse.js');
 
-
 // Define the type for product with included relations for GetAllProducts and GetUserProducts
 interface ProductWithRelations {
   id: number;
@@ -217,228 +216,13 @@ export class ProductService {
     const [type, token] = request.headers?.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }
+  private fixedCategories = [
+    { id: 1, name: 'Laptops' },
+    { id: 2, name: 'Desktops' },
+    { id: 3, name: 'Components' },
+    { id: 4, name: 'Gaming Consoles' },
+  ];
 
-  // async GetAllProducts(queryData: any, user: any) {
-  //   try {
-  //     const token = this.extractTokenFromHeader(user);
-  //     let payload = null;
-  //     if (token) {
-  //       try {
-  //         payload = await this.jwtService.verifyAsync(token, {
-  //           secret: process.env.JWT_SECRET,
-  //         });
-  //       } catch (error) {
-  //         console.warn('JWT Verification Failed:', error.message);
-  //         payload = null;
-  //       }
-  //     }
-  //     const limit = 10;
-
-  //     // Build the `where` parameters dynamically
-  //     const WhereParameters: Record<string, any> = {};
-  //     WhereParameters.is_store_product = false;
-  //     WhereParameters.is_published = true;
-  //     if (queryData.title) {
-  //       WhereParameters.name = {
-  //         contains: queryData.title,
-  //         mode: 'insensitive',
-  //       };
-  //     }
-  //     if (queryData.show_on_home) {
-  //       WhereParameters.show_on_home = Boolean(queryData.show_on_home);
-  //     }
-  //     if (queryData.is_store_product && queryData.is_store_product == 'true') {
-  //       WhereParameters.is_store_product = Boolean(queryData.is_store_product);
-  //     }
-  //     if (queryData.top_rated) {
-  //       WhereParameters.top_rated = Boolean(queryData.top_rated);
-  //     }
-  //     if (queryData.category_id) {
-  //       WhereParameters.category_id = parseInt(queryData.category_id, 10);
-  //     }
-  //     if (queryData.model_id) {
-  //       WhereParameters.model_id = parseInt(queryData.model_id, 10);
-  //     }
-  //     if (queryData.brand_id) {
-  //       WhereParameters.brand_id = parseInt(queryData.brand_id, 10);
-  //     }
-  //     if (queryData.condition) {
-  //       const conditionValue = parseInt(queryData.condition, 10);
-  //       if (conditionValue === 2) {
-  //         WhereParameters.condition = { in: [2, 3, 4] };
-  //       } else {
-  //         WhereParameters.condition = conditionValue;
-  //       }
-  //     }
-  //     if (queryData.processor) {
-  //       const processorValue = parseInt(queryData.processor, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           { laptops: { some: { processor: processorValue } } },
-  //           { personal_computers: { some: { processor: processorValue } } },
-  //         ],
-  //       });
-  //     }
-  //     if (queryData.ram) {
-  //       const ramValue = parseInt(queryData.ram, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           { laptops: { some: { ram: ramValue } } },
-  //           { personal_computers: { some: { ram: ramValue } } },
-  //         ],
-  //       });
-  //     }
-  //     if (queryData.storage) {
-  //       const storageValue = parseInt(queryData.storage, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           { laptops: { some: { storage_type: storageValue } } },
-  //           { personal_computers: { some: { storage_type: storageValue } } },
-  //         ],
-  //       });
-  //     }
-  //     if (queryData.gpu) {
-  //       const gpuValue = parseInt(queryData.gpu, 10);
-  //       WhereParameters.AND = WhereParameters.AND || [];
-  //       WhereParameters.AND.push({
-  //         OR: [
-  //           { laptops: { some: { gpu: gpuValue } } },
-  //           { personal_computers: { some: { gpu: gpuValue } } },
-  //         ],
-  //       });
-  //     }
-  //     if (queryData.location) {
-  //       WhereParameters.location = parseInt(queryData.location, 10);
-  //     }
-  //     if (queryData.is_verified_by_admin) {
-  //       WhereParameters.is_verified_by_admin = Boolean(
-  //         queryData.is_verified_by_admin,
-  //       );
-  //     }
-
-  //     const selectFilters = {
-  //       brands: true,
-  //       models: true,
-  //       categories: true,
-  //       components: {
-  //         include: {
-  //           component_type_components_component_typeTocomponent_type: true,
-  //         },
-  //       },
-  //       personal_computers: true,
-  //       gaming_console: true,
-  //       laptops: true,
-  //       admin: true,
-  //       admin_product_admin_idToadmin: true,
-  //       users: true,
-  //       product_images: true,
-  //       location_product_locationTolocation: true,
-  //     };
-
-  //     const totalCount = await this.prismaService.product.count({
-  //       where: WhereParameters,
-  //     });
-
-  //     const queryOptions: any = {
-  //       include: selectFilters,
-  //       where: WhereParameters,
-  //     };
-  //     if (queryData.pageNo) {
-  //       queryOptions.skip = (parseInt(queryData.pageNo, 10) - 1) * limit;
-  //       queryOptions.take = limit;
-  //     }
-
-  //     const data: ProductWithRelations[] =
-  //       await this.prismaService.product.findMany(queryOptions);
-
-  //     const today = new Date();
-  //     const featured: any[] = [];
-  //     const nonFeatured: any[] = [];
-  //     const expiredFeaturedProductIds: number[] = [];
-
-  //     for (const e of data) {
-  //       if (e.is_featured) {
-  //         if (e.feature_start_date && e.feature_end_date) {
-  //           const start = new Date(e.feature_start_date);
-  //           const end = new Date(e.feature_end_date);
-  //           if (today < start || today > end) {
-  //             expiredFeaturedProductIds.push(e.id);
-  //             e.is_featured = false;
-  //             e.feature_start_date = null;
-  //             e.feature_end_date = null;
-  //           }
-  //         } else {
-  //           expiredFeaturedProductIds.push(e.id);
-  //           e.is_featured = false;
-  //         }
-  //       }
-
-  //       // Generate signed URLs for product images
-  //       const imageUrls = e.product_images.length
-  //         ? await this.s3Service.get_image_urls(
-  //             e.product_images.map((img) => img.image_url),
-  //           )
-  //         : [];
-  //       const imagesWithUrls = e.product_images.map((img, index) => ({
-  //         ...img,
-  //         image_url: imageUrls[index],
-  //       }));
-
-  //       const productInfo = {
-  //         is_featured: e.is_featured,
-  //         feature_start_date: e.feature_start_date,
-  //         feature_end_date: e.feature_end_date,
-  //         created_at: e.created_at,
-  //         created_by: e.is_store_product
-  //           ? 'GamerGizmo Store'
-  //           : e.users?.first_name + ' ' + e.users?.last_name,
-  //         name: e.name,
-  //         category: e.categories?.name,
-  //         id: e.id,
-  //         description: e.description,
-  //         price: e.price,
-  //         images: imagesWithUrls,
-  //         fav: payload
-  //           ? (
-  //               await this.prismaService.favourite_products.findMany({
-  //                 where: {
-  //                   user_id: parseInt(payload.id),
-  //                   product_id: e.id,
-  //                 },
-  //               })
-  //             ).length > 0
-  //           : false,
-  //       };
-  //       if (e.is_featured) {
-  //         featured.push(productInfo);
-  //       } else {
-  //         nonFeatured.push(productInfo);
-  //       }
-  //     }
-
-  //     if (expiredFeaturedProductIds.length > 0) {
-  //       await this.prismaService.product.updateMany({
-  //         where: { id: { in: expiredFeaturedProductIds } },
-  //         data: {
-  //           is_featured: false,
-  //           feature_start_date: null,
-  //           feature_end_date: null,
-  //         },
-  //       });
-  //     }
-
-  //     const finalData = [...featured, ...nonFeatured];
-  //     return { data: finalData, totalCount, message: 'success' };
-  //   } catch (error) {
-  //     throw new InternalServerErrorException(
-  //       'Failed to fetch products',
-  //       error.message,
-  //     );
-  //   }
-  // }
   async GetAllProducts(queryData: any, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
@@ -2075,51 +1859,205 @@ export class ProductService {
   }
 
   // For ai bot
+  // async findProductByQuery(
+  //   query: string,
+  //   skip = 0,
+  //   take = 10,
+  // ): Promise<{ id: number; name: string; created_at: Date }[]> {
+  //   const normalizedQuery = query.trim().toLowerCase();
+
+  //   // 🔎 Step 1: Get all category names
+  //   const categories = await this.prismaService.categories.findMany({
+  //     select: { id: true, name: true },
+  //   });
+
+  //   // 🔍 Step 2: Use Fuse.js to find best matching category
+  //   const fuse = new Fuse(categories, {
+  //     keys: ['name'],
+  //     threshold: 0.4, // fuzzy match sensitivity
+  //   });
+
+  //   const matchedCategory = fuse.search(normalizedQuery)?.[0]?.item;
+
+  //   // You can log or use this category match to boost results
+  //   const whereClause: any = {
+  //     is_published: true,
+  //     OR: [
+  //       { name: { contains: query, mode: 'insensitive' } },
+  //       { description: { contains: query, mode: 'insensitive' } },
+  //       { other_brand_name: { contains: query, mode: 'insensitive' } },
+  //       { categories: { name: { contains: query, mode: 'insensitive' } } },
+  //       { brands: { name: { contains: query, mode: 'insensitive' } } },
+  //       { models: { name: { contains: query, mode: 'insensitive' } } },
+  //     ],
+  //   };
+
+  //   // ✅ Boost category if fuzzy match found
+  //   if (matchedCategory) {
+  //     whereClause.OR.push({
+  //       category_id: matchedCategory.id,
+  //     });
+  //   }
+
+  //   return this.prismaService.product.findMany({
+  //     where: whereClause,
+  //     select: {
+  //       id: true,
+  //       name: true,
+  //       created_at: true,
+  //     },
+  //     orderBy: {
+  //       created_at: 'asc',
+  //     },
+  //     skip,
+  //     take,
+  //   });
+  // }
+
+  // For ai bot
   async findProductByQuery(
     query: string,
     skip = 0,
     take = 10,
-  ): Promise<{ id: number; name: string; created_at: Date }[]> {
-    const normalizedQuery = query.trim().toLowerCase();
+  ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+    const originalQuery = query.trim().toLowerCase();
+    let normalizedQueryForTextSearch = originalQuery;
+    let priceFilter: number | undefined;
 
-    // 🔎 Step 1: Get all category names
-    const categories = await this.prismaService.categories.findMany({
-      select: { id: true, name: true },
-    });
+    // 1. Extract Price and Clean Query for Text Search
+    const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
+      /,/g,
+      '',
+    );
+    const priceRegex = /(\d+)(?:\s*aed)?/;
+    const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
 
-    // 🔍 Step 2: Use Fuse.js to find best matching category
-    const fuse = new Fuse(categories, {
-      keys: ['name'],
-      threshold: 0.4, // fuzzy match sensitivity
-    });
-
-    const matchedCategory = fuse.search(normalizedQuery)?.[0]?.item;
-
-    // You can log or use this category match to boost results
-    const whereClause: any = {
-      is_published: true,
-      OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-        { other_brand_name: { contains: query, mode: 'insensitive' } },
-        { categories: { name: { contains: query, mode: 'insensitive' } } },
-        { brands: { name: { contains: query, mode: 'insensitive' } } },
-        { models: { name: { contains: query, mode: 'insensitive' } } },
-      ],
-    };
-
-    // ✅ Boost category if fuzzy match found
-    if (matchedCategory) {
-      whereClause.OR.push({
-        category_id: matchedCategory.id,
-      });
+    if (priceMatch && priceMatch[1]) {
+      priceFilter = parseInt(priceMatch[1], 10);
+      normalizedQueryForTextSearch = normalizedQueryForTextSearch
+        .replace(priceRegex, '')
+        .trim();
+      normalizedQueryForTextSearch = normalizedQueryForTextSearch
+        .replace(/^(for|with|a|an|the)\s+/, '')
+        .trim();
+      normalizedQueryForTextSearch = normalizedQueryForTextSearch
+        .replace(/\s+(for|with|a|an|the)$/, '')
+        .trim();
     }
 
+    // 2. Aggressive Cleaning for General Queries
+    const generalPhrases = [
+      'suggest',
+      'show',
+      'find',
+      'me',
+      'some',
+      'any',
+      'top',
+      'best',
+      'good',
+      'gaming',
+    ];
+    for (const phrase of generalPhrases) {
+      normalizedQueryForTextSearch = normalizedQueryForTextSearch
+        .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+        .trim();
+    }
+    normalizedQueryForTextSearch = normalizedQueryForTextSearch
+      .replace(/\s+/g, ' ')
+      .trim();
+    console.log(
+      normalizedQueryForTextSearch,
+      'normalizedQueryForTextSearch after cleaning',
+    );
+
+    // 3. Explicit Category Keyword Matching
+    let categoryId: number | undefined;
+    if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
+      categoryId = 1; // Laptops
+    } else if (
+      originalQuery.includes('desktop') ||
+      originalQuery.includes('desktops') ||
+      originalQuery.includes('pc') ||
+      originalQuery.includes('computer')
+    ) {
+      categoryId = 2; // Desktops
+    } else if (
+      originalQuery.includes('component') ||
+      originalQuery.includes('components')
+    ) {
+      categoryId = 3; // Components
+    } else if (
+      originalQuery.includes('console') ||
+      originalQuery.includes('consoles') ||
+      originalQuery.includes('gaming console')
+    ) {
+      categoryId = 4; // Gaming Consoles
+    }
+    console.log(categoryId, 'categoryId from explicit matching');
+
+    // 4. Build the WHERE Clause
+    let whereConditions: any[] = [{ is_published: true }];
+
+    if (priceFilter !== undefined) {
+      whereConditions.push({ price: priceFilter.toString() });
+    }
+
+    if (categoryId !== undefined) {
+      whereConditions.push({ category_id: categoryId });
+    }
+
+    let textSearchOrConditions: any[] = [];
+    // Only add text search if there's a meaningful query left and no category was explicitly matched
+    if (normalizedQueryForTextSearch && categoryId === undefined) {
+      textSearchOrConditions.push(
+        {
+          name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
+        },
+        {
+          description: {
+            contains: normalizedQueryForTextSearch,
+            mode: 'insensitive',
+          },
+        },
+        {
+          other_brand_name: {
+            contains: normalizedQueryForTextSearch,
+            mode: 'insensitive',
+          },
+        },
+        {
+          brands: {
+            name: {
+              contains: normalizedQueryForTextSearch,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          models: {
+            name: {
+              contains: normalizedQueryForTextSearch,
+              mode: 'insensitive',
+            },
+          },
+        },
+      );
+    }
+
+    if (textSearchOrConditions.length > 0) {
+      whereConditions.push({ OR: textSearchOrConditions });
+    }
+
+    const finalWhereClause = { AND: whereConditions };
+    console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+
     return this.prismaService.product.findMany({
-      where: whereClause,
+      where: finalWhereClause,
       select: {
         id: true,
         name: true,
+        price: true,
         created_at: true,
       },
       orderBy: {
@@ -2129,9 +2067,8 @@ export class ProductService {
       take,
     });
   }
+
   async getAllCategories(): Promise<{ id: number; name: string }[]> {
-    return this.prismaService.categories.findMany({
-      select: { id: true, name: true },
-    });
+    return this.fixedCategories; // Return hardcoded categories
   }
 }
