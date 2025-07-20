@@ -2814,6 +2814,7 @@ export class ProductService {
 
     return products;
   }
+  
   // final searching as an integer
   // async findProductByQuery(
   //   query: string,

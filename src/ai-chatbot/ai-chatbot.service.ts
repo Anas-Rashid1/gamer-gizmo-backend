@@ -462,6 +462,7 @@ export class AiChatbotService {
     const products = await this.productService.findProductByQuery(normalizedMessage, skip, take);
     console.log(`[generateReply] Products found: ${JSON.stringify(products, null, 2)}`);
 
+    
     // 2. Fuzzy matching for category
     const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
     const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
