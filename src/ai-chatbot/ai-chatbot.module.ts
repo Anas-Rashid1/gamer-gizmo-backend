@@ -5,8 +5,9 @@ import { AiChatbotController } from './ai-chatbot.controller';
 import { ConfigModule } from '@nestjs/config';
 import { CategoriesModule } from 'src/categories/categories.module';
 
+import { PrismaModule } from 'src/prisma/prisma.module';
 @Module({
-  imports: [ConfigModule, ProductModule, CategoriesModule],
+  imports: [ConfigModule, ProductModule, CategoriesModule,PrismaModule],
   controllers: [AiChatbotController],
   providers: [AiChatbotService],
 })

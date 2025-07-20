@@ -2253,25 +2253,293 @@ export class ProductService {
   // }
 
   // final
+  // async findProductByQuery(
+  //   query: string,
+  //   skip = 0,
+  //   take = 10,
+  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+  //   const originalQuery = query.trim().toLowerCase();
+  //   let normalizedQueryForTextSearch = originalQuery;
+  //   let priceFilterMin: number | undefined;
+  //   let priceFilterMax: number | undefined;
+  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
+
+  //   // 1. Extract Price and Detect Range
+  //   const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
+  //     /,/g,
+  //     '',
+  //   );
+  //   const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
+  //   const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
+  //   const priceRegex = /(\d+)(?:\s*aed)?/;
+
+  //   if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+  //     priceFilterMin = parseInt(rangeMatch[1], 10);
+  //     priceFilterMax = parseInt(rangeMatch[2], 10);
+  //     priceCondition = 'range';
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(rangeRegex, '')
+  //       .replace(/\b(between|and)\b/, '')
+  //       .trim();
+  //   } else {
+  //     const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+  //     if (priceMatch && priceMatch[1]) {
+  //       priceFilterMin = parseInt(priceMatch[1], 10);
+  //       priceCondition =
+  //         originalQuery.includes('under') || originalQuery.includes('below')
+  //           ? 'lte'
+  //           : 'exact';
+  //       normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //         .replace(priceRegex, '')
+  //         .replace(/\b(under|below)\b/, '')
+  //         .trim();
+  //     }
+  //   }
+
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/^(for|with|a|an|the)\s+/, '')
+  //     .trim();
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+(for|with|a|an|the)$/, '')
+  //     .trim();
+
+  //   // 2. Aggressive Cleaning for General Queries
+  //   const generalPhrases = [
+  //     'suggest',
+  //     'show',
+  //     'find',
+  //     'me',
+  //     'some',
+  //     'any',
+  //     'top',
+  //     'best',
+  //     'good',
+  //     'gaming',
+  //   ];
+  //   for (const phrase of generalPhrases) {
+  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //       .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+  //       .trim();
+  //   }
+  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
+  //     .replace(/\s+/g, ' ')
+  //     .trim();
+  //   console.log(
+  //     normalizedQueryForTextSearch,
+  //     'normalizedQueryForTextSearch after cleaning',
+  //   );
+
+  //   // 3. Explicit Category Keyword Matching
+  //   let categoryId: number | undefined;
+  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
+  //     categoryId = 1; // Laptops
+  //   } else if (
+  //     originalQuery.includes('desktop') ||
+  //     originalQuery.includes('desktops') ||
+  //     originalQuery.includes('pc') ||
+  //     originalQuery.includes('computer')
+  //   ) {
+  //     categoryId = 2; // Desktops
+  //   } else if (
+  //     originalQuery.includes('component') ||
+  //     originalQuery.includes('components')
+  //   ) {
+  //     categoryId = 3; // Components
+  //   } else if (
+  //     originalQuery.includes('console') ||
+  //     originalQuery.includes('consoles') ||
+  //     originalQuery.includes('gaming console')
+  //   ) {
+  //     categoryId = 4; // Gaming Consoles
+  //   }
+  //   console.log(categoryId, 'categoryId from explicit matching');
+
+  //   // 4. Build the WHERE Clause
+  //   let whereConditions: any[] = [{ is_published: true }];
+
+  //   if (priceFilterMin !== undefined) {
+  //     if (priceCondition === 'lte') {
+  //       whereConditions.push({
+  //         price: {
+  //           lte: priceFilterMin.toString(),
+  //         },
+  //       });
+  //     } else if (priceCondition === 'range') {
+  //       whereConditions.push({
+  //         AND: [
+  //           {
+  //             price: {
+  //               gte: priceFilterMin.toString(),
+  //             },
+  //           },
+  //           {
+  //             price: {
+  //               lte: priceFilterMax!.toString(),
+  //             },
+  //           },
+  //         ],
+  //       });
+  //     } else {
+  //       whereConditions.push({
+  //         price: priceFilterMin.toString(),
+  //       });
+  //     }
+  //   }
+
+  //   if (categoryId !== undefined) {
+  //     whereConditions.push({ category_id: categoryId });
+  //   }
+
+  //   let textSearchOrConditions: any[] = [];
+  //   if (normalizedQueryForTextSearch && categoryId === undefined) {
+  //     textSearchOrConditions.push(
+  //       {
+  //         name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
+  //       },
+  //       {
+  //         description: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         other_brand_name: {
+  //           contains: normalizedQueryForTextSearch,
+  //           mode: 'insensitive',
+  //         },
+  //       },
+  //       {
+  //         brands: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //       {
+  //         models: {
+  //           name: {
+  //             contains: normalizedQueryForTextSearch,
+  //             mode: 'insensitive',
+  //           },
+  //         },
+  //       },
+  //     );
+  //   }
+
+  //   if (textSearchOrConditions.length > 0) {
+  //     whereConditions.push({ OR: textSearchOrConditions });
+  //   }
+
+  //   const finalWhereClause = { AND: whereConditions };
+  //   console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+
+  //   // 5. Execute Query with Raw SQL for Price Casting
+  //   let products;
+  //   if (priceFilterMin !== undefined) {
+  //     // Build raw SQL query for price casting
+  //     let priceConditionSql = '';
+  //     const queryParams: any[] = [];
+
+  //     if (priceCondition === 'lte') {
+  //       priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
+  //       queryParams.push(priceFilterMin);
+  //     } else if (priceCondition === 'range') {
+  //       priceConditionSql = `CAST(price AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+  //       queryParams.push(priceFilterMin, priceFilterMax);
+  //     } else {
+  //       priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
+  //       queryParams.push(priceFilterMin);
+  //     }
+
+  //     const baseQuery = `
+  //     SELECT id, name, price, created_at, category_id
+  //     FROM product
+  //     WHERE is_published = true
+  //     ${categoryId !== undefined ? `AND category_id = $${queryParams.length + 1}` : ''}
+  //     ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
+  //     ${
+  //       textSearchOrConditions.length > 0
+  //         ? `AND (
+  //             LOWER(name) LIKE $${queryParams.length + 1}
+  //             OR LOWER(description) LIKE $${queryParams.length + 1}
+  //             OR LOWER(other_brand_name) LIKE $${queryParams.length + 1}
+  //             OR EXISTS (
+  //               SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${queryParams.length + 1}
+  //             )
+  //             OR EXISTS (
+  //               SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${queryParams.length + 1}
+  //             )
+  //           )`
+  //         : ''
+  //     }
+  //     ORDER BY created_at ASC
+  //     LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+  //   `;
+  //     if (categoryId !== undefined) queryParams.push(categoryId);
+  //     if (textSearchOrConditions.length > 0)
+  //       queryParams.push(`%${normalizedQueryForTextSearch}%`);
+  //     queryParams.push(take, skip);
+
+  //     products = await this.prismaService.$queryRawUnsafe<
+  //       {
+  //         id: number;
+  //         name: string;
+  //         price: string;
+  //         created_at: Date;
+  //         category_id: number;
+  //       }[]
+  //     >(baseQuery, ...queryParams);
+  //   } else {
+  //     // Fallback to original Prisma query if no price filter
+  //     products = await this.prismaService.product.findMany({
+  //       where: finalWhereClause,
+  //       select: {
+  //         id: true,
+  //         name: true,
+  //         price: true,
+  //         created_at: true,
+  //         category_id: true,
+  //       },
+  //       orderBy: {
+  //         created_at: 'asc',
+  //       },
+  //       skip,
+  //       take,
+  //     });
+  //   }
+
+  //   // Debug: Log total matching products
+  //   const total = await this.prismaService.product.count({
+  //     where: finalWhereClause,
+  //   });
+  //   console.log(total, 'total matching products');
+  //   console.log(products, 'returned products');
+
+  //   return products;
+  // }
+
+
   async findProductByQuery(
     query: string,
     skip = 0,
     take = 10,
   ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
+    console.log(`[findProductByQuery] Input query: ${query}, skip: ${skip}, take: ${take}`);
     const originalQuery = query.trim().toLowerCase();
+    console.log(`[findProductByQuery] Normalized original query: ${originalQuery}`);
     let normalizedQueryForTextSearch = originalQuery;
     let priceFilterMin: number | undefined;
     let priceFilterMax: number | undefined;
     let priceCondition: 'exact' | 'lte' | 'range' | undefined;
 
     // 1. Extract Price and Detect Range
-    const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
-      /,/g,
-      '',
-    );
+    const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(/,/g, '');
+    console.log(`[findProductByQuery] Cleaned query for price parsing: ${cleanedQueryForPriceParsing}`);
     const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
     const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
     const priceRegex = /(\d+)(?:\s*aed)?/;
+    console.log(`[findProductByQuery] Range regex match: ${JSON.stringify(rangeMatch)}`);
 
     if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
       priceFilterMin = parseInt(rangeMatch[1], 10);
@@ -2281,8 +2549,10 @@ export class ProductService {
         .replace(rangeRegex, '')
         .replace(/\b(between|and)\b/, '')
         .trim();
+      console.log(`[findProductByQuery] Price range detected: min=${priceFilterMin}, max=${priceFilterMax}, condition=${priceCondition}`);
     } else {
       const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
+      console.log(`[findProductByQuery] Price regex match: ${JSON.stringify(priceMatch)}`);
       if (priceMatch && priceMatch[1]) {
         priceFilterMin = parseInt(priceMatch[1], 10);
         priceCondition =
@@ -2293,6 +2563,9 @@ export class ProductService {
           .replace(priceRegex, '')
           .replace(/\b(under|below)\b/, '')
           .trim();
+        console.log(`[findProductByQuery] Single price detected: value=${priceFilterMin}, condition=${priceCondition}`);
+      } else {
+        console.log(`[findProductByQuery] No price detected in query`);
       }
     }
 
@@ -2302,6 +2575,7 @@ export class ProductService {
     normalizedQueryForTextSearch = normalizedQueryForTextSearch
       .replace(/\s+(for|with|a|an|the)$/, '')
       .trim();
+    console.log(`[findProductByQuery] Query after removing articles: ${normalizedQueryForTextSearch}`);
 
     // 2. Aggressive Cleaning for General Queries
     const generalPhrases = [
@@ -2324,10 +2598,7 @@ export class ProductService {
     normalizedQueryForTextSearch = normalizedQueryForTextSearch
       .replace(/\s+/g, ' ')
       .trim();
-    console.log(
-      normalizedQueryForTextSearch,
-      'normalizedQueryForTextSearch after cleaning',
-    );
+    console.log(`[findProductByQuery] Normalized query after cleaning: ${normalizedQueryForTextSearch}`);
 
     // 3. Explicit Category Keyword Matching
     let categoryId: number | undefined;
@@ -2352,10 +2623,11 @@ export class ProductService {
     ) {
       categoryId = 4; // Gaming Consoles
     }
-    console.log(categoryId, 'categoryId from explicit matching');
+    console.log(`[findProductByQuery] Category ID from explicit matching: ${categoryId || 'none'}`);
 
     // 4. Build the WHERE Clause
     let whereConditions: any[] = [{ is_published: true }];
+    console.log(`[findProductByQuery] Initial where conditions: ${JSON.stringify(whereConditions, null, 2)}`);
 
     if (priceFilterMin !== undefined) {
       if (priceCondition === 'lte') {
@@ -2384,10 +2656,12 @@ export class ProductService {
           price: priceFilterMin.toString(),
         });
       }
+      console.log(`[findProductByQuery] Price where condition added: ${JSON.stringify(whereConditions[whereConditions.length - 1], null, 2)}`);
     }
 
     if (categoryId !== undefined) {
       whereConditions.push({ category_id: categoryId });
+      console.log(`[findProductByQuery] Category where condition added: category_id=${categoryId}`);
     }
 
     let textSearchOrConditions: any[] = [];
@@ -2425,14 +2699,16 @@ export class ProductService {
           },
         },
       );
+      console.log(`[findProductByQuery] Text search conditions: ${JSON.stringify(textSearchOrConditions, null, 2)}`);
     }
 
     if (textSearchOrConditions.length > 0) {
       whereConditions.push({ OR: textSearchOrConditions });
+      console.log(`[findProductByQuery] OR condition added for text search: ${JSON.stringify(textSearchOrConditions, null, 2)}`);
     }
 
     const finalWhereClause = { AND: whereConditions };
-    console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
+    console.log(`[findProductByQuery] Final where clause: ${JSON.stringify(finalWhereClause, null, 2)}`);
 
     // 5. Execute Query with Raw SQL for Price Casting
     let products;
@@ -2440,6 +2716,7 @@ export class ProductService {
       // Build raw SQL query for price casting
       let priceConditionSql = '';
       const queryParams: any[] = [];
+      console.log(`[findProductByQuery] Building raw SQL query for price condition: ${priceCondition}`);
 
       if (priceCondition === 'lte') {
         priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
@@ -2451,70 +2728,89 @@ export class ProductService {
         priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
         queryParams.push(priceFilterMin);
       }
+      console.log(`[findProductByQuery] Price condition SQL: ${priceConditionSql}, params: ${queryParams}`);
 
+      let paramIndex = queryParams.length + 1;
       const baseQuery = `
       SELECT id, name, price, created_at, category_id
       FROM product
       WHERE is_published = true
-      ${categoryId !== undefined ? `AND category_id = $${queryParams.length + 1}` : ''}
+      ${categoryId !== undefined ? `AND category_id = $${paramIndex++}` : ''}
       ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
       ${
         textSearchOrConditions.length > 0
           ? `AND (
-              LOWER(name) LIKE $${queryParams.length + 1}
-              OR LOWER(description) LIKE $${queryParams.length + 1}
-              OR LOWER(other_brand_name) LIKE $${queryParams.length + 1}
+              LOWER(name) LIKE $${paramIndex++}
+              OR LOWER(description) LIKE $${paramIndex++}
+              OR LOWER(other_brand_name) LIKE $${paramIndex++}
               OR EXISTS (
-                SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${queryParams.length + 1}
+                SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${paramIndex++}
               )
               OR EXISTS (
-                SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${queryParams.length + 1}
+                SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${paramIndex++}
               )
             )`
           : ''
       }
       ORDER BY created_at ASC
-      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
       if (categoryId !== undefined) queryParams.push(categoryId);
-      if (textSearchOrConditions.length > 0)
-        queryParams.push(`%${normalizedQueryForTextSearch}%`);
+      if (textSearchOrConditions.length > 0) queryParams.push(...Array(5).fill(`%${normalizedQueryForTextSearch}%`));
       queryParams.push(take, skip);
+      console.log(`[findProductByQuery] Raw SQL query: ${baseQuery}`);
+      console.log(`[findProductByQuery] Query parameters: ${JSON.stringify(queryParams)}`);
 
-      products = await this.prismaService.$queryRawUnsafe<
-        {
-          id: number;
-          name: string;
-          price: string;
-          created_at: Date;
-          category_id: number;
-        }[]
-      >(baseQuery, ...queryParams);
+      try {
+        products = await this.prismaService.$queryRawUnsafe<
+          {
+            id: number;
+            name: string;
+            price: string;
+            created_at: Date;
+            category_id: number;
+          }[]
+        >(baseQuery, ...queryParams);
+        console.log(`[findProductByQuery] Raw SQL query executed successfully, results: ${JSON.stringify(products, null, 2)}`);
+      } catch (error) {
+        console.error(`[findProductByQuery] Error executing raw SQL query: ${error.message}`);
+        throw error;
+      }
     } else {
-      // Fallback to original Prisma query if no price filter
-      products = await this.prismaService.product.findMany({
-        where: finalWhereClause,
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          created_at: true,
-          category_id: true,
-        },
-        orderBy: {
-          created_at: 'asc',
-        },
-        skip,
-        take,
-      });
+      console.log(`[findProductByQuery] Using Prisma query (no price filter)`);
+      try {
+        products = await this.prismaService.product.findMany({
+          where: finalWhereClause,
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            created_at: true,
+            category_id: true,
+          },
+          orderBy: {
+            created_at: 'asc',
+          },
+          skip,
+          take,
+        });
+        console.log(`[findProductByQuery] Prisma query executed successfully, results: ${JSON.stringify(products, null, 2)}`);
+      } catch (error) {
+        console.error(`[findProductByQuery] Error executing Prisma query: ${error.message}`);
+        throw error;
+      }
     }
 
     // Debug: Log total matching products
-    const total = await this.prismaService.product.count({
-      where: finalWhereClause,
-    });
-    console.log(total, 'total matching products');
-    console.log(products, 'returned products');
+    try {
+      const total = await this.prismaService.product.count({
+        where: finalWhereClause,
+      });
+      console.log(`[findProductByQuery] Total matching products: ${total}`);
+      console.log(`[findProductByQuery] Returned products: ${JSON.stringify(products, null, 2)}`);
+    } catch (error) {
+      console.error(`[findProductByQuery] Error counting total products: ${error.message}`);
+    }
 
     return products;
   }
