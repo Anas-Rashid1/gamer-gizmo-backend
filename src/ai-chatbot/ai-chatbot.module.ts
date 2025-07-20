@@ -10,5 +10,6 @@ import { PrismaModule } from 'src/prisma/prisma.module';
   imports: [ConfigModule, ProductModule, CategoriesModule,PrismaModule],
   controllers: [AiChatbotController],
   providers: [AiChatbotService],
+  
 })
 export class AiChatbotModule {}
