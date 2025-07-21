@@ -442,31 +442,42 @@ export class AiChatbotService {
       const response = await this.categoriesService.GetAllCategories();
       this.cachedCategories = response.data;
     }
-    return this.cachedCategories.length ? this.cachedCategories : this.fixedCategories;
+    return this.cachedCategories.length
+      ? this.cachedCategories
+      : this.fixedCategories;
   }
-
-  
 
   async generateReply(
     message: string,
     skip = 0,
     take = 10,
   ): Promise<{ reply: string; productLink?: string }> {
-    console.log(`[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}`);
+    console.log(
+      `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}`,
+    );
     const normalizedMessage = message.trim().toLowerCase();
     console.log(`[generateReply] Normalized message: ${normalizedMessage}`);
     const categories = await this.getCategoriesForMatching();
-    console.log(`[generateReply] Categories for matching: ${JSON.stringify(categories, null, 2)}`);
+    console.log(
+      `[generateReply] Categories for matching: ${JSON.stringify(categories, null, 2)}`,
+    );
 
     // 1. Find matching products
-    const products = await this.productService.findProductByQuery(normalizedMessage, skip, take);
-    console.log(`[generateReply] Products found: ${JSON.stringify(products, null, 2)}`);
+    const products = await this.productService.findProductByQuery(
+      normalizedMessage,
+      skip,
+      take,
+    );
+    console.log(
+      `[generateReply] Products found: ${JSON.stringify(products, null, 2)}`,
+    );
 
-    
     // 2. Fuzzy matching for category
     const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
     const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
-    console.log(`[generateReply] Matched category: ${JSON.stringify(matchedCategory, null, 2) || 'none'}`);
+    console.log(
+      `[generateReply] Matched category: ${JSON.stringify(matchedCategory, null, 2) || 'none'}`,
+    );
 
     // 3. Generate AI response
     const systemPrompt = `
@@ -513,9 +524,12 @@ ${
           },
         ],
       });
-      console.log(`[generateReply] AI response: ${JSON.stringify(aiResponse.choices?.[0]?.message?.content, null, 2)}`);
+      console.log(
+        `[generateReply] AI response: ${JSON.stringify(aiResponse.choices?.[0]?.message?.content, null, 2)}`,
+      );
 
-      const reply = aiResponse.choices?.[0]?.message?.content?.trim() ||
+      const reply =
+        aiResponse.choices?.[0]?.message?.content?.trim() ||
         "Sorry, I couldn't understand your question.";
 
       // 4. Format product links
@@ -529,7 +543,9 @@ ${
           .join('\n');
         console.log(`[generateReply] Formatted product links: ${productLinks}`);
       } else {
-        console.log(`[generateReply] No product links generated (no products found)`);
+        console.log(
+          `[generateReply] No product links generated (no products found)`,
+        );
       }
 
       const showMoreNote =
@@ -552,7 +568,9 @@ ${
           : undefined,
       };
     } catch (error) {
-      console.error(`[generateReply] Error calling OpenAI API: ${error.message}`);
+      console.error(
+        `[generateReply] Error calling OpenAI API: ${error.message}`,
+      );
       throw error;
     }
   }
