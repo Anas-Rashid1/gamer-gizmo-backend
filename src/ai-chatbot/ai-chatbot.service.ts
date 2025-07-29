@@ -464,7 +464,7 @@ export class AiChatbotService {
     if (greetingRegex.test(normalizedMessage)) {
       return {
         reply:
-          'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in.',
+          'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in (e.g., Laptops, Desktops, Components, Gaming Consoles).',
         productLink: undefined,
       };
     }
@@ -504,10 +504,11 @@ Important Rules:
 - For the user query "${normalizedMessage}", we found ${products.length} matching products
 - ${matchedCategory ? `The most relevant category is "${matchedCategory.name}"` : 'No specific category matched'}
 - Show only ${take} product results at a time
-- Sort by newest first
+- Sort by price (ascending) for price-related queries, otherwise by newest first
 - Include clickable links for products: [Product Name](https://gamergizmo.com/product-details/{id})
-- If no products are found, suggest refining the query
-- Support price queries like "under X", "above X", "price = X", or "between X and Y"
+- If no products are found or the query is vague (e.g., "products"), respond with: "Sorry, we couldn't find any products matching '${normalizedMessage}'. Please specify a category like Laptops, Desktops, Components, or Gaming Consoles, or adjust your price range."
+- Support price queries like "under X", "below X", "less than X", "cheaper than X", "in range X-Y", "between X and Y"
+- Prices in the database may include "AED" and commas (e.g., "3,600 AED"). Parse them correctly as integers for comparison
 - Provide concise, friendly, and clear responses
 
 Current matching products:
@@ -540,9 +541,9 @@ ${
         `[generateReply] AI response: ${JSON.stringify(aiResponse.choices?.[0]?.message?.content, null, 2)}`,
       );
 
-      const reply =
+      let reply =
         aiResponse.choices?.[0]?.message?.content?.trim() ||
-        "Sorry, I couldn't understand your question.";
+        `Sorry, we couldn't find any products matching "${normalizedMessage}". Please specify a category like Laptops, Desktops, Components, or Gaming Consoles, or adjust your price range.`;
 
       // 4. Format product links
       let productLinks = '';
@@ -554,10 +555,6 @@ ${
           )
           .join('\n');
         console.log(`[generateReply] Formatted product links: ${productLinks}`);
-      } else {
-        console.log(
-          `[generateReply] No product links generated (no products found)`,
-        );
       }
 
       const showMoreNote =
@@ -566,11 +563,9 @@ ${
           : '';
       console.log(`[generateReply] Show more note: ${showMoreNote}`);
 
-      const finalReply =
-        (productLinks
-          ? `${reply}\n\nHere are some options:\n${productLinks}`
-          : `${reply}\n\nSorry, we couldn't find matching products. Try refining your query (e.g., specify brand, category, or price range).`) +
-        showMoreNote;
+      const finalReply = productLinks
+        ? `${reply}\n\nHere are some options:\n${productLinks}${showMoreNote}`
+        : `${reply}${showMoreNote}`;
       console.log(`[generateReply] Final reply: ${finalReply}`);
 
       return {
@@ -583,7 +578,10 @@ ${
       console.error(
         `[generateReply] Error calling OpenAI API: ${error.message}`,
       );
-      throw error;
+      return {
+        reply: `Sorry, something went wrong. Please try again or refine your query.`,
+        productLink: undefined,
+      };
     }
   }
 }

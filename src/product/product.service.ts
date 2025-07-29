@@ -2117,7 +2117,7 @@ export class ProductService {
   //     .trim();
   //   console.log(
   //     normalizedQueryForTextSearch,
-//     'normalizedQueryForTextSearch after cleaning',
+  //     'normalizedQueryForTextSearch after cleaning',
   //   );
 
   //   // 3. Explicit Category Keyword Matching
@@ -2519,65 +2519,59 @@ export class ProductService {
   //   return products;
   // }
 
-
   async findProductByQuery(
     query: string,
     skip = 0,
     take = 10,
   ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
-    console.log(`[findProductByQuery] Input query: ${query}, skip: ${skip}, take: ${take}`);
+    console.log(
+      `[findProductByQuery] Input query: ${query}, skip: ${skip}, take: ${take}`,
+    );
     const originalQuery = query.trim().toLowerCase();
-    console.log(`[findProductByQuery] Normalized original query: ${originalQuery}`);
+    console.log(
+      `[findProductByQuery] Normalized original query: ${originalQuery}`,
+    );
     let normalizedQueryForTextSearch = originalQuery;
     let priceFilterMin: number | undefined;
     let priceFilterMax: number | undefined;
     let priceCondition: 'exact' | 'lte' | 'range' | undefined;
 
     // 1. Extract Price and Detect Range
-    const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(/,/g, '');
-    console.log(`[findProductByQuery] Cleaned query for price parsing: ${cleanedQueryForPriceParsing}`);
-    const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
-    const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
-    const priceRegex = /(\d+)(?:\s*aed)?/;
-    console.log(`[findProductByQuery] Range regex match: ${JSON.stringify(rangeMatch)}`);
+    const priceKeywords =
+      /\b(under|below|less than|less|cheaper than)\s+(\d+[,.\d]*)(?:\s*aed)?/i;
+    const rangeKeywords =
+      /\b(between|from|in range)\s+(\d+[,.\d]*)\s*(?:and|to|-)\s*(\d+[,.\d]*)(?:\s*aed)?/i;
+    const cleanedQuery = normalizedQueryForTextSearch.replace(/,/g, '');
+    console.log(
+      `[findProductByQuery] Cleaned query for price parsing: ${cleanedQuery}`,
+    );
 
-    if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
-      priceFilterMin = parseInt(rangeMatch[1], 10);
-      priceFilterMax = parseInt(rangeMatch[2], 10);
+    if (rangeKeywords.test(cleanedQuery)) {
+      const rangeMatch = cleanedQuery.match(rangeKeywords);
+      priceFilterMin = parseInt(rangeMatch[2].replace(/[,.\s]/g, ''), 10);
+      priceFilterMax = parseInt(rangeMatch[3].replace(/[,.\s]/g, ''), 10);
       priceCondition = 'range';
-      normalizedQueryForTextSearch = normalizedQueryForTextSearch
-        .replace(rangeRegex, '')
-        .replace(/\b(between|and)\b/, '')
+      normalizedQueryForTextSearch = cleanedQuery
+        .replace(rangeKeywords, '')
         .trim();
-      console.log(`[findProductByQuery] Price range detected: min=${priceFilterMin}, max=${priceFilterMax}, condition=${priceCondition}`);
+      console.log(
+        `[findProductByQuery] Price range detected: min=${priceFilterMin}, max=${priceFilterMax}, condition=${priceCondition}`,
+      );
+    } else if (priceKeywords.test(cleanedQuery)) {
+      const priceMatch = cleanedQuery.match(priceKeywords);
+      priceFilterMin = parseInt(priceMatch[2].replace(/[,.\s]/g, ''), 10);
+      priceCondition = 'lte';
+      normalizedQueryForTextSearch = cleanedQuery
+        .replace(priceKeywords, '')
+        .trim();
+      console.log(
+        `[findProductByQuery] Single price detected: value=${priceFilterMin}, condition=${priceCondition}`,
+      );
     } else {
-      const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
-      console.log(`[findProductByQuery] Price regex match: ${JSON.stringify(priceMatch)}`);
-      if (priceMatch && priceMatch[1]) {
-        priceFilterMin = parseInt(priceMatch[1], 10);
-        priceCondition =
-          originalQuery.includes('under') || originalQuery.includes('below')
-            ? 'lte'
-            : 'exact';
-        normalizedQueryForTextSearch = normalizedQueryForTextSearch
-          .replace(priceRegex, '')
-          .replace(/\b(under|below)\b/, '')
-          .trim();
-        console.log(`[findProductByQuery] Single price detected: value=${priceFilterMin}, condition=${priceCondition}`);
-      } else {
-        console.log(`[findProductByQuery] No price detected in query`);
-      }
+      console.log(`[findProductByQuery] No price detected in query`);
     }
 
-    normalizedQueryForTextSearch = normalizedQueryForTextSearch
-      .replace(/^(for|with|a|an|the)\s+/, '')
-      .trim();
-    normalizedQueryForTextSearch = normalizedQueryForTextSearch
-      .replace(/\s+(for|with|a|an|the)$/, '')
-      .trim();
-    console.log(`[findProductByQuery] Query after removing articles: ${normalizedQueryForTextSearch}`);
-
-    // 2. Aggressive Cleaning for General Queries
+    // 2. Clean Query
     const generalPhrases = [
       'suggest',
       'show',
@@ -2589,16 +2583,27 @@ export class ProductService {
       'best',
       'good',
       'gaming',
+      'less',
+      'cheaper',
+      'within',
+      'price',
+      'priced',
+      'in range',
+      'between',
     ];
     for (const phrase of generalPhrases) {
       normalizedQueryForTextSearch = normalizedQueryForTextSearch
-        .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
+        .replace(new RegExp(`\\b${phrase}\\b`, 'gi'), '')
         .trim();
     }
     normalizedQueryForTextSearch = normalizedQueryForTextSearch
+      .replace(/^(for|with|a|an|the)\s+/i, '')
+      .replace(/\s+(for|with|a|an|the)$/i, '')
       .replace(/\s+/g, ' ')
       .trim();
-    console.log(`[findProductByQuery] Normalized query after cleaning: ${normalizedQueryForTextSearch}`);
+    console.log(
+      `[findProductByQuery] Normalized query after cleaning: ${normalizedQueryForTextSearch}`,
+    );
 
     // 3. Explicit Category Keyword Matching
     let categoryId: number | undefined;
@@ -2623,112 +2628,33 @@ export class ProductService {
     ) {
       categoryId = 4; // Gaming Consoles
     }
-    console.log(`[findProductByQuery] Category ID from explicit matching: ${categoryId || 'none'}`);
+    console.log(
+      `[findProductByQuery] Category ID from explicit matching: ${categoryId || 'none'}`,
+    );
 
     // 4. Build the WHERE Clause
     let whereConditions: any[] = [{ is_published: true }];
-    console.log(`[findProductByQuery] Initial where conditions: ${JSON.stringify(whereConditions, null, 2)}`);
+    console.log(
+      `[findProductByQuery] Initial where conditions: ${JSON.stringify(whereConditions, null, 2)}`,
+    );
 
     if (priceFilterMin !== undefined) {
-      if (priceCondition === 'lte') {
-        whereConditions.push({
-          price: {
-            lte: priceFilterMin.toString(),
-          },
-        });
-      } else if (priceCondition === 'range') {
-        whereConditions.push({
-          AND: [
-            {
-              price: {
-                gte: priceFilterMin.toString(),
-              },
-            },
-            {
-              price: {
-                lte: priceFilterMax!.toString(),
-              },
-            },
-          ],
-        });
-      } else {
-        whereConditions.push({
-          price: priceFilterMin.toString(),
-        });
-      }
-      console.log(`[findProductByQuery] Price where condition added: ${JSON.stringify(whereConditions[whereConditions.length - 1], null, 2)}`);
-    }
-
-    if (categoryId !== undefined) {
-      whereConditions.push({ category_id: categoryId });
-      console.log(`[findProductByQuery] Category where condition added: category_id=${categoryId}`);
-    }
-
-    let textSearchOrConditions: any[] = [];
-    if (normalizedQueryForTextSearch && categoryId === undefined) {
-      textSearchOrConditions.push(
-        {
-          name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
-        },
-        {
-          description: {
-            contains: normalizedQueryForTextSearch,
-            mode: 'insensitive',
-          },
-        },
-        {
-          other_brand_name: {
-            contains: normalizedQueryForTextSearch,
-            mode: 'insensitive',
-          },
-        },
-        {
-          brands: {
-            name: {
-              contains: normalizedQueryForTextSearch,
-              mode: 'insensitive',
-            },
-          },
-        },
-        {
-          models: {
-            name: {
-              contains: normalizedQueryForTextSearch,
-              mode: 'insensitive',
-            },
-          },
-        },
-      );
-      console.log(`[findProductByQuery] Text search conditions: ${JSON.stringify(textSearchOrConditions, null, 2)}`);
-    }
-
-    if (textSearchOrConditions.length > 0) {
-      whereConditions.push({ OR: textSearchOrConditions });
-      console.log(`[findProductByQuery] OR condition added for text search: ${JSON.stringify(textSearchOrConditions, null, 2)}`);
-    }
-
-    const finalWhereClause = { AND: whereConditions };
-    console.log(`[findProductByQuery] Final where clause: ${JSON.stringify(finalWhereClause, null, 2)}`);
-
-    // 5. Execute Query with Raw SQL for Price Casting
-    let products;
-    if (priceFilterMin !== undefined) {
-      // Build raw SQL query for price casting
+      // Use raw SQL for price casting to handle strings like "3,600 AED"
       let priceConditionSql = '';
       const queryParams: any[] = [];
-      console.log(`[findProductByQuery] Building raw SQL query for price condition: ${priceCondition}`);
-
       if (priceCondition === 'lte') {
-        priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
+        priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) <= $${queryParams.length + 1}`;
         queryParams.push(priceFilterMin);
       } else if (priceCondition === 'range') {
-        priceConditionSql = `CAST(price AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+        priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
         queryParams.push(priceFilterMin, priceFilterMax);
       } else {
-        priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
+        priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) = $${queryParams.length + 1}`;
         queryParams.push(priceFilterMin);
       }
-      console.log(`[findProductByQuery] Price condition SQL: ${priceConditionSql}, params: ${queryParams}`);
+      console.log(
+        `[findProductByQuery] Price condition SQL: ${priceConditionSql}, params: ${queryParams}`,
+      );
 
       let paramIndex = queryParams.length + 1;
       const baseQuery = `
@@ -2738,7 +2664,7 @@ export class ProductService {
       ${categoryId !== undefined ? `AND category_id = $${paramIndex++}` : ''}
       ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
       ${
-        textSearchOrConditions.length > 0
+        normalizedQueryForTextSearch
           ? `AND (
               LOWER(name) LIKE $${paramIndex++}
               OR LOWER(description) LIKE $${paramIndex++}
@@ -2752,17 +2678,20 @@ export class ProductService {
             )`
           : ''
       }
-      ORDER BY created_at ASC
+      ORDER BY CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) ASC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
       if (categoryId !== undefined) queryParams.push(categoryId);
-      if (textSearchOrConditions.length > 0) queryParams.push(...Array(5).fill(`%${normalizedQueryForTextSearch}%`));
+      if (normalizedQueryForTextSearch)
+        queryParams.push(...Array(5).fill(`%${normalizedQueryForTextSearch}%`));
       queryParams.push(take, skip);
       console.log(`[findProductByQuery] Raw SQL query: ${baseQuery}`);
-      console.log(`[findProductByQuery] Query parameters: ${JSON.stringify(queryParams)}`);
+      console.log(
+        `[findProductByQuery] Query parameters: ${JSON.stringify(queryParams)}`,
+      );
 
       try {
-        products = await this.prismaService.$queryRawUnsafe<
+        const products = await this.prismaService.$queryRawUnsafe<
           {
             id: number;
             name: string;
@@ -2771,15 +2700,84 @@ export class ProductService {
             category_id: number;
           }[]
         >(baseQuery, ...queryParams);
-        console.log(`[findProductByQuery] Raw SQL query executed successfully, results: ${JSON.stringify(products, null, 2)}`);
+        console.log(
+          `[findProductByQuery] Raw SQL query executed successfully, results: ${JSON.stringify(products, null, 2)}`,
+        );
+        return products;
       } catch (error) {
-        console.error(`[findProductByQuery] Error executing raw SQL query: ${error.message}`);
+        console.error(
+          `[findProductByQuery] Error executing raw SQL query: ${error.message}`,
+        );
         throw error;
       }
     } else {
-      console.log(`[findProductByQuery] Using Prisma query (no price filter)`);
+      // Handle non-price queries
+      if (!categoryId && !normalizedQueryForTextSearch) {
+        // Vague query (e.g., "suggest me products")
+        console.log(
+          `[findProductByQuery] Vague query detected, returning empty result to prompt for category`,
+        );
+        return [];
+      }
+
+      let textSearchOrConditions: any[] = [];
+      if (normalizedQueryForTextSearch) {
+        textSearchOrConditions.push(
+          {
+            name: {
+              contains: normalizedQueryForTextSearch,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: normalizedQueryForTextSearch,
+              mode: 'insensitive',
+            },
+          },
+          {
+            other_brand_name: {
+              contains: normalizedQueryForTextSearch,
+              mode: 'insensitive',
+            },
+          },
+          {
+            brands: {
+              name: {
+                contains: normalizedQueryForTextSearch,
+                mode: 'insensitive',
+              },
+            },
+          },
+          {
+            models: {
+              name: {
+                contains: normalizedQueryForTextSearch,
+                mode: 'insensitive',
+              },
+            },
+          },
+        );
+        console.log(
+          `[findProductByQuery] Text search conditions: ${JSON.stringify(textSearchOrConditions, null, 2)}`,
+        );
+      }
+
+      if (textSearchOrConditions.length > 0) {
+        whereConditions.push({ OR: textSearchOrConditions });
+      }
+
+      if (categoryId !== undefined) {
+        whereConditions.push({ category_id: categoryId });
+      }
+
+      const finalWhereClause = { AND: whereConditions };
+      console.log(
+        `[findProductByQuery] Final where clause: ${JSON.stringify(finalWhereClause, null, 2)}`,
+      );
+
       try {
-        products = await this.prismaService.product.findMany({
+        const products = await this.prismaService.product.findMany({
           where: finalWhereClause,
           select: {
             id: true,
@@ -2788,33 +2786,22 @@ export class ProductService {
             created_at: true,
             category_id: true,
           },
-          orderBy: {
-            created_at: 'asc',
-          },
+          orderBy: { created_at: 'asc' },
           skip,
           take,
         });
-        console.log(`[findProductByQuery] Prisma query executed successfully, results: ${JSON.stringify(products, null, 2)}`);
+        console.log(
+          `[findProductByQuery] Prisma query executed successfully, results: ${JSON.stringify(products, null, 2)}`,
+        );
+        return products;
       } catch (error) {
-        console.error(`[findProductByQuery] Error executing Prisma query: ${error.message}`);
+        console.error(
+          `[findProductByQuery] Error executing Prisma query: ${error.message}`,
+        );
         throw error;
       }
     }
-
-    // Debug: Log total matching products
-    try {
-      const total = await this.prismaService.product.count({
-        where: finalWhereClause,
-      });
-      console.log(`[findProductByQuery] Total matching products: ${total}`);
-      console.log(`[findProductByQuery] Returned products: ${JSON.stringify(products, null, 2)}`);
-    } catch (error) {
-      console.error(`[findProductByQuery] Error counting total products: ${error.message}`);
-    }
-
-    return products;
   }
-  
   // final searching as an integer
   // async findProductByQuery(
   //   query: string,
