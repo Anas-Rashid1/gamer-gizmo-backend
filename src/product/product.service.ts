@@ -2117,7 +2117,7 @@ export class ProductService {
   //     .trim();
   //   console.log(
   //     normalizedQueryForTextSearch,
-  //     'normalizedQueryForTextSearch after cleaning',
+//     'normalizedQueryForTextSearch after cleaning',
   //   );
 
   //   // 3. Explicit Category Keyword Matching

@@ -457,6 +457,18 @@ export class AiChatbotService {
     );
     const normalizedMessage = message.trim().toLowerCase();
     console.log(`[generateReply] Normalized message: ${normalizedMessage}`);
+
+    // 0. Greeting detection
+    const greetingRegex =
+      /^(hi|hello|hey|greetings|good (morning|afternoon|evening)|salaam|assalam|as-salaam|yo|sup)[!,. ]*$/i;
+    if (greetingRegex.test(normalizedMessage)) {
+      return {
+        reply:
+          'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in.',
+        productLink: undefined,
+      };
+    }
+
     const categories = await this.getCategoriesForMatching();
     console.log(
       `[generateReply] Categories for matching: ${JSON.stringify(categories, null, 2)}`,
