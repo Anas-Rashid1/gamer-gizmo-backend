@@ -444,191 +444,382 @@ export class AnalyticsService {
     }
   }
 
+  // async getOrderAnalytics(query: AnalyticsQueryDto): Promise<OrderAnalyticsResponseDto> {
+  //   try {
+  //     const { startDate, endDate, productId } = query;
+
+  //     // Convert dates to Date objects
+  //     const start = new Date(startDate);
+  //     const end = new Date(endDate);
+  //     end.setHours(23, 59, 59, 999); // Include entire end date
+
+  //     // Base where clause for orders
+  //     const whereOrders = {
+  //       created_at: {
+  //         gte: start,
+  //         lte: end,
+  //       },
+  //       order_items: {
+  //         some: {
+  //           product: {
+  //             is_store_product: true,
+  //           },
+  //           ...(productId ? { product_id: parseInt(productId, 10) } : {}),
+  //         },
+  //       },
+  //     };
+
+  //     // Fetch orders in the period
+  //     const ordersInPeriod = await this.prisma.orders.findMany({
+  //       where: whereOrders,
+  //       select: {
+  //         id: true,
+  //         created_at: true,
+  //         order_items: {
+  //           select: {
+  //             quantity: true,
+  //             price: true,
+  //             product: {
+  //               select: {
+  //                 id: true,
+  //                 name: true,
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     // Calculate total sales in period
+  //     let totalSalesInPeriod = 0;
+  //     const orderDetails = ordersInPeriod.map((order) => {
+  //       const cost = order.order_items.reduce(
+  //         (sum, item) => sum + item.quantity * parseFloat(item.price),
+  //         0,
+  //       );
+  //       totalSalesInPeriod += cost;
+  //       return {
+  //         orderId: order.id,
+  //         cost,
+  //         salesPercentage: 0, // To be calculated later
+  //         createdAt: order.created_at.toISOString(),
+  //       };
+  //     });
+
+  //     // Fetch total sales overall (no date filter, only store products)
+  //     const allOrders = await this.prisma.orders.findMany({
+  //       where: {
+  //         order_items: {
+  //           some: {
+  //             product: {
+  //               is_store_product: true,
+  //             },
+  //             ...(productId ? { product_id: parseInt(productId, 10) } : {}),
+  //           },
+  //         },
+  //       },
+  //       select: {
+  //         order_items: {
+  //           select: {
+  //             quantity: true,
+  //             price: true,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     const totalSalesOverall = allOrders.reduce(
+  //       (sum, order) =>
+  //         sum +
+  //         order.order_items.reduce(
+  //           (orderSum, item) => orderSum + item.quantity * parseFloat(item.price),
+  //           0,
+  //         ),
+  //       0,
+  //     );
+
+  //     // Aggregate product sales
+  //     const productSalesMap: Record<
+  //       number,
+  //       {
+  //         productId: number;
+  //         productName: string;
+  //         costInPeriod: number;
+  //         costOverall: number;
+  //       }
+  //     > = {};
+
+  //     // Process period sales
+  //     ordersInPeriod.forEach((order) => {
+  //       order.order_items.forEach((item) => {
+  //         if (!productId || item.product.id === parseInt(productId, 10)) {
+  //           if (!productSalesMap[item.product.id]) {
+  //             productSalesMap[item.product.id] = {
+  //               productId: item.product.id,
+  //               productName: item.product.name,
+  //               costInPeriod: 0,
+  //               costOverall: 0,
+  //             };
+  //           }
+  //           productSalesMap[item.product.id].costInPeriod +=
+  //             item.quantity * parseFloat(item.price);
+  //         }
+  //       });
+  //     });
+
+  //     // Process overall sales
+  //     const allOrderItems = await this.prisma.order_items.findMany({
+  //       where: {
+  //         product: {
+  //           is_store_product: true,
+  //         },
+  //         ...(productId ? { product_id: parseInt(productId, 10) } : {}),
+  //       },
+  //       select: {
+  //         quantity: true,
+  //         price: true,
+  //         product: {
+  //           select: {
+  //             id: true,
+  //             name: true,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     allOrderItems.forEach((item) => {
+  //       if (!productSalesMap[item.product.id]) {
+  //         productSalesMap[item.product.id] = {
+  //           productId: item.product.id,
+  //           productName: item.product.name,
+  //           costInPeriod: 0,
+  //           costOverall: 0,
+  //         };
+  //       }
+  //       productSalesMap[item.product.id].costOverall +=
+  //         item.quantity * parseFloat(item.price);
+  //     });
+
+  //     // Calculate percentages
+  //     const products = Object.values(productSalesMap).map((product) => ({
+  //       productId: product.productId,
+  //       productName: product.productName,
+  //       costInPeriod: product.costInPeriod,
+  //       salesPercentageInPeriod: totalSalesInPeriod
+  //         ? (product.costInPeriod / totalSalesInPeriod) * 100
+  //         : 0,
+  //       costOverall: product.costOverall,
+  //       salesPercentageOverall: totalSalesOverall
+  //         ? (product.costOverall / totalSalesOverall) * 100
+  //         : 0,
+  //     }));
+
+  //     // Update order sales percentages
+  //     const orders = orderDetails.map((order) => ({
+  //       ...order,
+  //       salesPercentage: totalSalesInPeriod ? (order.cost / totalSalesInPeriod) * 100 : 0,
+  //     }));
+
+  //     return {
+  //       totalCost: totalSalesInPeriod, // Assuming totalCost is same as totalSalesInPeriod
+  //       totalSalesOverall,
+  //       totalSalesInPeriod,
+  //       orders,
+  //       products,
+  //     };
+  //   } catch (error) {
+  //     throw new InternalServerErrorException('Failed to fetch order analytics', error.message);
+  //   }
+  // }
   async getOrderAnalytics(query: AnalyticsQueryDto): Promise<OrderAnalyticsResponseDto> {
-    try {
-      const { startDate, endDate, productId } = query;
+  try {
+    const { startDate, endDate, productId } = query;
 
-      // Convert dates to Date objects
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999); // Include entire end date
+    // Convert dates to Date objects
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include entire end date
 
-      // Base where clause for orders
-      const whereOrders = {
-        created_at: {
-          gte: start,
-          lte: end,
-        },
-        order_items: {
-          some: {
-            product: {
-              is_store_product: true,
-            },
-            ...(productId ? { product_id: parseInt(productId, 10) } : {}),
-          },
-        },
-      };
-
-      // Fetch orders in the period
-      const ordersInPeriod = await this.prisma.orders.findMany({
-        where: whereOrders,
-        select: {
-          id: true,
-          created_at: true,
-          order_items: {
-            select: {
-              quantity: true,
-              price: true,
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      // Calculate total sales in period
-      let totalSalesInPeriod = 0;
-      const orderDetails = ordersInPeriod.map((order) => {
-        const cost = order.order_items.reduce(
-          (sum, item) => sum + item.quantity * parseFloat(item.price),
-          0,
-        );
-        totalSalesInPeriod += cost;
-        return {
-          orderId: order.id,
-          cost,
-          salesPercentage: 0, // To be calculated later
-          createdAt: order.created_at.toISOString(),
-        };
-      });
-
-      // Fetch total sales overall (no date filter, only store products)
-      const allOrders = await this.prisma.orders.findMany({
-        where: {
-          order_items: {
-            some: {
-              product: {
-                is_store_product: true,
-              },
-              ...(productId ? { product_id: parseInt(productId, 10) } : {}),
-            },
-          },
-        },
-        select: {
-          order_items: {
-            select: {
-              quantity: true,
-              price: true,
-            },
-          },
-        },
-      });
-
-      const totalSalesOverall = allOrders.reduce(
-        (sum, order) =>
-          sum +
-          order.order_items.reduce(
-            (orderSum, item) => orderSum + item.quantity * parseFloat(item.price),
-            0,
-          ),
-        0,
-      );
-
-      // Aggregate product sales
-      const productSalesMap: Record<
-        number,
-        {
-          productId: number;
-          productName: string;
-          costInPeriod: number;
-          costOverall: number;
-        }
-      > = {};
-
-      // Process period sales
-      ordersInPeriod.forEach((order) => {
-        order.order_items.forEach((item) => {
-          if (!productId || item.product.id === parseInt(productId, 10)) {
-            if (!productSalesMap[item.product.id]) {
-              productSalesMap[item.product.id] = {
-                productId: item.product.id,
-                productName: item.product.name,
-                costInPeriod: 0,
-                costOverall: 0,
-              };
-            }
-            productSalesMap[item.product.id].costInPeriod +=
-              item.quantity * parseFloat(item.price);
-          }
-        });
-      });
-
-      // Process overall sales
-      const allOrderItems = await this.prisma.order_items.findMany({
-        where: {
+    // Base where clause for orders
+    const whereOrders = {
+      created_at: {
+        gte: start,
+        lte: end,
+      },
+      order_items: {
+        some: {
+          product_id: { not: null }, // Ensure product_id is not null
           product: {
             is_store_product: true,
           },
           ...(productId ? { product_id: parseInt(productId, 10) } : {}),
         },
-        select: {
-          quantity: true,
-          price: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
+      },
+    };
+
+    // Fetch orders in the period
+    const ordersInPeriod = await this.prisma.orders.findMany({
+      where: whereOrders,
+      select: {
+        id: true,
+        created_at: true,
+        order_items: {
+          select: {
+            quantity: true,
+            price: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
+          where: {
+            product_id: { not: null }, // Ensure product_id is not null
+          },
         },
-      });
+      },
+    });
 
-      allOrderItems.forEach((item) => {
-        if (!productSalesMap[item.product.id]) {
-          productSalesMap[item.product.id] = {
-            productId: item.product.id,
-            productName: item.product.name,
-            costInPeriod: 0,
-            costOverall: 0,
-          };
-        }
-        productSalesMap[item.product.id].costOverall +=
-          item.quantity * parseFloat(item.price);
-      });
-
-      // Calculate percentages
-      const products = Object.values(productSalesMap).map((product) => ({
-        productId: product.productId,
-        productName: product.productName,
-        costInPeriod: product.costInPeriod,
-        salesPercentageInPeriod: totalSalesInPeriod
-          ? (product.costInPeriod / totalSalesInPeriod) * 100
-          : 0,
-        costOverall: product.costOverall,
-        salesPercentageOverall: totalSalesOverall
-          ? (product.costOverall / totalSalesOverall) * 100
-          : 0,
-      }));
-
-      // Update order sales percentages
-      const orders = orderDetails.map((order) => ({
-        ...order,
-        salesPercentage: totalSalesInPeriod ? (order.cost / totalSalesInPeriod) * 100 : 0,
-      }));
-
+    // Calculate total sales in period
+    let totalSalesInPeriod = 0;
+    const orderDetails = ordersInPeriod.map((order) => {
+      const cost = order.order_items.reduce(
+        (sum, item) => sum + item.quantity * parseFloat(item.price),
+        0,
+      );
+      totalSalesInPeriod += cost;
       return {
-        totalCost: totalSalesInPeriod, // Assuming totalCost is same as totalSalesInPeriod
-        totalSalesOverall,
-        totalSalesInPeriod,
-        orders,
-        products,
+        orderId: order.id,
+        cost,
+        salesPercentage: 0, // To be calculated later
+        createdAt: order.created_at.toISOString(),
       };
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to fetch order analytics', error.message);
-    }
+    });
+
+    // Fetch total sales overall (no date filter, only store products)
+    const allOrderItems = await this.prisma.order_items.findMany({
+      where: {
+        product_id: { not: null }, // Ensure product_id is not null
+        product: {
+          is_store_product: true,
+        },
+        ...(productId ? { product_id: parseInt(productId, 10) } : {}),
+      },
+      select: {
+        quantity: true,
+        price: true,
+      },
+    });
+
+    const totalSalesOverall = allOrderItems.reduce(
+      (sum, item) => sum + item.quantity * parseFloat(item.price),
+      0,
+    );
+
+    // Aggregate product sales
+    const productSalesMap: Record<
+      number,
+      {
+        productId: number;
+        productName: string;
+        costInPeriod: number;
+        costOverall: number;
+      }
+    > = {};
+
+    // Process period sales
+    ordersInPeriod.forEach((order) => {
+      order.order_items.forEach((item) => {
+        // Skip if product is null
+        if (!item.product) {
+          this.logger.warn(`Skipping order_item with null product in order ${order.id}`);
+          return;
+        }
+        if (!productId || item.product.id === parseInt(productId, 10)) {
+          if (!productSalesMap[item.product.id]) {
+            productSalesMap[item.product.id] = {
+              productId: item.product.id,
+              productName: item.product.name,
+              costInPeriod: 0,
+              costOverall: 0,
+            };
+          }
+          productSalesMap[item.product.id].costInPeriod +=
+            item.quantity * parseFloat(item.price);
+        }
+      });
+    });
+
+    // Process overall sales
+    const allOrderItemsWithProduct = await this.prisma.order_items.findMany({
+      where: {
+        product_id: { not: null }, // Ensure product_id is not null
+        product: {
+          is_store_product: true,
+        },
+        ...(productId ? { product_id: parseInt(productId, 10) } : {}),
+      },
+      select: {
+        quantity: true,
+        price: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    allOrderItemsWithProduct.forEach((item) => {
+      // Skip if product is null (shouldn't happen due to where clause)
+      if (!item.product) {
+        this.logger.warn(`Skipping order_item with null product in overall sales`);
+        return;
+      }
+      if (!productSalesMap[item.product.id]) {
+        productSalesMap[item.product.id] = {
+          productId: item.product.id,
+          productName: item.product.name,
+          costInPeriod: 0,
+          costOverall: 0,
+        };
+      }
+      productSalesMap[item.product.id].costOverall +=
+        item.quantity * parseFloat(item.price);
+    });
+
+    // Calculate percentages
+    const products = Object.values(productSalesMap).map((product) => ({
+      productId: product.productId,
+      productName: product.productName,
+      costInPeriod: product.costInPeriod,
+      salesPercentageInPeriod: totalSalesInPeriod
+        ? (product.costInPeriod / totalSalesInPeriod) * 100
+        : 0,
+      costOverall: product.costOverall,
+      salesPercentageOverall: totalSalesOverall
+        ? (product.costOverall / totalSalesOverall) * 100
+        : 0,
+    }));
+
+    // Update order sales percentages
+    const orders = orderDetails.map((order) => ({
+      ...order,
+      salesPercentage: totalSalesInPeriod ? (order.cost / totalSalesInPeriod) * 100 : 0,
+    }));
+
+    return {
+      totalCost: totalSalesInPeriod,
+      totalSalesOverall,
+      totalSalesInPeriod,
+      orders,
+      products,
+    };
+  } catch (error) {
+    this.logger.error(`Failed to fetch order analytics: ${error.message}`);
+    throw new InternalServerErrorException('Failed to fetch order analytics', error.message);
   }
+}
 }
