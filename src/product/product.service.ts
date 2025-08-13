@@ -2259,7 +2259,7 @@ export class ProductService {
       originalQuery.includes('consoles') ||
       originalQuery.includes('gaming console')
     ) {
-      categoryId = 4; // Gaming Consoles
+      categoryId = 4; 
     }
     console.log(
       `[findProductByQuery] Category ID from explicit matching: ${categoryId || 'none'}`,

@@ -1154,6 +1154,8 @@ export class AiChatbotService {
       lastQuery?: string;
       lastResults?: Product[];
       queryType?: string;
+      skip?: number; // ✅ Added
+      take?: number; // ✅ Added
     } = {},
   ): Promise<{ reply: string; productLink?: string; updatedSession?: any }> {
     console.log(
@@ -1162,6 +1164,16 @@ export class AiChatbotService {
 
     const normalizedMessage = message.trim().toLowerCase();
     const updatedSession = { ...sessionData };
+
+    // ✅ Detect "show more"
+    const isShowMore = normalizedMessage.includes('show more');
+    if (isShowMore) {
+      updatedSession.skip =
+        (updatedSession.skip || 0) + (updatedSession.take || 10);
+    } else {
+      updatedSession.skip = 0; // reset for a new search
+    }
+    updatedSession.take = updatedSession.take || 10;
 
     // Greeting check
     const greetingRegex =
@@ -1184,8 +1196,9 @@ export class AiChatbotService {
       keys: ['name'],
       threshold: 0.3,
     });
+
     // Try to detect category only if missing
-    if (!updatedSession.categoryId) {
+    if (!updatedSession.categoryId && !isShowMore) {
       updatedSession.categoryId = this.detectCategory(normalizedMessage);
       if (!updatedSession.categoryId) {
         const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
@@ -1196,7 +1209,7 @@ export class AiChatbotService {
     }
 
     // Try to detect budget only if missing
-    if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+    if (!updatedSession.budgetMin && !updatedSession.budgetMax && !isShowMore) {
       const budgetMatch = normalizedMessage.match(
         /(\d{2,5})\s*(?:-|to|and)\s*(\d{2,5})|(\d{2,5})/,
       );
@@ -1257,29 +1270,25 @@ export class AiChatbotService {
       };
     }
 
-    // Fetch products
-    let products: Product[] = [];
-    if (
-      !sessionData.lastQuery ||
-      normalizedMessage.match(/(laptop|desktop|pc|console|component)/i) ||
-      /\d{2,5}/.test(normalizedMessage)
-    ) {
-      const queryForSearch = normalizedMessage.match(
-        /(laptop|desktop|pc|console|component)/i,
-      )
-        ? normalizedMessage.match(/(laptop|desktop|pc|console|component)/i)[0]
-        : normalizedMessage;
-      products = await this.productService.findProductByQuery(
-        queryForSearch,
-        skip,
-        take,
-      );
-      updatedSession.lastQuery = normalizedMessage;
-      updatedSession.lastResults = products;
-      updatedSession.queryType = isBrandQuery ? 'brand' : 'product';
-    } else {
-      products = sessionData.lastResults || [];
-    }
+    // ✅ Always refetch products when showing more
+    const queryForSearch = normalizedMessage.match(
+      /(laptop|desktop|pc|console|component)/i,
+    )
+      ? normalizedMessage.match(/(laptop|desktop|pc|console|component)/i)[0]
+      : sessionData.lastQuery || normalizedMessage;
+
+    let products: Product[] = await this.productService.findProductByQuery(
+      queryForSearch,
+      updatedSession.skip,
+      updatedSession.take,
+    );
+
+    updatedSession.lastQuery = queryForSearch;
+    updatedSession.lastResults = [
+      ...(sessionData.lastResults || []),
+      ...products,
+    ]; // accumulate results
+    updatedSession.queryType = isBrandQuery ? 'brand' : 'product';
 
     const matchedCategory = categories.find(
       (c) => c.id === updatedSession.categoryId,
@@ -1292,57 +1301,31 @@ export class AiChatbotService {
         parseFloat(p.price) <= (updatedSession.budgetMax || Infinity),
     );
 
-    const systemPrompt = `
-You are an intelligent assistant for a tech marketplace called GamerGizmo.
-All prices are in AED.
-The user is looking for products in the category "${matchedCategory?.name}" with budget between ${updatedSession.budgetMin} and ${updatedSession.budgetMax} AED.
-We found ${products.length} matching products.
-${products.map((p) => `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`).join('\n') || 'No products found.'}
-`.trim();
+    let reply: string;
+    if (products.length > 0) {
+      const productLinks = products
+        .map(
+          (p) =>
+            `🛒 ${p.name} - ${p.price} AED <a href="https://gamergizmo.com/product-details/${p.id}" target="_blank" style="color: #4da6ff; text-decoration: underline;">View Product</a>`,
+        )
+        .join('<br>');
 
-    try {
-      const aiResponse = await this.openai.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message },
-        ],
-      });
-
-      let reply =
-        aiResponse.choices?.[0]?.message?.content?.trim() ||
-        `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
-
-      // Streamline response to avoid repetition
-      if (products.length > 0) {
-        const productLinks = products
-          .map(
-            (p) =>
-              // `🛒 ${p.name} - ${p.price} AED https://gamergizmo.com/product-details/${p.id}`,
-              `🛒 ${p.name} - ${p.price} AED <a href="https://gamergizmo.com/product-details/${p.id}" target="_blank" style="color: #4da6ff; text-decoration: underline;">View Product</a>`,
-          )
-          .join('<br>');
-        reply = `Here are ${products.length} products within your budget of ${updatedSession.budgetMin}–${updatedSession.budgetMax} AED in the ${matchedCategory?.name} category:\n${productLinks}`;
-      }
-
-      const showMoreNote =
-        products.length === take
-          ? '\n\nWant to see more? Just say "show more".'
-          : '';
-
-      return {
-        reply: `${reply}${showMoreNote}`,
-        productLink: products?.[0]?.id
-          ? `https://gamergizmo.com/product-details/${products[0].id}`
-          : undefined,
-        updatedSession,
-      };
-    } catch (error) {
-      console.error(`[generateReply] OpenAI Error: ${error.message}`);
-      return {
-        reply: 'Sorry, something went wrong. Please try again.',
-        updatedSession,
-      };
+      reply = `Here are ${products.length} products within your budget of ${updatedSession.budgetMin}–${updatedSession.budgetMax} AED in the ${matchedCategory?.name} category:\n${productLinks}`;
+    } else {
+      reply = `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
     }
+
+    const showMoreNote =
+      products.length === updatedSession.take
+        ? '\n\nWant to see more? Just say "show more".'
+        : '';
+
+    return {
+      reply: `${reply}${showMoreNote}`,
+      productLink: products?.[0]?.id
+        ? `https://gamergizmo.com/product-details/${products[0].id}`
+        : undefined,
+      updatedSession,
+    };
   }
 }
