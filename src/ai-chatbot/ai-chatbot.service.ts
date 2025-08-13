@@ -405,6 +405,671 @@
 //   }
 // }
 
+// import { Injectable } from '@nestjs/common';
+// import { ConfigService } from '@nestjs/config';
+// import OpenAI from 'openai';
+// const Fuse = require('fuse.js');
+// import { ProductService } from '../product/product.service';
+// import { CategoriesService } from '../categories/categories.service';
+// import { PrismaService } from '../prisma/prisma.service';
+// import { Product } from 'src/types/product';
+// @Injectable()
+// export class AiChatbotService {
+//   private openai: OpenAI;
+//   private cachedCategories: { id: number; name: string }[] = [];
+//   private fixedCategories = [
+//     { id: 1, name: 'Laptops' },
+//     { id: 2, name: 'Desktops' },
+//     { id: 3, name: 'Components' },
+//     { id: 4, name: 'Gaming Consoles' },
+//   ];
+
+//   constructor(
+//     private configService: ConfigService,
+//     private productService: ProductService,
+//     private categoriesService: CategoriesService,
+//     private prismaService: PrismaService,
+//   ) {
+//     this.openai = new OpenAI({
+//       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+//     });
+//   }
+
+//   private async getCategoriesForMatching(): Promise<
+//     { id: number; name: string }[]
+//   > {
+//     if (!this.cachedCategories.length) {
+//       const response = await this.categoriesService.GetAllCategories();
+//       this.cachedCategories = response.data;
+//     }
+//     return this.cachedCategories.length
+//       ? this.cachedCategories
+//       : this.fixedCategories;
+//   }
+
+//   //   async generateReply(
+//   //     message: string,
+//   //     skip = 0,
+//   //     take = 10,
+//   //     sessionData: {
+//   //       budgetMin?: number;
+//   //       budgetMax?: number;
+//   //       categoryId?: number;
+//   //     } = {},
+//   //   ): Promise<{ reply: string; productLink?: string; updatedSession?: any }> {
+//   //     console.log(
+//   //       `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}, session: ${JSON.stringify(sessionData)}`,
+//   //     );
+
+//   //     const normalizedMessage = message.trim().toLowerCase();
+//   //     const updatedSession = { ...sessionData };
+
+//   //     // Greeting check
+//   //     const greetingRegex =
+//   //       /^(hi|hello|hey|greetings|good (morning|afternoon|evening)|salaam|assalam|as-salaam|yo|sup)[!,. ]*$/i;
+//   //     if (greetingRegex.test(normalizedMessage)) {
+//   //       return {
+//   //         reply:
+//   //           'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in (e.g., Laptops, Desktops, Components, Gaming Consoles).',
+//   //         updatedSession,
+//   //       };
+//   //     }
+
+//   //     const categories = await this.getCategoriesForMatching();
+//   //     const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
+
+//   //     // Try to detect category only if missing
+//   //     if (!updatedSession.categoryId) {
+//   //       const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
+//   //       if (matchedCategory) {
+//   //         updatedSession.categoryId = matchedCategory.id;
+//   //       }
+//   //     }
+
+//   //     // Try to detect budget only if missing
+//   //     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//   //       const budgetMatch = normalizedMessage.match(
+//   //         /(\d{2,5})\s*(?:-|to|and)\s*(\d{2,5})|(\d{2,5})/,
+//   //       );
+//   //       if (budgetMatch) {
+//   //         if (budgetMatch[1] && budgetMatch[2]) {
+//   //           updatedSession.budgetMin = parseInt(budgetMatch[1], 10);
+//   //           updatedSession.budgetMax = parseInt(budgetMatch[2], 10);
+//   //         } else if (budgetMatch[3]) {
+//   //           updatedSession.budgetMin = 0;
+//   //           updatedSession.budgetMax = parseInt(budgetMatch[3], 10);
+//   //         }
+//   //       }
+//   //     }
+
+//   //     // Ask missing info
+//   //     if (!updatedSession.categoryId) {
+//   //       return {
+//   //         reply:
+//   //           "Got it! Could you tell me if you're looking for a Laptop, Desktop, Gaming Console, or Components?",
+//   //         updatedSession,
+//   //       };
+//   //     }
+//   //     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//   //       return {
+//   //         reply: 'Sure! Could you also tell me your budget in AED?',
+//   //         updatedSession,
+//   //       };
+//   //     }
+//   //     // ✅ Before fetching products:
+
+//   //     //@ts-ignore
+//   //     let products: Product[] = [];
+
+//   //     if (
+//   //       //@ts-ignore
+//   //       !sessionData.lastQuery || // no previous query
+//   //       normalizedMessage.includes('laptop') || // user changes category
+//   //       /\d{2,5}/.test(normalizedMessage) // mentions budget
+//   //     ) {
+//   //       products = await this.productService.findProductByQuery(
+//   //         normalizedMessage,
+//   //         skip,
+//   //         take,
+//   //       );
+//   //       //@ts-ignore
+//   //       updatedSession.lastQuery = normalizedMessage;
+//   //       //@ts-ignore
+//   //       updatedSession.lastResults = products; // store results
+//   //     } else {
+//   //       //@ts-ignore
+//   //       products = sessionData.lastResults || [];
+//   //     }
+
+//   //     const matchedCategory = categories.find(
+//   //       (c) => c.id === updatedSession.categoryId,
+//   //     );
+//   //     // Fetch products with complete info
+//   //     // const products = await this.productService.findProductByQuery(
+//   //     //   normalizedMessage,
+//   //     //   skip,
+//   //     //   take,
+//   //     // );
+
+//   //     const systemPrompt = `
+//   // You are an intelligent assistant for a tech marketplace called GamerGizmo.
+//   // All prices are in AED.
+
+//   // The user is looking for products in the category "${matchedCategory?.name}" with budget between ${updatedSession.budgetMin} and ${updatedSession.budgetMax} AED.
+//   // We found ${products.length} matching products.
+
+//   // ${products.map((p) => `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`).join('\n') || 'No products found.'}
+//   //   `.trim();
+
+//   //     try {
+//   //       const aiResponse = await this.openai.chat.completions.create({
+//   //         model: 'gpt-4.1',
+//   //         messages: [
+//   //           { role: 'system', content: systemPrompt },
+//   //           { role: 'user', content: message },
+//   //         ],
+//   //       });
+
+//   //       let reply =
+//   //         aiResponse.choices?.[0]?.message?.content?.trim() ||
+//   //         `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
+
+//   //       let productLinks = '';
+//   //       if (products.length > 0) {
+//   //         productLinks = products
+//   //           .map(
+//   //             (p) =>
+//   //               `🛒 ${p.name} - ${p.price} AED [View Product](https://gamergizmo.com/product-details/${p.id})`,
+//   //           )
+//   //           .join('\n');
+//   //       }
+
+//   //       const showMoreNote =
+//   //         products.length === take
+//   //           ? '\n\nWant to see more? Just say "show more".'
+//   //           : '';
+
+//   //       const finalReply = productLinks
+//   //         ? `${reply}\n\nHere are some options:\n${productLinks}${showMoreNote}`
+//   //         : `${reply}${showMoreNote}`;
+
+//   //       return {
+//   //         reply: finalReply,
+//   //         productLink: products?.[0]?.id
+//   //           ? `https://gamergizmo.com/product-details/${products[0].id}`
+//   //           : undefined,
+//   //         updatedSession,
+//   //       };
+//   //     } catch (error) {
+//   //       console.error(`[generateReply] OpenAI Error: ${error.message}`);
+//   //       return {
+//   //         reply: 'Sorry, something went wrong. Please try again.',
+//   //         updatedSession,
+//   //       };
+//   //     }
+//   //   }
+//   async generateReply(
+//     message: string,
+//     skip = 0,
+//     take = 10,
+//     sessionData: {
+//       budgetMin?: number;
+//       budgetMax?: number;
+//       categoryId?: number;
+//       lastQuery?: string;
+//       //@ts-ignore
+//       lastResults?: Product[];
+//       queryType?: string;
+//     } = {},
+//   ): Promise<{ reply: string; productLink?: string; updatedSession?: any }> {
+//     console.log(
+//       `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}, session: ${JSON.stringify(sessionData)}`,
+//     );
+
+//     const normalizedMessage = message.trim().toLowerCase();
+//     const updatedSession = { ...sessionData };
+
+//     // Greeting check
+//     const greetingRegex =
+//       /^(hi|hello|hey|greetings|good (morning|afternoon|evening)|salaam|assalam|as-salaam|yo|sup)[!,. ]*$/i;
+//     if (greetingRegex.test(normalizedMessage)) {
+//       return {
+//         reply:
+//           'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in (e.g., Laptops, Desktops, Components, Gaming Consoles).',
+//         updatedSession,
+//       };
+//     }
+
+//     const isBrandQuery =
+//       /(brands?|manufacturer|which brands|list brands)/i.test(
+//         normalizedMessage,
+//       );
+//     const categories = await this.getCategoriesForMatching();
+//     const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
+
+//     // Try to detect category only if missing
+//     if (!updatedSession.categoryId) {
+//       const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
+//       if (matchedCategory) {
+//         updatedSession.categoryId = matchedCategory.id;
+//       }
+//     }
+
+//     // Try to detect budget only if missing
+//     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//       const budgetMatch = normalizedMessage.match(
+//         /(\d{2,5})\s*(?:-|to|and)\s*(\d{2,5})|(\d{2,5})/,
+//       );
+//       if (budgetMatch) {
+//         if (budgetMatch[1] && budgetMatch[2]) {
+//           updatedSession.budgetMin = parseInt(budgetMatch[1], 10);
+//           updatedSession.budgetMax = parseInt(budgetMatch[2], 10);
+//         } else if (budgetMatch[3]) {
+//           updatedSession.budgetMin = 0;
+//           updatedSession.budgetMax = parseInt(budgetMatch[3], 10);
+//         }
+//       }
+//     }
+
+//     // Ask missing info
+//     if (!updatedSession.categoryId) {
+//       return {
+//         reply:
+//           "Got it! Could you tell me if you're looking for a Laptop, Desktop, Gaming Console, or Components?",
+//         updatedSession,
+//       };
+//     }
+//     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//       return {
+//         reply: 'Sure! Could you also tell me your budget in AED?',
+//         updatedSession,
+//       };
+//     }
+
+//     // Handle brand-specific queries
+//     if (isBrandQuery && sessionData.lastResults?.length > 0) {
+//       const brands = [
+//         ...new Set(
+//           sessionData.lastResults
+//             .map((p) => {
+//               const name = p.name.toLowerCase();
+//               if (name.includes('hp')) return 'HP';
+//               if (name.includes('acer')) return 'Acer';
+//               if (name.includes('dell')) return 'Dell';
+//               if (name.includes('asus')) return 'ASUS';
+//               if (name.includes('msi')) return 'MSI';
+//               return null;
+//             })
+//             .filter(Boolean),
+//         ),
+//       ];
+
+//       if (normalizedMessage.includes('from gamergizmo')) {
+//         return {
+//           reply: `Yes, all the brands listed (e.g., ${brands.join(', ')}) are available on GamerGizmo based on the laptops found within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED). Would you like to see specific models from these brands?`,
+//           updatedSession,
+//         };
+//       }
+
+//       return {
+//         reply: `The brands available on GamerGizmo within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED) for ${categories.find((c) => c.id === updatedSession.categoryId)?.name} are: ${brands.join(', ')}. Would you like more details about specific models from these brands?`,
+//         updatedSession,
+//       };
+//     }
+
+//     // Fetch products
+//     let products: Product[] = [];
+//     if (
+//       !sessionData.lastQuery ||
+//       normalizedMessage.includes('laptop') ||
+//       /\d{2,5}/.test(normalizedMessage)
+//     ) {
+//       products = await this.productService.findProductByQuery(
+//         normalizedMessage.includes('laptop') ? 'laptop' : normalizedMessage,
+//         skip,
+//         take,
+//       );
+//       updatedSession.lastQuery = normalizedMessage;
+//       updatedSession.lastResults = products;
+//     } else {
+//       products = sessionData.lastResults || [];
+//     }
+
+//     const matchedCategory = categories.find(
+//       (c) => c.id === updatedSession.categoryId,
+//     );
+
+//     const systemPrompt = `
+// You are an intelligent assistant for a tech marketplace called GamerGizmo.
+// All prices are in AED.
+// The user is looking for products in the category "${matchedCategory?.name}" with budget between ${updatedSession.budgetMin} and ${updatedSession.budgetMax} AED.
+// We found ${products.length} matching products.
+// ${products.map((p) => `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`).join('\n') || 'No products found.'}
+// `.trim();
+
+//     try {
+//       const aiResponse = await this.openai.chat.completions.create({
+//         model: 'gpt-4.1',
+//         messages: [
+//           { role: 'system', content: systemPrompt },
+//           { role: 'user', content: message },
+//         ],
+//       });
+
+//       let reply =
+//         aiResponse.choices?.[0]?.message?.content?.trim() ||
+//         `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
+
+//       let productLinks = '';
+//       if (products.length > 0) {
+//         productLinks = products
+//           .map(
+//             (p) =>
+//               `🛒 ${p.name} - ${p.price} AED [View Product](https://gamergizmo.com/product-details/${p.id})`,
+//           )
+//           .join('\n');
+//       }
+
+//       const showMoreNote =
+//         products.length === take
+//           ? '\n\nWant to see more? Just say "show more".'
+//           : '';
+
+//       const finalReply = productLinks
+//         ? `${reply}\n\nHere are some options:\n${productLinks}${showMoreNote}`
+//         : `${reply}${showMoreNote}`;
+
+//       return {
+//         reply: finalReply,
+//         productLink: products?.[0]?.id
+//           ? `https://gamergizmo.com/product-details/${products[0].id}`
+//           : undefined,
+//         updatedSession,
+//       };
+//     } catch (error) {
+//       console.error(`[generateReply] OpenAI Error: ${error.message}`);
+//       return {
+//         reply: 'Sorry, something went wrong. Please try again.',
+//         updatedSession,
+//       };
+//     }
+//   }
+// }
+// src/ai-chatbot/ai-chatbot.service.ts
+// import { Injectable } from '@nestjs/common';
+// import { ConfigService } from '@nestjs/config';
+// import OpenAI from 'openai';
+// import Fuse from 'fuse.js';
+// import { ProductService } from '../product/product.service';
+// import { CategoriesService } from '../categories/categories.service';
+// import { PrismaService } from '../prisma/prisma.service';
+// import { Product } from '../types/product';
+
+// @Injectable()
+// export class AiChatbotService {
+//   private openai: OpenAI;
+//   private cachedCategories: { id: number; name: string }[] = [];
+//   private fixedCategories = [
+//     { id: 1, name: 'Laptops' },
+//     { id: 2, name: 'Desktops' },
+//     { id: 3, name: 'Components' },
+//     { id: 4, name: 'Gaming Consoles' },
+//   ];
+
+//   constructor(
+//     private configService: ConfigService,
+//     private productService: ProductService,
+//     private categoriesService: CategoriesService,
+//     private prismaService: PrismaService,
+//   ) {
+//     this.openai = new OpenAI({
+//       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+//     });
+//   }
+
+//   private async getCategoriesForMatching(): Promise<
+//     { id: number; name: string }[]
+//   > {
+//     if (!this.cachedCategories.length) {
+//       const response = await this.categoriesService.GetAllCategories();
+//       this.cachedCategories = response.data;
+//     }
+//     return this.cachedCategories.length
+//       ? this.cachedCategories
+//       : this.fixedCategories;
+//   }
+
+//   private detectCategory(query: string): number | undefined {
+//     const normalizedQuery = query.trim().toLowerCase();
+//     if (
+//       normalizedQuery.includes('laptop') ||
+//       normalizedQuery.includes('laptops')
+//     ) {
+//       return 1; // Laptops
+//     } else if (
+//       normalizedQuery.includes('desktop') ||
+//       normalizedQuery.includes('desktops') ||
+//       normalizedQuery.includes('pc') ||
+//       normalizedQuery.includes('computer') ||
+//       normalizedQuery.includes('gaming pc')
+//     ) {
+//       return 2; // Desktops
+//     } else if (
+//       normalizedQuery.includes('component') ||
+//       normalizedQuery.includes('components')
+//     ) {
+//       return 3; // Components
+//     } else if (
+//       normalizedQuery.includes('console') ||
+//       normalizedQuery.includes('consoles') ||
+//       normalizedQuery.includes('gaming console')
+//     ) {
+//       return 4; // Gaming Consoles
+//     }
+//     return undefined;
+//   }
+
+//   async generateReply(
+//     message: string,
+//     skip = 0,
+//     take = 10,
+//     sessionData: {
+//       budgetMin?: number;
+//       budgetMax?: number;
+//       categoryId?: number;
+//       lastQuery?: string;
+//       lastResults?: Product[];
+//       queryType?: string;
+//     } = {},
+//   ): Promise<{ reply: string; productLink?: string; updatedSession?: any }> {
+//     console.log(
+//       `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}, session: ${JSON.stringify(sessionData)}`,
+//     );
+
+//     const normalizedMessage = message.trim().toLowerCase();
+//     const updatedSession = { ...sessionData };
+
+//     // Greeting check
+//     const greetingRegex =
+//       /^(hi|hello|hey|greetings|good (morning|afternoon|evening)|salaam|assalam|as-salaam|yo|sup)[!,. ]*$/i;
+//     if (greetingRegex.test(normalizedMessage)) {
+//       return {
+//         reply:
+//           'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in (e.g., Laptops, Desktops, Components, Gaming Consoles).',
+//         updatedSession,
+//       };
+//     }
+
+//     const isBrandQuery =
+//       /(brands?|manufacturer|which brands|list brands)/i.test(
+//         normalizedMessage,
+//       );
+//     const categories = await this.getCategoriesForMatching();
+//     const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
+
+//     // Try to detect category only if missing
+//     if (!updatedSession.categoryId) {
+//       updatedSession.categoryId = this.detectCategory(normalizedMessage);
+//       if (!updatedSession.categoryId) {
+//         const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
+//         if (matchedCategory) {
+//           updatedSession.categoryId = matchedCategory.id;
+//         }
+//       }
+//     }
+
+//     // Try to detect budget only if missing
+//     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//       const budgetMatch = normalizedMessage.match(
+//         /(\d{2,5})\s*(?:-|to|and)\s*(\d{2,5})|(\d{2,5})/,
+//       );
+//       if (budgetMatch) {
+//         if (budgetMatch[1] && budgetMatch[2]) {
+//           updatedSession.budgetMin = parseInt(budgetMatch[1], 10);
+//           updatedSession.budgetMax = parseInt(budgetMatch[2], 10);
+//         } else if (budgetMatch[3]) {
+//           updatedSession.budgetMin = 0;
+//           updatedSession.budgetMax = parseInt(budgetMatch[3], 10);
+//         }
+//       }
+//     }
+
+//     // Ask missing info
+//     if (!updatedSession.categoryId) {
+//       return {
+//         reply:
+//           "Got it! Could you tell me if you're looking for a Laptop, Desktop, Gaming Console, or Components?",
+//         updatedSession,
+//       };
+//     }
+//     if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+//       return {
+//         reply: 'Sure! Could you also tell me your budget in AED?',
+//         updatedSession,
+//       };
+//     }
+
+//     // Handle brand-specific queries
+//     if (isBrandQuery && sessionData.lastResults?.length > 0) {
+//       const brands = [
+//         ...new Set(
+//           sessionData.lastResults
+//             .map((p) => {
+//               const name = p.name.toLowerCase();
+//               if (name.includes('hp')) return 'HP';
+//               if (name.includes('acer')) return 'Acer';
+//               if (name.includes('dell')) return 'Dell';
+//               if (name.includes('asus')) return 'ASUS';
+//               if (name.includes('msi')) return 'MSI';
+//               return null;
+//             })
+//             .filter(Boolean),
+//         ),
+//       ];
+
+//       if (normalizedMessage.includes('from gamergizmo')) {
+//         return {
+//           reply: `Yes, all the brands listed (e.g., ${brands.join(', ')}) are available on GamerGizmo based on the products found within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED). Would you like to see specific models from these brands?`,
+//           updatedSession,
+//         };
+//       }
+
+//       return {
+//         reply: `The brands available on GamerGizmo within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED) for ${categories.find((c) => c.id === updatedSession.categoryId)?.name} are: ${brands.join(', ')}. Would you like more details about specific models from these brands?`,
+//         updatedSession,
+//       };
+//     }
+
+//     // Fetch products
+//     let products: Product[] = [];
+//     if (
+//       !sessionData.lastQuery ||
+//       normalizedMessage.match(/(laptop|desktop|pc|console|component)/i) ||
+//       /\d{2,5}/.test(normalizedMessage)
+//     ) {
+//       const queryForSearch = normalizedMessage.match(
+//         /(laptop|desktop|pc|console|component)/i,
+//       )
+//         ? normalizedMessage.match(/(laptop|desktop|pc|console|component)/i)[0]
+//         : normalizedMessage;
+//       products = await this.productService.findProductByQuery(
+//         queryForSearch,
+//         skip,
+//         take,
+//       );
+//       updatedSession.lastQuery = normalizedMessage;
+//       updatedSession.lastResults = products;
+//       updatedSession.queryType = isBrandQuery ? 'brand' : 'product';
+//     } else {
+//       products = sessionData.lastResults || [];
+//     }
+
+//     const matchedCategory = categories.find(
+//       (c) => c.id === updatedSession.categoryId,
+//     );
+
+//     // Filter products by budget
+//     products = products.filter(
+//       (p) =>
+//         parseFloat(p.price) >= (updatedSession.budgetMin || 0) &&
+//         parseFloat(p.price) <= (updatedSession.budgetMax || Infinity),
+//     );
+
+//     const systemPrompt = `
+// You are an intelligent assistant for a tech marketplace called GamerGizmo.
+// All prices are in AED.
+// The user is looking for products in the category "${matchedCategory?.name}" with budget between ${updatedSession.budgetMin} and ${updatedSession.budgetMax} AED.
+// We found ${products.length} matching products.
+// ${products.map((p) => `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`).join('\n') || 'No products found.'}
+// `.trim();
+
+//     try {
+//       const aiResponse = await this.openai.chat.completions.create({
+//         model: 'gpt-4.1',
+//         messages: [
+//           { role: 'system', content: systemPrompt },
+//           { role: 'user', content: message },
+//         ],
+//       });
+
+//       let reply =
+//         aiResponse.choices?.[0]?.message?.content?.trim() ||
+//         `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
+
+//       // Streamline response to avoid repetition
+//       if (products.length > 0) {
+//         const productLinks = products
+//           .map(
+//             (p) =>
+//               `🛒 ${p.name} - ${p.price} AED [View Product](https://gamergizmo.com/product-details/${p.id})`,
+//           )
+//           .join('\n');
+//         reply = `Here are ${products.length} products within your budget of ${updatedSession.budgetMin}–${updatedSession.budgetMax} AED in the ${matchedCategory?.name} category:\n${productLinks}`;
+//       }
+
+//       const showMoreNote =
+//         products.length === take
+//           ? '\n\nWant to see more? Just say "show more".'
+//           : '';
+
+//       return {
+//         reply: `${reply}${showMoreNote}`,
+//         productLink: products?.[0]?.id
+//           ? `https://gamergizmo.com/product-details/${products[0].id}`
+//           : undefined,
+//         updatedSession,
+//       };
+//     } catch (error) {
+//       console.error(`[generateReply] OpenAI Error: ${error.message}`);
+//       return {
+//         reply: 'Sorry, something went wrong. Please try again.',
+//         updatedSession,
+//       };
+//     }
+//   }
+// }
+
+// src/ai-chatbot/ai-chatbot.service.ts
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -412,6 +1077,7 @@ const Fuse = require('fuse.js');
 import { ProductService } from '../product/product.service';
 import { CategoriesService } from '../categories/categories.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Product } from '../types/product';
 
 @Injectable()
 export class AiChatbotService {
@@ -447,140 +1113,235 @@ export class AiChatbotService {
       : this.fixedCategories;
   }
 
+  private detectCategory(query: string): number | undefined {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (
+      normalizedQuery.includes('laptop') ||
+      normalizedQuery.includes('laptops')
+    ) {
+      return 1; // Laptops
+    } else if (
+      normalizedQuery.includes('desktop') ||
+      normalizedQuery.includes('desktops') ||
+      normalizedQuery.includes('pc') ||
+      normalizedQuery.includes('computer') ||
+      normalizedQuery.includes('gaming pc')
+    ) {
+      return 2; // Desktops
+    } else if (
+      normalizedQuery.includes('component') ||
+      normalizedQuery.includes('components')
+    ) {
+      return 3; // Components
+    } else if (
+      normalizedQuery.includes('console') ||
+      normalizedQuery.includes('consoles') ||
+      normalizedQuery.includes('gaming console')
+    ) {
+      return 4; // Gaming Consoles
+    }
+    return undefined;
+  }
+
   async generateReply(
     message: string,
     skip = 0,
     take = 10,
-  ): Promise<{ reply: string; productLink?: string }> {
+    sessionData: {
+      budgetMin?: number;
+      budgetMax?: number;
+      categoryId?: number;
+      lastQuery?: string;
+      lastResults?: Product[];
+      queryType?: string;
+    } = {},
+  ): Promise<{ reply: string; productLink?: string; updatedSession?: any }> {
     console.log(
-      `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}`,
+      `[generateReply] Input message: ${message}, skip: ${skip}, take: ${take}, session: ${JSON.stringify(sessionData)}`,
     );
-    const normalizedMessage = message.trim().toLowerCase();
-    console.log(`[generateReply] Normalized message: ${normalizedMessage}`);
 
-    // 0. Greeting detection
+    const normalizedMessage = message.trim().toLowerCase();
+    const updatedSession = { ...sessionData };
+
+    // Greeting check
     const greetingRegex =
       /^(hi|hello|hey|greetings|good (morning|afternoon|evening)|salaam|assalam|as-salaam|yo|sup)[!,. ]*$/i;
     if (greetingRegex.test(normalizedMessage)) {
       return {
         reply:
           'Hello there! Welcome to GamerGizmo. How can I assist you today? Please let me know which products or categories you are interested in (e.g., Laptops, Desktops, Components, Gaming Consoles).',
-        productLink: undefined,
+        updatedSession,
       };
     }
 
+    const isBrandQuery =
+      /(brands?|manufacturer|which brands|list brands)/i.test(
+        normalizedMessage,
+      );
     const categories = await this.getCategoriesForMatching();
-    console.log(
-      `[generateReply] Categories for matching: ${JSON.stringify(categories, null, 2)}`,
+
+    const fuse = new Fuse(categories, {
+      keys: ['name'],
+      threshold: 0.3,
+    });
+    // Try to detect category only if missing
+    if (!updatedSession.categoryId) {
+      updatedSession.categoryId = this.detectCategory(normalizedMessage);
+      if (!updatedSession.categoryId) {
+        const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
+        if (matchedCategory) {
+          updatedSession.categoryId = matchedCategory.id;
+        }
+      }
+    }
+
+    // Try to detect budget only if missing
+    if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+      const budgetMatch = normalizedMessage.match(
+        /(\d{2,5})\s*(?:-|to|and)\s*(\d{2,5})|(\d{2,5})/,
+      );
+      if (budgetMatch) {
+        if (budgetMatch[1] && budgetMatch[2]) {
+          updatedSession.budgetMin = parseInt(budgetMatch[1], 10);
+          updatedSession.budgetMax = parseInt(budgetMatch[2], 10);
+        } else if (budgetMatch[3]) {
+          updatedSession.budgetMin = 0;
+          updatedSession.budgetMax = parseInt(budgetMatch[3], 10);
+        }
+      }
+    }
+
+    // Ask missing info
+    if (!updatedSession.categoryId) {
+      return {
+        reply:
+          "Got it! Could you tell me if you're looking for a Laptop, Desktop, Gaming Console, or Components?",
+        updatedSession,
+      };
+    }
+    if (!updatedSession.budgetMin && !updatedSession.budgetMax) {
+      return {
+        reply: 'Sure! Could you also tell me your budget in AED?',
+        updatedSession,
+      };
+    }
+
+    // Handle brand-specific queries
+    if (isBrandQuery && sessionData.lastResults?.length > 0) {
+      const brands = [
+        ...new Set(
+          sessionData.lastResults
+            .map((p) => {
+              const name = p.name.toLowerCase();
+              if (name.includes('hp')) return 'HP';
+              if (name.includes('acer')) return 'Acer';
+              if (name.includes('dell')) return 'Dell';
+              if (name.includes('asus')) return 'ASUS';
+              if (name.includes('msi')) return 'MSI';
+              return null;
+            })
+            .filter(Boolean),
+        ),
+      ];
+
+      if (normalizedMessage.includes('from gamergizmo')) {
+        return {
+          reply: `Yes, all the brands listed (e.g., ${brands.join(', ')}) are available on GamerGizmo based on the products found within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED). Would you like to see specific models from these brands?`,
+          updatedSession,
+        };
+      }
+
+      return {
+        reply: `The brands available on GamerGizmo within your budget (${updatedSession.budgetMin}–${updatedSession.budgetMax} AED) for ${categories.find((c) => c.id === updatedSession.categoryId)?.name} are: ${brands.join(', ')}. Would you like more details about specific models from these brands?`,
+        updatedSession,
+      };
+    }
+
+    // Fetch products
+    let products: Product[] = [];
+    if (
+      !sessionData.lastQuery ||
+      normalizedMessage.match(/(laptop|desktop|pc|console|component)/i) ||
+      /\d{2,5}/.test(normalizedMessage)
+    ) {
+      const queryForSearch = normalizedMessage.match(
+        /(laptop|desktop|pc|console|component)/i,
+      )
+        ? normalizedMessage.match(/(laptop|desktop|pc|console|component)/i)[0]
+        : normalizedMessage;
+      products = await this.productService.findProductByQuery(
+        queryForSearch,
+        skip,
+        take,
+      );
+      updatedSession.lastQuery = normalizedMessage;
+      updatedSession.lastResults = products;
+      updatedSession.queryType = isBrandQuery ? 'brand' : 'product';
+    } else {
+      products = sessionData.lastResults || [];
+    }
+
+    const matchedCategory = categories.find(
+      (c) => c.id === updatedSession.categoryId,
     );
 
-    // 1. Find matching products
-    const products = await this.productService.findProductByQuery(
-      normalizedMessage,
-      skip,
-      take,
-    );
-    console.log(
-      `[generateReply] Products found: ${JSON.stringify(products, null, 2)}`,
+    // Filter products by budget
+    products = products.filter(
+      (p) =>
+        parseFloat(p.price) >= (updatedSession.budgetMin || 0) &&
+        parseFloat(p.price) <= (updatedSession.budgetMax || Infinity),
     );
 
-    // 2. Fuzzy matching for category
-    const fuse = new Fuse(categories, { keys: ['name'], threshold: 0.3 });
-    const matchedCategory = fuse.search(normalizedMessage)?.[0]?.item;
-    console.log(
-      `[generateReply] Matched category: ${JSON.stringify(matchedCategory, null, 2) || 'none'}`,
-    );
-
-    // 3. Generate AI response
     const systemPrompt = `
 You are an intelligent assistant for a tech marketplace called GamerGizmo.
-All prices are in AED (United Arab Emirates Dirhams).
-
-Important Rules:
-- Always mention prices in AED
-- Example: "This laptop costs 2,499 AED"
-- DO NOT convert to other currencies unless explicitly asked
-- ONLY suggest products that exist in our database
-- For the user query "${normalizedMessage}", we found ${products.length} matching products
-- ${matchedCategory ? `The most relevant category is "${matchedCategory.name}"` : 'No specific category matched'}
-- Show only ${take} product results at a time
-- Sort by price (ascending) for price-related queries, otherwise by newest first
-- Include clickable links for products: [Product Name](https://gamergizmo.com/product-details/{id})
-- If no products are found or the query is vague (e.g., "products"), respond with: "Sorry, we couldn't find any products matching '${normalizedMessage}'. Please specify a category like Laptops, Desktops, Components, or Gaming Consoles, or adjust your price range."
-- Support price queries like "under X", "below X", "less than X", "cheaper than X", "in range X-Y", "between X and Y"
-- Prices in the database may include "AED" and commas (e.g., "3,600 AED"). Parse them correctly as integers for comparison
-- Provide concise, friendly, and clear responses
-
-Current matching products:
-${
-  products
-    .map(
-      (p) =>
-        `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`,
-    )
-    .join('\n') || 'None found'
-}
-    `.trim();
-    console.log(`[generateReply] System prompt: ${systemPrompt}`);
+All prices are in AED.
+The user is looking for products in the category "${matchedCategory?.name}" with budget between ${updatedSession.budgetMin} and ${updatedSession.budgetMax} AED.
+We found ${products.length} matching products.
+${products.map((p) => `- ${p.name} (${p.price} AED, https://gamergizmo.com/product-details/${p.id})`).join('\n') || 'No products found.'}
+`.trim();
 
     try {
       const aiResponse = await this.openai.chat.completions.create({
         model: 'gpt-4.1',
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: message,
-          },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message },
         ],
       });
-      console.log(
-        `[generateReply] AI response: ${JSON.stringify(aiResponse.choices?.[0]?.message?.content, null, 2)}`,
-      );
 
       let reply =
         aiResponse.choices?.[0]?.message?.content?.trim() ||
-        `Sorry, we couldn't find any products matching "${normalizedMessage}". Please specify a category like Laptops, Desktops, Components, or Gaming Consoles, or adjust your price range.`;
+        `Sorry, we couldn't find any products matching "${normalizedMessage}".`;
 
-      // 4. Format product links
-      let productLinks = '';
+      // Streamline response to avoid repetition
       if (products.length > 0) {
-        productLinks = products
+        const productLinks = products
           .map(
-            (product) =>
-              `🛒 ${product.name} - ${product.price} AED [View Product](https://gamergizmo.com/product-details/${product.id})`,
+            (p) =>
+              // `🛒 ${p.name} - ${p.price} AED https://gamergizmo.com/product-details/${p.id}`,
+              `🛒 ${p.name} - ${p.price} AED <a href="https://gamergizmo.com/product-details/${p.id}" target="_blank" style="color: #4da6ff; text-decoration: underline;">View Product</a>`,
           )
-          .join('\n');
-        console.log(`[generateReply] Formatted product links: ${productLinks}`);
+          .join('<br>');
+        reply = `Here are ${products.length} products within your budget of ${updatedSession.budgetMin}–${updatedSession.budgetMax} AED in the ${matchedCategory?.name} category:\n${productLinks}`;
       }
 
       const showMoreNote =
         products.length === take
           ? '\n\nWant to see more? Just say "show more".'
           : '';
-      console.log(`[generateReply] Show more note: ${showMoreNote}`);
-
-      const finalReply = productLinks
-        ? `${reply}\n\nHere are some options:\n${productLinks}${showMoreNote}`
-        : `${reply}${showMoreNote}`;
-      console.log(`[generateReply] Final reply: ${finalReply}`);
 
       return {
-        reply: finalReply,
+        reply: `${reply}${showMoreNote}`,
         productLink: products?.[0]?.id
           ? `https://gamergizmo.com/product-details/${products[0].id}`
           : undefined,
+        updatedSession,
       };
     } catch (error) {
-      console.error(
-        `[generateReply] Error calling OpenAI API: ${error.message}`,
-      );
+      console.error(`[generateReply] OpenAI Error: ${error.message}`);
       return {
-        reply: `Sorry, something went wrong. Please try again or refine your query.`,
-        productLink: undefined,
+        reply: 'Sorry, something went wrong. Please try again.',
+        updatedSession,
       };
     }
   }

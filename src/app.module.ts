@@ -35,6 +35,7 @@ import { WebhookController } from './webhook/webhook.controller';
 import { WebhookService } from './webhook/webhook.service';
 import { WebhookModule } from './webhook/webhook.module';
 import { AiChatbotModule } from './ai-chatbot/ai-chatbot.module';
+import { SessionStoreService } from './session-store/session-store.service';
 
 @Module({
   imports: [
@@ -71,6 +72,6 @@ import { AiChatbotModule } from './ai-chatbot/ai-chatbot.module';
     AiChatbotModule,
   ],
   controllers: [AppController],
-  providers: [AppService ],
+  providers: [AppService, SessionStoreService ],
 })
 export class AppModule {}
