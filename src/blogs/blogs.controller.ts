@@ -46,17 +46,32 @@ export class BlogsContoller {
     return this.blogsService.GetRecentsBlogs();
   }
 
+  // @Get('/getSingleBlogsDetails')
+  // @ApiQuery({
+  //   name: 'id',
+  //   required: true,
+  //   type: Number,
+  //   description: 'Blog ID',
+  // })
+  // async GetSingleBlogsDetails(@Query() id: any) {
+  //   return this.blogsService.GetSingleBlogsDetails(id);
+  // }
   @Get('/getSingleBlogsDetails')
   @ApiQuery({
     name: 'id',
-    required: true,
+    required: false,
     type: Number,
     description: 'Blog ID',
   })
-  async GetSingleBlogsDetails(@Query() id: any) {
-    return this.blogsService.GetSingleBlogsDetails(id);
+  @ApiQuery({
+    name: 'title',
+    required: false,
+    type: String,
+    description: 'Blog title',
+  })
+  async GetSingleBlogsDetails(@Query() query: { id?: string; title?: string }) {
+    return this.blogsService.GetSingleBlogsDetails(query);
   }
-
   @Post('/create')
   @UseGuards(AdminAuthGuard)
   @ApiBearerAuth()

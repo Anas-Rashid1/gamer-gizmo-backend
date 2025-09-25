@@ -63,11 +63,70 @@ export class BlogsService {
   //     throw new InternalServerErrorException(e);
   //   }
   // }
-  async GetSingleBlogsDetails({ id }) {
+  // async GetSingleBlogsDetails({ id }) {
+  //   try {
+  //     // Fetch the blog and increment the views count atomically
+  //     const blog = await this.prisma.blog_posts.update({
+  //       where: { id: parseInt(id) },
+  //       data: {
+  //         views: { increment: 1 },
+  //       },
+  //       select: {
+  //         id: true,
+  //         admin_id: true,
+  //         title: true,
+  //         content: true,
+  //         images: true,
+  //         created_at: true,
+  //         updated_at: true,
+  //         is_verified: true,
+  //         verified_by: true,
+  //         is_published: true,
+  //         tags: true,
+  //         views: true,
+  //       },
+  //     });
+
+  //     if (!blog) {
+  //       throw new BadRequestException('Blog not found');
+  //     }
+
+  //     const imageUrl = blog.images
+  //       ? await this.s3Service.get_image_url(blog.images)
+  //       : null;
+
+  //     return { message: 'Success', data: { ...blog, images: imageUrl } };
+  //   } catch (e) {
+  //     throw new InternalServerErrorException(e);
+  //   }
+  // }
+  async GetSingleBlogsDetails({ id, title }: { id?: string; title?: string }) {
     try {
+      // Ensure at least one parameter is provided
+      if (!id && !title) {
+        throw new BadRequestException('Either ID or title must be provided');
+      }
+
+      let blogId: number;
+
+      // If title is provided, find the blog by title
+      if (title && !id) {
+        const blogByTitle = await this.prisma.blog_posts.findFirst({
+          where: { title },
+          select: { id: true },
+        });
+
+        if (!blogByTitle) {
+          throw new BadRequestException('Blog not found');
+        }
+        blogId = blogByTitle.id;
+      } else {
+        blogId = parseInt(id);
+      }
+
       // Fetch the blog and increment the views count atomically
       const blog = await this.prisma.blog_posts.update({
-        where: { id: parseInt(id) },
+        where: { id: blogId },
         data: {
           views: { increment: 1 },
         },
