@@ -74,9 +74,14 @@ export class ProductsContoller {
   }
 
   @Get('/getProductById')
-  @ApiQuery({ name: 'id', required: true, type: String })
-  async GetProductById(@Query() id: string, @Req() user: any) {
-    return this.productService.GetProductById(id, user);
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    type: String,
+    description: 'Product ID (numeric) or slug (string) for fetching the product',
+  })
+  async GetProductById(@Query('id') identifier: string, @Req() user: any) {
+    return this.productService.GetProductById(identifier, user);
   }
 
   @Delete('/deleteProductById')
@@ -307,6 +312,7 @@ export class ProductsContoller {
             properties: {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Gaming Mouse' },
+              slug: { type: 'string', example: 'gaming-mouse' },
               price: { type: 'number', example: 49.99 },
               category: {
                 type: 'string',
@@ -367,6 +373,7 @@ export class ProductsContoller {
             properties: {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Gaming Mouse' },
+              slug: { type: 'string', example: 'gaming-mouse' },
               price: { type: 'number', example: 49.99 },
               category: {
                 type: 'string',
@@ -446,5 +453,27 @@ export class ProductsContoller {
   @Get('store-products-with-orders')
   async getStoreProductsWithOrders(): Promise<{ id: number; name: string }[]> {
     return this.productService.getStoreProductsWithOrders();
+  }
+
+  
+  @ApiOperation({ summary: 'Generate slugs for existing products without slugs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Slugs generated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Slugs generated successfully' },
+        count: { type: 'number', example: 5 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Failed to generate slugs',
+  })
+  @Post('/generate-slugs')
+  async generateSlugs() {
+    return this.productService.generateSlugsForAllProducts();
   }
 }

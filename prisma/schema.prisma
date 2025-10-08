@@ -297,6 +297,7 @@ model processors {
 model product {
   id                                     Int                  @id @default(autoincrement())
   name                                   String               @db.VarChar
+  slug                                   String?              @unique @db.VarChar(255) // Make slug nullable with `?`
   user_id                                Int?
   description                            String               @db.VarChar
   price                                  String               @db.VarChar

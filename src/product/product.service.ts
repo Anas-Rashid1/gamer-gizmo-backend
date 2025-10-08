@@ -15,13 +15,12 @@ import { JwtService } from '@nestjs/jwt';
 import { S3Service } from 'src/utils/s3.service';
 import { Prisma } from '@prisma/client';
 import { Product } from 'src/types/product';
-// import Fuse from 'fuse.js';
 const Fuse = require('fuse.js');
 
-// Define the type for product with included relations for GetAllProducts and GetUserProducts
 interface ProductWithRelations {
   id: number;
   name: string;
+  slug?: string | null;
   user_id?: number | null;
   description: string;
   price: string;
@@ -224,6 +223,48 @@ export class ProductService {
     { id: 4, name: 'Gaming Consoles' },
   ];
 
+  private async generateUniqueSlug(name: string): Promise<string> {
+  if (!name || name.trim() === '') {
+    throw new Error('Product name cannot be empty');
+  }
+
+  const MAX_SLUG_LENGTH = 255; // Adjust based on your database column definition
+
+  // Generate base slug
+  let baseSlug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+  if (!baseSlug) {
+    baseSlug = 'product'; // Fallback for names that result in empty slugs
+  }
+
+  // Truncate baseSlug to leave room for potential numeric suffix (e.g., -123)
+  const maxBaseLength = MAX_SLUG_LENGTH - 10; // Reserve space for "-{count}"
+  baseSlug = baseSlug.substring(0, maxBaseLength);
+
+  let slug = baseSlug;
+  let count = 1;
+
+  // Check for existing slugs
+  while (
+    await this.prismaService.product.findUnique({
+      where: { slug },
+      select: { id: true }, // Optimize by selecting minimal data
+    })
+  ) {
+    const suffix = `-${count}`;
+    // Ensure the slug + suffix doesn't exceed MAX_SLUG_LENGTH
+    const maxSlugWithoutSuffix = MAX_SLUG_LENGTH - suffix.length;
+    slug = `${baseSlug.substring(0, maxSlugWithoutSuffix)}${suffix}`;
+    count++;
+  }
+
+  return slug;
+}
+
   async GetAllProducts(queryData: any, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
@@ -388,6 +429,7 @@ export class ProductService {
             ? 'GamerGizmo Store'
             : e.users?.first_name + ' ' + e.users?.last_name,
           name: e.name,
+          slug: e.slug,
           category: e.categories?.name,
           id: e.id,
           description: e.description,
@@ -566,150 +608,7 @@ export class ProductService {
     }
   }
 
-  // async GetProductById(pid: any, user: any) {
-  //   try {
-  //     const token = this.extractTokenFromHeader(user);
-  //     let payload = null;
-  //     if (token) {
-  //       try {
-  //         payload = await this.jwtService.verifyAsync(token, {
-  //           secret: process.env.JWT_SECRET,
-  //         });
-  //       } catch (error) {
-  //         console.warn('JWT Verification Failed:', error.message);
-  //         payload = null;
-  //       }
-  //     }
-
-  //     const data = await this.prismaService.product.findUnique({
-  //       include: {
-  //         brands: true,
-  //         models: true,
-  //         categories: true,
-  //         condition_product_conditionTocondition: true,
-  //         components: {
-  //           include: {
-  //             component_type_components_component_typeTocomponent_type: true,
-  //           },
-  //         },
-  //         product_reviews: {
-  //           include: {
-  //             users: {
-  //               select: {
-  //                 username: true,
-  //                 profile: true,
-  //                 created_at: true,
-  //                 first_name: true,
-  //                 last_name: true,
-  //                 email: true,
-  //                 phone: true,
-  //                 gender: true,
-  //               },
-  //             },
-  //             store_product_review_images: true,
-  //           },
-  //           orderBy: { created_at: 'desc' },
-  //         },
-  //         gaming_console: true,
-  //         users: {
-  //           select: {
-  //             username: true,
-  //             profile: true,
-  //             created_at: true,
-  //             first_name: true,
-  //             last_name: true,
-  //             email: true,
-  //             phone: true,
-  //             gender: true,
-  //           },
-  //         },
-  //         personal_computers: {
-  //           include: {
-  //             processors: true,
-  //             ram_personal_computers_ramToram: true,
-  //             storage_personal_computers_storageTostorage: true,
-  //             storage_type_personal_computers_storage_typeTostorage_type: true,
-  //             gpu_personal_computers_gpuTogpu: true,
-  //             processor_variant_personal_computers_processor_variantToprocessor_variant: true,
-  //           },
-  //         },
-  //         laptops: {
-  //           include: {
-  //             ram_laptops_ramToram: true,
-  //             storage_laptops_storageTostorage: true,
-  //             storage_type_laptops_storage_typeTostorage_type: true,
-  //             gpu_laptops_gpuTogpu: true,
-  //             processors: true,
-  //             processor_variant_laptops_processor_variantToprocessor_variant: true,
-  //           },
-  //         },
-  //         product_images: true,
-  //         location_product_locationTolocation: true,
-  //       },
-  //       where: { id: parseInt(pid.id) },
-  //     });
-
-  //     if (!data) {
-  //       return { data: null, message: 'Product not found' };
-  //     }
-
-  //     // Generate signed URLs for product images
-  //     const imageUrls = data.product_images.length
-  //       ? await this.s3Service.get_image_urls(
-  //           data.product_images.map((img) => img.image_url),
-  //         )
-  //       : [];
-  //     const imagesWithUrls = data.product_images.map((img, index) => ({
-  //       ...img,
-  //       image_url: imageUrls[index],
-  //     }));
-
-  //     // Generate signed URLs for review images
-  //     const reviewsWithImageUrls = await Promise.all(
-  //       data.product_reviews.map(async (review) => {
-  //         const reviewImageUrls = review.store_product_review_images.length
-  //           ? await this.s3Service.get_image_urls(
-  //               review.store_product_review_images.map((img) => img.image_url),
-  //             )
-  //           : [];
-  //         const reviewImagesWithUrls = review.store_product_review_images.map(
-  //           (img, index) => ({
-  //             ...img,
-  //             image_url: reviewImageUrls[index],
-  //           }),
-  //         );
-  //         return {
-  //           ...review,
-  //           store_product_review_images: reviewImagesWithUrls,
-  //         };
-  //       }),
-  //     );
-
-  //     const isFavorite = payload
-  //       ? (
-  //           await this.prismaService.favourite_products.findMany({
-  //             where: {
-  //               user_id: parseInt(payload.id),
-  //               product_id: data.id,
-  //             },
-  //           })
-  //         ).length > 0
-  //       : false;
-
-  //     return {
-  //       data: {
-  //         ...data,
-  //         product_images: imagesWithUrls,
-  //         product_reviews: reviewsWithImageUrls,
-  //         fav: isFavorite,
-  //       },
-  //       message: 'success',
-  //     };
-  //   } catch (e) {
-  //     throw new InternalServerErrorException(e);
-  //   }
-  // }
-  async GetProductById(pid: any, user: any) {
+  async GetProductById(identifier: string, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
       let payload = null;
@@ -722,6 +621,14 @@ export class ProductService {
           console.warn('JWT Verification Failed:', error.message);
           payload = null;
         }
+      }
+
+      let where;
+      const id = parseInt(identifier);
+      if (!isNaN(id)) {
+        where = { id };
+      } else {
+        where = { slug: identifier };
       }
 
       const data = await this.prismaService.product.findUnique({
@@ -791,7 +698,7 @@ export class ProductService {
           product_images: true,
           location_product_locationTolocation: true,
         },
-        where: { id: parseInt(pid.id) },
+        where,
       });
 
       if (!data) {
@@ -894,8 +801,10 @@ export class ProductService {
     images: Express.Multer.File[],
   ) {
     try {
+      const slug = await this.generateUniqueSlug(productbody.name);
       const data: Prisma.productCreateInput = {
         name: productbody.name,
+        slug,
         description: productbody.description,
         price: productbody.price,
         stock: productbody.stock,
@@ -1050,6 +959,10 @@ export class ProductService {
         },
         other_brand_name: productbody.otherBrandName,
       };
+
+      if (productbody.name !== pro.name) {
+        data.slug = await this.generateUniqueSlug(productbody.name);
+      }
 
       await this.prismaService.product.update({
         where: { id: parseInt(productbody.prod_id) },
@@ -1299,6 +1212,7 @@ export class ProductService {
 
           return {
             name: e.name,
+            slug: e.slug,
             id: e.id,
             active: e.is_published,
             description: e.description,
@@ -1545,6 +1459,7 @@ export class ProductService {
           return {
             id: product.id,
             name: product.name,
+            slug: product.slug,
             price: product.price,
             category: product.categories?.name,
             category_id: product.categories?.id,
@@ -1620,6 +1535,7 @@ export class ProductService {
           return {
             id: product.id,
             name: product.name,
+            slug: product.slug,
             price: product.price,
             category: product.categories?.name,
             category_id: product.categories?.id,
@@ -1828,6 +1744,7 @@ export class ProductService {
           return {
             id: product.id,
             name: product.name,
+            slug: product.slug,
             price: parseFloat(product.price),
             category: product.categories?.name,
             category_id: product.categories?.id,
@@ -1859,294 +1776,6 @@ export class ProductService {
     }
   }
 
-  // async findProductByQuery(
-  //   query: string,
-  //   skip = 0,
-  //   take = 10,
-  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
-  //   console.log(
-  //     `[findProductByQuery] Input query: ${query}, skip: ${skip}, take: ${take}`,
-  //   );
-  //   const originalQuery = query.trim().toLowerCase();
-  //   console.log(
-  //     `[findProductByQuery] Normalized original query: ${originalQuery}`,
-  //   );
-  //   let normalizedQueryForTextSearch = originalQuery;
-  //   let priceFilterMin: number | undefined;
-  //   let priceFilterMax: number | undefined;
-  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
-
-  //   // 1. Extract Price and Detect Range
-  //   const priceKeywords =
-  //     /\b(under|below|less than|less|cheaper than)\s+(\d+[,.\d]*)(?:\s*aed)?/i;
-  //   const rangeKeywords =
-  //     /\b(?:between|from|in range)?\s*(\d+[,.\d]*)\s*(?:and|to|-)\s*(\d+[,.\d]*)\s*(?:aed)?/i;
-  //   const singleBudgetWithDash = /(\d+)\s*-\s*$/i;
-  //   const cleanedQuery = normalizedQueryForTextSearch.replace(/,/g, '');
-  //   console.log(
-  //     `[findProductByQuery] Cleaned query for price parsing: ${cleanedQuery}`,
-  //   );
-  //   console.log(
-  //     `[findProductByQuery] Cleaned query for price parsing: ${cleanedQuery}`,
-  //   );
-  //   if (rangeKeywords.test(cleanedQuery)) {
-  //     const rangeMatch = cleanedQuery.match(rangeKeywords);
-  //     priceFilterMin = parseInt(rangeMatch[1].replace(/[,.\s]/g, ''), 10);
-  //     priceFilterMax = parseInt(rangeMatch[2].replace(/[,.\s]/g, ''), 10);
-  //     priceCondition = 'range';
-  //     normalizedQueryForTextSearch = cleanedQuery
-  //       .replace(rangeKeywords, '')
-  //       .trim();
-  //   } else if (priceKeywords.test(cleanedQuery)) {
-  //     const priceMatch = cleanedQuery.match(priceKeywords);
-  //     priceFilterMin = parseInt(priceMatch[2].replace(/[,.\s]/g, ''), 10);
-  //     priceCondition = 'lte';
-  //     normalizedQueryForTextSearch = cleanedQuery
-  //       .replace(priceKeywords, '')
-  //       .trim();
-  //   } else if (singleBudgetWithDash.test(cleanedQuery)) {
-  //     const match = cleanedQuery.match(singleBudgetWithDash);
-  //     priceFilterMin = parseInt(match[1], 10);
-  //     // @ts-expect-error
-  //     priceCondition = 'gte';
-  //     normalizedQueryForTextSearch = cleanedQuery
-  //       .replace(singleBudgetWithDash, '')
-  //       .trim();
-  //   } else {
-  //     console.log(`[findProductByQuery] No price detected in query`);
-  //   }
-
-  //   // 2. Clean Query
-  //   const generalPhrases = [
-  //     'suggest',
-  //     'show',
-  //     'find',
-  //     'me',
-  //     'some',
-  //     'any',
-  //     'top',
-  //     'best',
-  //     'good',
-  //     'gaming',
-  //     'less',
-  //     'cheaper',
-  //     'within',
-  //     'price',
-  //     'priced',
-  //     'in range',
-  //     'between',
-  //   ];
-  //   for (const phrase of generalPhrases) {
-  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //       .replace(new RegExp(`\\b${phrase}\\b`, 'gi'), '')
-  //       .trim();
-  //   }
-  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //     .replace(/^(for|with|a|an|the)\s+/i, '')
-  //     .replace(/\s+(for|with|a|an|the)$/i, '')
-  //     .replace(/\s+/g, ' ')
-  //     .trim();
-  //   console.log(
-  //     `[findProductByQuery] Normalized query after cleaning: ${normalizedQueryForTextSearch}`,
-  //   );
-
-  //   // 3. Explicit Category Keyword Matching
-  //   let categoryId: number | undefined;
-  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
-  //     categoryId = 1; // Laptops
-  //   } else if (
-  //     originalQuery.includes('desktop') ||
-  //     originalQuery.includes('desktops') ||
-  //     originalQuery.includes('pc') ||
-  //     originalQuery.includes('computer')
-  //   ) {
-  //     categoryId = 2; // Desktops
-  //   } else if (
-  //     originalQuery.includes('component') ||
-  //     originalQuery.includes('components')
-  //   ) {
-  //     categoryId = 3; // Components
-  //   } else if (
-  //     originalQuery.includes('console') ||
-  //     originalQuery.includes('consoles') ||
-  //     originalQuery.includes('gaming console')
-  //   ) {
-  //     categoryId = 4; // Gaming Consoles
-  //   }
-  //   console.log(
-  //     `[findProductByQuery] Category ID from explicit matching: ${categoryId || 'none'}`,
-  //   );
-
-  //   // 4. Build the WHERE Clause
-  //   let whereConditions: any[] = [{ is_published: true }];
-  //   console.log(
-  //     `[findProductByQuery] Initial where conditions: ${JSON.stringify(whereConditions, null, 2)}`,
-  //   );
-
-  //   if (priceFilterMin !== undefined) {
-  //     // Use raw SQL for price casting to handle strings like "3,600 AED"
-  //     let priceConditionSql = '';
-  //     const queryParams: any[] = [];
-  //     if (priceCondition === 'lte') {
-  //       priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) <= $${queryParams.length + 1}`;
-  //       queryParams.push(priceFilterMin);
-  //     } else if (priceCondition === 'range') {
-  //       priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
-  //       queryParams.push(priceFilterMin, priceFilterMax);
-  //     } else {
-  //       priceConditionSql = `CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) = $${queryParams.length + 1}`;
-  //       queryParams.push(priceFilterMin);
-  //     }
-  //     console.log(
-  //       `[findProductByQuery] Price condition SQL: ${priceConditionSql}, params: ${queryParams}`,
-  //     );
-
-  //     let paramIndex = queryParams.length + 1;
-  //     const baseQuery = `
-  //     SELECT id, name, price, created_at, category_id
-  //     FROM product
-  //     WHERE is_published = true
-  //     ${categoryId !== undefined ? `AND category_id = $${paramIndex++}` : ''}
-  //     ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
-  //     ${
-  //       normalizedQueryForTextSearch
-  //         ? `AND (
-  //             LOWER(name) LIKE $${paramIndex++}
-  //             OR LOWER(description) LIKE $${paramIndex++}
-  //             OR LOWER(other_brand_name) LIKE $${paramIndex++}
-  //             OR EXISTS (
-  //               SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${paramIndex++}
-  //             )
-  //             OR EXISTS (
-  //               SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${paramIndex++}
-  //             )
-  //           )`
-  //         : ''
-  //     }
-  //     ORDER BY CAST(REPLACE(REPLACE(price, 'AED', ''), ',', '') AS INTEGER) ASC
-  //     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-  //   `;
-  //     if (categoryId !== undefined) queryParams.push(categoryId);
-  //     if (normalizedQueryForTextSearch)
-  //       queryParams.push(...Array(5).fill(`%${normalizedQueryForTextSearch}%`));
-  //     queryParams.push(take, skip);
-  //     console.log(`[findProductByQuery] Raw SQL query: ${baseQuery}`);
-  //     console.log(
-  //       `[findProductByQuery] Query parameters: ${JSON.stringify(queryParams)}`,
-  //     );
-
-  //     try {
-  //       const products = await this.prismaService.$queryRawUnsafe<
-  //         {
-  //           id: number;
-  //           name: string;
-  //           price: string;
-  //           created_at: Date;
-  //           category_id: number;
-  //         }[]
-  //       >(baseQuery, ...queryParams);
-  //       console.log(
-  //         `[findProductByQuery] Raw SQL query executed successfully, results: ${JSON.stringify(products, null, 2)}`,
-  //       );
-  //       return products;
-  //     } catch (error) {
-  //       console.error(
-  //         `[findProductByQuery] Error executing raw SQL query: ${error.message}`,
-  //       );
-  //       throw error;
-  //     }
-  //   } else {
-  //     // Handle non-price queries
-  //     if (!categoryId && !normalizedQueryForTextSearch) {
-  //       // Vague query (e.g., "suggest me products")
-  //       console.log(
-  //         `[findProductByQuery] Vague query detected, returning empty result to prompt for category`,
-  //       );
-  //       return [];
-  //     }
-
-  //     let textSearchOrConditions: any[] = [];
-  //     if (normalizedQueryForTextSearch) {
-  //       textSearchOrConditions.push(
-  //         {
-  //           name: {
-  //             contains: normalizedQueryForTextSearch,
-  //             mode: 'insensitive',
-  //           },
-  //         },
-  //         {
-  //           description: {
-  //             contains: normalizedQueryForTextSearch,
-  //             mode: 'insensitive',
-  //           },
-  //         },
-  //         {
-  //           other_brand_name: {
-  //             contains: normalizedQueryForTextSearch,
-  //             mode: 'insensitive',
-  //           },
-  //         },
-  //         {
-  //           brands: {
-  //             name: {
-  //               contains: normalizedQueryForTextSearch,
-  //               mode: 'insensitive',
-  //             },
-  //           },
-  //         },
-  //         {
-  //           models: {
-  //             name: {
-  //               contains: normalizedQueryForTextSearch,
-  //               mode: 'insensitive',
-  //             },
-  //           },
-  //         },
-  //       );
-  //       console.log(
-  //         `[findProductByQuery] Text search conditions: ${JSON.stringify(textSearchOrConditions, null, 2)}`,
-  //       );
-  //     }
-
-  //     if (textSearchOrConditions.length > 0) {
-  //       whereConditions.push({ OR: textSearchOrConditions });
-  //     }
-
-  //     if (categoryId !== undefined) {
-  //       whereConditions.push({ category_id: categoryId });
-  //     }
-
-  //     const finalWhereClause = { AND: whereConditions };
-  //     console.log(
-  //       `[findProductByQuery] Final where clause: ${JSON.stringify(finalWhereClause, null, 2)}`,
-  //     );
-
-  //     try {
-  //       const products = await this.prismaService.product.findMany({
-  //         where: finalWhereClause,
-  //         select: {
-  //           id: true,
-  //           name: true,
-  //           price: true,
-  //           created_at: true,
-  //           category_id: true,
-  //         },
-  //         orderBy: { created_at: 'asc' },
-  //         skip,
-  //         take,
-  //       });
-  //       console.log(
-  //         `[findProductByQuery] Prisma query executed successfully, results: ${JSON.stringify(products, null, 2)}`,
-  //       );
-  //       return products;
-  //     } catch (error) {
-  //       console.error(
-  //         `[findProductByQuery] Error executing Prisma query: ${error.message}`,
-  //       );
-  //       throw error;
-  //     }
-  //   }
-  // }
 
   async findProductByQuery(
     query: string,
@@ -2428,273 +2057,33 @@ export class ProductService {
     return this.fixedCategories;
   }
 
-  // async getAllCategories(): Promise<{ id: number; name: string }[]> {
-  //   return this.fixedCategories; // Return hardcoded categories
-  // }
-  // final searching as an integer
-  // async findProductByQuery(
-  //   query: string,
-  //   skip = 0,
-  //   take = 10,
-  // ): Promise<{ id: number; name: string; price: string; created_at: Date }[]> {
-  //   const originalQuery = query.trim().toLowerCase();
-  //   let normalizedQueryForTextSearch = originalQuery;
-  //   let priceFilterMin: number | undefined;
-  //   let priceFilterMax: number | undefined;
-  //   let priceCondition: 'exact' | 'lte' | 'range' | undefined;
+ async generateSlugsForAllProducts() {
+  try {
+    // Fetch all products
+    const products = await this.prismaService.product.findMany({
+      select: {
+        id: true,
+        name: true,
+      }, // Optimize by selecting only needed fields
+    });
 
-  //   // 1. Extract Price and Detect Range
-  //   const cleanedQueryForPriceParsing = normalizedQueryForTextSearch.replace(
-  //     /,/g,
-  //     '',
-  //   );
-  //   const rangeRegex = /\bbetween\s+(\d+)\s*(?:and|-)\s*(\d+)/;
-  //   const rangeMatch = cleanedQueryForPriceParsing.match(rangeRegex);
-  //   const priceRegex = /(\d+)(?:\s*aed)?/;
+    let count = 0;
+    for (const product of products) {
+      const slug = await this.generateUniqueSlug(product.name);
+      await this.prismaService.product.update({
+        where: { id: product.id },
+        data: { slug },
+      });
+      count++;
+    }
 
-  //   if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
-  //     priceFilterMin = parseInt(rangeMatch[1], 10);
-  //     priceFilterMax = parseInt(rangeMatch[2], 10);
-  //     priceCondition = 'range';
-  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //       .replace(rangeRegex, '')
-  //       .replace(/\b(between|and)\b/, '')
-  //       .trim();
-  //   } else {
-  //     const priceMatch = cleanedQueryForPriceParsing.match(priceRegex);
-  //     if (priceMatch && priceMatch[1]) {
-  //       priceFilterMin = parseInt(priceMatch[1], 10);
-  //       priceCondition =
-  //         originalQuery.includes('under') || originalQuery.includes('below')
-  //           ? 'lte'
-  //           : 'exact';
-  //       normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //         .replace(priceRegex, '')
-  //         .replace(/\b(under|below)\b/, '')
-  //         .trim();
-  //     }
-  //   }
+    return { message: 'Slugs generated/updated successfully for all products', count };
+  } catch (error) {
+    throw new InternalServerErrorException(
+      'Failed to generate/update slugs for products',
+      error.message,
+    );
+  }
+}
 
-  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //     .replace(/^(for|with|a|an|the)\s+/, '')
-  //     .trim();
-  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //     .replace(/\s+(for|with|a|an|the)$/, '')
-  //     .trim();
-
-  //   // 2. Aggressive Cleaning for General Queries
-  //   const generalPhrases = [
-  //     'suggest',
-  //     'show',
-  //     'find',
-  //     'me',
-  //     'some',
-  //     'any',
-  //     'top',
-  //     'best',
-  //     'good',
-  //     'gaming',
-  //   ];
-  //   for (const phrase of generalPhrases) {
-  //     normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //       .replace(new RegExp(`\\b${phrase}\\b`, 'g'), '')
-  //       .trim();
-  //   }
-  //   normalizedQueryForTextSearch = normalizedQueryForTextSearch
-  //     .replace(/\s+/g, ' ')
-  //     .trim();
-  //   console.log(
-  //     normalizedQueryForTextSearch,
-  //     'normalizedQueryForTextSearch after cleaning',
-  //   );
-
-  //   // 3. Explicit Category Keyword Matching
-  //   let categoryId: number | undefined;
-  //   if (originalQuery.includes('laptop') || originalQuery.includes('laptops')) {
-  //     categoryId = 1; // Laptops
-  //   } else if (
-  //     originalQuery.includes('desktop') ||
-  //     originalQuery.includes('desktops') ||
-  //     originalQuery.includes('pc') ||
-  //     originalQuery.includes('computer')
-  //   ) {
-  //     categoryId = 2; // Desktops
-  //   } else if (
-  //     originalQuery.includes('component') ||
-  //     originalQuery.includes('components')
-  //   ) {
-  //     categoryId = 3; // Components
-  //   } else if (
-  //     originalQuery.includes('console') ||
-  //     originalQuery.includes('consoles') ||
-  //     originalQuery.includes('gaming console')
-  //   ) {
-  //     categoryId = 4; // Gaming Consoles
-  //   }
-  //   console.log(categoryId, 'categoryId from explicit matching');
-
-  //   // 4. Build the WHERE Clause
-  //   let whereConditions: any[] = [{ is_published: true }];
-
-  //   if (priceFilterMin !== undefined) {
-  //     if (priceCondition === 'lte') {
-  //       whereConditions.push({
-  //         price: {
-  //           lte: priceFilterMin.toString(),
-  //         },
-  //       });
-  //     } else if (priceCondition === 'range') {
-  //       whereConditions.push({
-  //         AND: [
-  //           {
-  //             price: {
-  //               gte: priceFilterMin.toString(),
-  //             },
-  //           },
-  //           {
-  //             price: {
-  //               lte: priceFilterMax!.toString(),
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     } else {
-  //       whereConditions.push({
-  //         price: priceFilterMin.toString(),
-  //       });
-  //     }
-  //   }
-
-  //   if (categoryId !== undefined) {
-  //     whereConditions.push({ category_id: categoryId });
-  //   }
-
-  //   let textSearchOrConditions: any[] = [];
-  //   if (normalizedQueryForTextSearch && categoryId === undefined) {
-  //     textSearchOrConditions.push(
-  //       {
-  //         name: { contains: normalizedQueryForTextSearch, mode: 'insensitive' },
-  //       },
-  //       {
-  //         description: {
-  //           contains: normalizedQueryForTextSearch,
-  //           mode: 'insensitive',
-  //         },
-  //       },
-  //       {
-  //         other_brand_name: {
-  //           contains: normalizedQueryForTextSearch,
-  //           mode: 'insensitive',
-  //         },
-  //       },
-  //       {
-  //         brands: {
-  //           name: {
-  //             contains: normalizedQueryForTextSearch,
-  //             mode: 'insensitive',
-  //           },
-  //         },
-  //       },
-  //       {
-  //         models: {
-  //           name: {
-  //             contains: normalizedQueryForTextSearch,
-  //             mode: 'insensitive',
-  //           },
-  //         },
-  //       },
-  //     );
-  //   }
-
-  //   if (textSearchOrConditions.length > 0) {
-  //     whereConditions.push({ OR: textSearchOrConditions });
-  //   }
-
-  //   const finalWhereClause = { AND: whereConditions };
-  //   console.log(JSON.stringify(finalWhereClause, null, 2), 'finalWhereClause');
-
-  //   // 5. Execute Query with Raw SQL for Price Casting
-  //   let products;
-  //   if (priceFilterMin !== undefined) {
-  //     // Build raw SQL query for price casting
-  //     let priceConditionSql = '';
-  //     const queryParams: any[] = [];
-
-  //     if (priceCondition === 'lte') {
-  //       priceConditionSql = `CAST(price AS INTEGER) <= $${queryParams.length + 1}`;
-  //       queryParams.push(priceFilterMin);
-  //     } else if (priceCondition === 'range') {
-  //       priceConditionSql = `CAST(price AS INTEGER) BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
-  //       queryParams.push(priceFilterMin, priceFilterMax);
-  //     } else {
-  //       priceConditionSql = `CAST(price AS INTEGER) = $${queryParams.length + 1}`;
-  //       queryParams.push(priceFilterMin);
-  //     }
-
-  //     const baseQuery = `
-  //     SELECT id, name, price, created_at, category_id
-  //     FROM product
-  //     WHERE is_published = true
-  //     ${categoryId !== undefined ? `AND category_id = $${queryParams.length + 1}` : ''}
-  //     ${priceConditionSql ? `AND ${priceConditionSql}` : ''}
-  //     ${
-  //       textSearchOrConditions.length > 0
-  //         ? `AND (
-  //             LOWER(name) LIKE $${queryParams.length + 1}
-  //             OR LOWER(description) LIKE $${queryParams.length + 1}
-  //             OR LOWER(other_brand_name) LIKE $${queryParams.length + 1}
-  //             OR EXISTS (
-  //               SELECT 1 FROM brands WHERE brands.id = product.brand_id AND LOWER(brands.name) LIKE $${queryParams.length + 1}
-  //             )
-  //             OR EXISTS (
-  //               SELECT 1 FROM models WHERE models.id = product.model_id AND LOWER(models.name) LIKE $${queryParams.length + 1}
-  //             )
-  //           )`
-  //         : ''
-  //     }
-  //     ORDER BY created_at ASC
-  //     LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-  //   `;
-  //     if (categoryId !== undefined) queryParams.push(categoryId);
-  //     if (textSearchOrConditions.length > 0)
-  //       queryParams.push(`%${normalizedQueryForTextSearch}%`);
-  //     queryParams.push(take, skip);
-
-  //     products = await this.prismaService.$queryRawUnsafe<
-  //       {
-  //         id: number;
-  //         name: string;
-  //         price: string;
-  //         created_at: Date;
-  //         category_id: number;
-  //       }[]
-  //     >(baseQuery, ...queryParams);
-  //   } else {
-  //     // Fallback to original Prisma query if no price filter
-  //     products = await this.prismaService.product.findMany({
-  //       where: finalWhereClause,
-  //       select: {
-  //         id: true,
-  //         name: true,
-  //         price: true,
-  //         created_at: true,
-  //         category_id: true,
-  //       },
-  //       orderBy: {
-  //         created_at: 'asc',
-  //       },
-  //       skip,
-  //       take,
-  //     });
-  //   }
-
-  //   // Debug: Log total matching products
-  //   const total = await this.prismaService.product.count({
-  //     where: finalWhereClause,
-  //   });
-  //   console.log(total, 'total matching products');
-  //   console.log(products, 'returned products');
-
-  //   return products;
-  // }
 }
