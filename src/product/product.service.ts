@@ -282,8 +282,9 @@ export class ProductService {
       baseSlug = 'product'; // Fallback for names that result in empty slugs
     }
 
-    // Append product ID to the slug
-    const idSuffix = `-id-${productId}`;
+    // Format product ID to 5 digits (e.g., 1 -> 00001, 9999 -> 09999, 99999 -> 99999)
+    const formattedId = productId.toString().padStart(5, '0');
+    const idSuffix = `-id-${formattedId}`;
     const maxBaseLength = MAX_SLUG_LENGTH - idSuffix.length; // Reserve space for ID suffix
     baseSlug = baseSlug.substring(0, maxBaseLength);
 
@@ -667,12 +668,7 @@ export class ProductService {
       }
 
       let where;
-      // const id = parseInt(identifier);
-      // if (!isNaN(id)) {
-      //   where = { id };
-      // } else {
-      //   where = { slug: identifier };
-      // }
+     
       const id = Number(identifier);
       if (/^\d+$/.test(identifier)) {
         where = { id };
