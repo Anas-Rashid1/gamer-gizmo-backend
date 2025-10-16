@@ -223,48 +223,91 @@ export class ProductService {
     { id: 4, name: 'Gaming Consoles' },
   ];
 
-  private async generateUniqueSlug(name: string): Promise<string> {
-  if (!name || name.trim() === '') {
-    throw new Error('Product name cannot be empty');
+//   private async generateUniqueSlug(name: string): Promise<string> {
+//   if (!name || name.trim() === '') {
+//     throw new Error('Product name cannot be empty');
+//   }
+
+//   const MAX_SLUG_LENGTH = 255; // Adjust based on your database column definition
+
+//   // Generate base slug
+//   let baseSlug = name
+//     .toLowerCase()
+//     .trim()
+//     .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+//     .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+//   if (!baseSlug) {
+//     baseSlug = 'product'; // Fallback for names that result in empty slugs
+//   }
+
+//   // Truncate baseSlug to leave room for potential numeric suffix (e.g., -123)
+//   const maxBaseLength = MAX_SLUG_LENGTH - 10; // Reserve space for "-{count}"
+//   baseSlug = baseSlug.substring(0, maxBaseLength);
+
+//   let slug = baseSlug;
+//   let count = 1;
+
+//   // Check for existing slugs
+//   while (
+//     await this.prismaService.product.findUnique({
+//       where: { slug },
+//       select: { id: true }, // Optimize by selecting minimal data
+//     })
+//   ) {
+//     const suffix = `-${count}`;
+//     // Ensure the slug + suffix doesn't exceed MAX_SLUG_LENGTH
+//     const maxSlugWithoutSuffix = MAX_SLUG_LENGTH - suffix.length;
+//     slug = `${baseSlug.substring(0, maxSlugWithoutSuffix)}${suffix}`;
+//     count++;
+//   }
+
+//   return slug;
+// }
+  private async generateUniqueSlug(name: string, productId: number): Promise<string> {
+    if (!name || name.trim() === '') {
+      throw new Error('Product name cannot be empty');
+    }
+
+    const MAX_SLUG_LENGTH = 255; // Adjust based on your database column definition
+
+    // Generate base slug
+    let baseSlug = name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+    if (!baseSlug) {
+      baseSlug = 'product'; // Fallback for names that result in empty slugs
+    }
+
+    // Append product ID to the slug
+    const idSuffix = `-id-${productId}`;
+    const maxBaseLength = MAX_SLUG_LENGTH - idSuffix.length; // Reserve space for ID suffix
+    baseSlug = baseSlug.substring(0, maxBaseLength);
+
+    let slug = `${baseSlug}${idSuffix}`;
+
+    // Check for existing slugs (excluding the current product)
+    let count = 1;
+    while (
+      await this.prismaService.product.findFirst({
+        where: { 
+          slug,
+          NOT: { id: productId } // Exclude the current product
+        },
+        select: { id: true },
+      })
+    ) {
+      const suffix = `-${count}${idSuffix}`;
+      const maxSlugWithoutSuffix = MAX_SLUG_LENGTH - suffix.length;
+      slug = `${baseSlug.substring(0, maxSlugWithoutSuffix)}${suffix}`;
+      count++;
+    }
+
+    return slug;
   }
-
-  const MAX_SLUG_LENGTH = 255; // Adjust based on your database column definition
-
-  // Generate base slug
-  let baseSlug = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-
-  if (!baseSlug) {
-    baseSlug = 'product'; // Fallback for names that result in empty slugs
-  }
-
-  // Truncate baseSlug to leave room for potential numeric suffix (e.g., -123)
-  const maxBaseLength = MAX_SLUG_LENGTH - 10; // Reserve space for "-{count}"
-  baseSlug = baseSlug.substring(0, maxBaseLength);
-
-  let slug = baseSlug;
-  let count = 1;
-
-  // Check for existing slugs
-  while (
-    await this.prismaService.product.findUnique({
-      where: { slug },
-      select: { id: true }, // Optimize by selecting minimal data
-    })
-  ) {
-    const suffix = `-${count}`;
-    // Ensure the slug + suffix doesn't exceed MAX_SLUG_LENGTH
-    const maxSlugWithoutSuffix = MAX_SLUG_LENGTH - suffix.length;
-    slug = `${baseSlug.substring(0, maxSlugWithoutSuffix)}${suffix}`;
-    count++;
-  }
-
-  return slug;
-}
-
   async GetAllProducts(queryData: any, user: any) {
     try {
       const token = this.extractTokenFromHeader(user);
@@ -796,15 +839,137 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
-  async CreateProduct(
+  // async CreateProduct(
+  //   productbody: CreateProductDto,
+  //   images: Express.Multer.File[],
+  // ) {
+  //   try {
+  //     const slug = await this.generateUniqueSlug(productbody.name);
+  //     const data: Prisma.productCreateInput = {
+  //       name: productbody.name,
+  //       slug,
+  //       description: productbody.description,
+  //       price: productbody.price,
+  //       stock: productbody.stock,
+  //       is_store_product: Boolean(productbody.is_store_product),
+  //       brands:
+  //         productbody.brand_id && parseInt(productbody.brand_id) != 0
+  //           ? { connect: { id: parseInt(productbody.brand_id) } }
+  //           : undefined,
+  //       models:
+  //         productbody.model_id && parseInt(productbody.model_id) != 0
+  //           ? { connect: { id: parseInt(productbody.model_id) } }
+  //           : undefined,
+  //       categories: { connect: { id: parseInt(productbody.category_id) } },
+  //       condition_product_conditionTocondition: {
+  //         connect: { id: parseInt(productbody.condition) },
+  //       },
+  //       is_published: Boolean(productbody.is_published),
+  //       is_verified_by_admin: false,
+  //       show_on_home: false,
+  //       top_rated: false,
+  //       location_product_locationTolocation: {
+  //         connect: { id: parseInt(productbody.location) },
+  //       },
+  //       other_brand_name: productbody.otherBrandName,
+  //     };
+
+  //     if (Boolean(productbody.is_store_product)) {
+  //       data.admin_product_admin_idToadmin = {
+  //         connect: { id: parseInt(productbody.user_id) },
+  //       };
+  //     } else {
+  //       data.users = { connect: { id: parseInt(productbody.user_id) } };
+  //     }
+
+  //     const prod = await this.prismaService.product.create({ data });
+
+  //     // Upload images to S3
+  //     for (const image of images) {
+  //       const uploaded = await this.s3Service.upload_file(image);
+  //       await this.prismaService.product_images.create({
+  //         data: {
+  //           product_id: prod.id,
+  //           image_url: uploaded.Key,
+  //           created_at: new Date(),
+  //         },
+  //       });
+  //     }
+
+  //     // Category-specific data
+  //     if (parseInt(productbody.category_id) == 1) {
+  //       await this.prismaService.laptops.create({
+  //         data: {
+  //           product_id: prod.id,
+  //           ram: parseInt(productbody.ram),
+  //           processor: parseInt(productbody.processor),
+  //           storage: parseInt(productbody.storage),
+  //           storage_type: parseInt(productbody.storageType),
+  //           gpu: parseInt(productbody.gpu),
+  //           graphics: productbody.graphics,
+  //           ports: productbody.ports,
+  //           battery_life: productbody.battery_life,
+  //           screen_size: productbody.screen_size,
+  //           weight: productbody.weight,
+  //           screen_resolution: productbody.screen_resolution,
+  //           color: productbody.color,
+  //           processor_variant: parseInt(productbody.processorVariant),
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 4) {
+  //       await this.prismaService.gaming_console.create({
+  //         data: {
+  //           product_id: prod.id,
+  //           accessories: productbody.accessories,
+  //           warranty_status: productbody.warranty_status,
+  //           color: productbody.color,
+  //           battery_life: productbody.battery_life,
+  //           connectivity: productbody.connectivity,
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 2) {
+  //       await this.prismaService.personal_computers.create({
+  //         data: {
+  //           product_id: prod.id,
+  //           ram: parseInt(productbody.ram),
+  //           processor: parseInt(productbody.processor),
+  //           processor_variant: parseInt(productbody.processorVariant),
+  //           graphics: productbody.graphics,
+  //           ports: productbody.ports,
+  //           storage: parseInt(productbody.storage),
+  //           storage_type: parseInt(productbody.storageType),
+  //           gpu: parseInt(productbody.gpu),
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 3) {
+  //       await this.prismaService.components.create({
+  //         data: {
+  //           product_id: prod.id,
+  //           component_type: parseInt(productbody.component_type),
+  //           text: productbody.text,
+  //         },
+  //       });
+  //     }
+
+  //     if (!Boolean(productbody.is_store_product)) {
+  //       await this.prismaService.users.update({
+  //         data: { is_seller: true },
+  //         where: { id: parseInt(productbody.user_id) },
+  //       });
+  //     }
+
+  //     return { message: 'success' };
+  //   } catch (e) {
+  //     throw new InternalServerErrorException(e);
+  //   }
+  // }
+   async CreateProduct(
     productbody: CreateProductDto,
     images: Express.Multer.File[],
   ) {
     try {
-      const slug = await this.generateUniqueSlug(productbody.name);
       const data: Prisma.productCreateInput = {
         name: productbody.name,
-        slug,
         description: productbody.description,
         price: productbody.price,
         stock: productbody.stock,
@@ -840,6 +1005,13 @@ export class ProductService {
       }
 
       const prod = await this.prismaService.product.create({ data });
+
+      // Generate slug with product ID
+      const slug = await this.generateUniqueSlug(productbody.name, prod.id);
+      await this.prismaService.product.update({
+        where: { id: prod.id },
+        data: { slug },
+      });
 
       // Upload images to S3
       for (const image of images) {
@@ -921,6 +1093,160 @@ export class ProductService {
     }
   }
 
+  // async UpdateProduct(productbody: any, images: Express.Multer.File[]) {
+  //   try {
+  //     const pro = await this.prismaService.product.findUnique({
+  //       where: { id: parseInt(productbody.prod_id) },
+  //     });
+  //     if (!pro) {
+  //       throw new BadRequestException('No Product Found');
+  //     }
+
+  //     const data: Prisma.productUpdateInput = {
+  //       name: productbody.name,
+  //       description: productbody.description,
+  //       price: productbody.price,
+  //       stock: productbody.stock,
+  //       is_store_product: Boolean(productbody.is_store_product),
+  //       brands: productbody.brand_id
+  //         ? { connect: { id: parseInt(productbody.brand_id) } }
+  //         : { disconnect: true },
+  //       models:
+  //         productbody.model_id && parseInt(productbody.model_id) != 0
+  //           ? { connect: { id: parseInt(productbody.model_id) } }
+  //           : { disconnect: true },
+  //       categories: { connect: { id: parseInt(productbody.category_id) } },
+  //       condition_product_conditionTocondition: {
+  //         connect: { id: parseInt(productbody.condition) },
+  //       },
+  //       is_published:
+  //         productbody.is_published === 'true' ||
+  //         productbody.is_published === true,
+
+  //       is_verified_by_admin: false,
+  //       show_on_home: false,
+  //       top_rated: false,
+  //       location_product_locationTolocation: {
+  //         connect: { id: parseInt(productbody.location) },
+  //       },
+  //       other_brand_name: productbody.otherBrandName,
+  //     };
+
+  //     if (productbody.name !== pro.name) {
+  //       data.slug = await this.generateUniqueSlug(productbody.name);
+  //     }
+
+  //     await this.prismaService.product.update({
+  //       where: { id: parseInt(productbody.prod_id) },
+  //       data,
+  //     });
+
+  //     // if (images && images.length > 0) {
+  //     //   // Delete existing images from S3
+  //     //   const imagesToDelete = await this.prismaService.product_images.findMany(
+  //     //     {
+  //     //       where: { product_id: parseInt(productbody.prod_id) },
+  //     //     },
+  //     //   );
+  //     //   for (const img of imagesToDelete) {
+  //     //     await this.s3Service.deleteFileByKey(img.image_url);
+  //     //   }
+  //     //   await this.prismaService.product_images.deleteMany({
+  //     //     where: { product_id: parseInt(productbody.prod_id) },
+  //     //   });
+
+  //     //   // Upload new images to S3
+  //     //   for (const image of images) {
+  //     //     const uploaded = await this.s3Service.upload_file(image);
+  //     //     await this.prismaService.product_images.create({
+  //     //       data: {
+  //     //         product_id: parseInt(productbody.prod_id),
+  //     //         image_url: uploaded.Key,
+  //     //         created_at: new Date(),
+  //     //       },
+  //     //     });
+  //     //   }
+  //     // }
+  //     if (images && images.length > 0) {
+  //       // Just upload and add new images without deleting the old ones
+  //       for (const image of images) {
+  //         const uploaded = await this.s3Service.upload_file(image);
+  //         await this.prismaService.product_images.create({
+  //           data: {
+  //             product_id: parseInt(productbody.prod_id),
+  //             image_url: uploaded.Key,
+  //             created_at: new Date(),
+  //           },
+  //         });
+  //       }
+  //     }
+
+  //     // Category-specific updates
+  //     if (parseInt(productbody.category_id) == 1) {
+  //       await this.prismaService.laptops.updateMany({
+  //         where: { product_id: parseInt(productbody.prod_id) },
+  //         data: {
+  //           ram: parseInt(productbody.laptops[0].ram),
+  //           processor: parseInt(productbody.laptops[0].processor),
+  //           storage: parseInt(productbody.laptops[0].storage),
+  //           storage_type: parseInt(productbody.laptops[0].storage_type),
+  //           gpu: parseInt(productbody.laptops[0].gpu),
+  //           graphics: productbody.laptops[0].graphics,
+  //           ports: productbody.laptops[0].ports,
+  //           battery_life: productbody.laptops[0].battery_life,
+  //           screen_size: productbody.laptops[0].screen_size,
+  //           weight: productbody.laptops[0].weight,
+  //           screen_resolution: productbody.laptops[0].screen_resolution,
+  //           color: productbody.laptops[0].color,
+  //           processor_variant: parseInt(
+  //             productbody.laptops[0].processor_variant,
+  //           ),
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 4) {
+  //       await this.prismaService.gaming_console.updateMany({
+  //         where: { product_id: parseInt(productbody.prod_id) },
+  //         data: {
+  //           accessories: productbody.gaming_console[0].accessories,
+  //           warranty_status: productbody.gaming_console[0].warranty_status,
+  //           color: productbody.gaming_console[0].color,
+  //           battery_life: productbody.gaming_console[0].battery_life,
+  //           connectivity: productbody.gaming_console[0].connectivity,
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 2) {
+  //       await this.prismaService.personal_computers.updateMany({
+  //         where: { product_id: parseInt(productbody.prod_id) },
+  //         data: {
+  //           ram: parseInt(productbody.personal_computers[0].ram),
+  //           processor: parseInt(productbody.personal_computers[0].processor),
+  //           processor_variant: parseInt(
+  //             productbody.personal_computers[0].processor_variant,
+  //           ),
+  //           graphics: productbody.personal_computers[0].graphics,
+  //           ports: productbody.personal_computers[0].ports,
+  //           storage: parseInt(productbody.personal_computers[0].storage),
+  //           storage_type: parseInt(
+  //             productbody.personal_computers[0].storage_type,
+  //           ),
+  //           gpu: parseInt(productbody.personal_computers[0].gpu),
+  //         },
+  //       });
+  //     } else if (parseInt(productbody.category_id) == 3) {
+  //       await this.prismaService.components.updateMany({
+  //         where: { product_id: parseInt(productbody.prod_id) },
+  //         data: {
+  //           component_type: parseInt(productbody.components[0].component_type),
+  //           text: productbody.components[0].text,
+  //         },
+  //       });
+  //     }
+
+  //     return { message: 'Successfully Updated' };
+  //   } catch (e) {
+  //     throw new InternalServerErrorException(e);
+  //   }
+  // }
   async UpdateProduct(productbody: any, images: Express.Multer.File[]) {
     try {
       const pro = await this.prismaService.product.findUnique({
@@ -950,7 +1276,6 @@ export class ProductService {
         is_published:
           productbody.is_published === 'true' ||
           productbody.is_published === true,
-
         is_verified_by_admin: false,
         show_on_home: false,
         top_rated: false,
@@ -961,7 +1286,7 @@ export class ProductService {
       };
 
       if (productbody.name !== pro.name) {
-        data.slug = await this.generateUniqueSlug(productbody.name);
+        data.slug = await this.generateUniqueSlug(productbody.name, parseInt(productbody.prod_id));
       }
 
       await this.prismaService.product.update({
@@ -969,32 +1294,6 @@ export class ProductService {
         data,
       });
 
-      // if (images && images.length > 0) {
-      //   // Delete existing images from S3
-      //   const imagesToDelete = await this.prismaService.product_images.findMany(
-      //     {
-      //       where: { product_id: parseInt(productbody.prod_id) },
-      //     },
-      //   );
-      //   for (const img of imagesToDelete) {
-      //     await this.s3Service.deleteFileByKey(img.image_url);
-      //   }
-      //   await this.prismaService.product_images.deleteMany({
-      //     where: { product_id: parseInt(productbody.prod_id) },
-      //   });
-
-      //   // Upload new images to S3
-      //   for (const image of images) {
-      //     const uploaded = await this.s3Service.upload_file(image);
-      //     await this.prismaService.product_images.create({
-      //       data: {
-      //         product_id: parseInt(productbody.prod_id),
-      //         image_url: uploaded.Key,
-      //         created_at: new Date(),
-      //       },
-      //     });
-      //   }
-      // }
       if (images && images.length > 0) {
         // Just upload and add new images without deleting the old ones
         for (const image of images) {
@@ -1075,7 +1374,6 @@ export class ProductService {
       throw new InternalServerErrorException(e);
     }
   }
-
   async AddReview(productbody: CreateReviewDto, images: Express.Multer.File[]) {
     try {
       const pro = await this.prismaService.product.findUnique({
@@ -2057,33 +2355,60 @@ export class ProductService {
     return this.fixedCategories;
   }
 
- async generateSlugsForAllProducts() {
-  try {
-    // Fetch all products
-    const products = await this.prismaService.product.findMany({
-      select: {
-        id: true,
-        name: true,
-      }, // Optimize by selecting only needed fields
-    });
+//  async generateSlugsForAllProducts() {
+//   try {
+//     // Fetch all products
+//     const products = await this.prismaService.product.findMany({
+//       select: {
+//         id: true,
+//         name: true,
+//       }, // Optimize by selecting only needed fields
+//     });
 
-    let count = 0;
-    for (const product of products) {
-      const slug = await this.generateUniqueSlug(product.name);
-      await this.prismaService.product.update({
-        where: { id: product.id },
-        data: { slug },
+//     let count = 0;
+//     for (const product of products) {
+//       const slug = await this.generateUniqueSlug(product.name);
+//       await this.prismaService.product.update({
+//         where: { id: product.id },
+//         data: { slug },
+//       });
+//       count++;
+//     }
+
+//     return { message: 'Slugs generated/updated successfully for all products', count };
+//   } catch (error) {
+//     throw new InternalServerErrorException(
+//       'Failed to generate/update slugs for products',
+//       error.message,
+//     );
+//   }
+// }
+  async generateSlugsForAllProducts() {
+    try {
+      // Fetch all products
+      const products = await this.prismaService.product.findMany({
+        select: {
+          id: true,
+          name: true,
+        }, // Optimize by selecting only needed fields
       });
-      count++;
+
+      let count = 0;
+      for (const product of products) {
+        const slug = await this.generateUniqueSlug(product.name, product.id);
+        await this.prismaService.product.update({
+          where: { id: product.id },
+          data: { slug },
+        });
+        count++;
+      }
+
+      return { message: 'Slugs generated/updated successfully for all products', count };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to generate/update slugs for products',
+        error.message,
+      );
     }
-
-    return { message: 'Slugs generated/updated successfully for all products', count };
-  } catch (error) {
-    throw new InternalServerErrorException(
-      'Failed to generate/update slugs for products',
-      error.message,
-    );
   }
-}
-
 }
