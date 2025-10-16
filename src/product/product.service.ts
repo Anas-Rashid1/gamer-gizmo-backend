@@ -667,8 +667,14 @@ export class ProductService {
       }
 
       let where;
-      const id = parseInt(identifier);
-      if (!isNaN(id)) {
+      // const id = parseInt(identifier);
+      // if (!isNaN(id)) {
+      //   where = { id };
+      // } else {
+      //   where = { slug: identifier };
+      // }
+      const id = Number(identifier);
+      if (/^\d+$/.test(identifier)) {
         where = { id };
       } else {
         where = { slug: identifier };
